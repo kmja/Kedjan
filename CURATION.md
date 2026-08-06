@@ -1,83 +1,72 @@
 # Curation notes
 
 The generator proposes; a human decides. This file records what the current
-`public/days.json` has been through, and what it has *not*.
+`public/days.json` has been through.
 
 ## What shipped
 
-Four days, `2026-08-03` … `2026-08-06`, carried over from the prototype's
-hand-checked set.
+Five days, generated from a real 250k-word Swedish dictionary and curated down
+from thirteen candidates.
 
-| # | date | day | par | pairs | solutions |
-|---|------|-----|-----|-------|-----------|
-| 1 | 2026-08-03 | huvud → tusen | 3 | 29 | ✓ in band |
-| 2 | 2026-08-04 | full → rock | 3 | 23 | ✓ in band |
-| 3 | 2026-08-05 | het → bank | 3 | 26 | ✓ in band |
-| 4 | 2026-08-06 | färg → broder | 4 | 23 | ✓ in band |
+| # | date | day | par | pairs | solutions | opening moves |
+|---|------|-----|-----|-------|-----------|----------------|
+| 1 | 2026-08-02 | jul → dam | 4 | 28 | 6 | 4 |
+| 2 | 2026-08-03 | hund → folk | 3 | 27 | 9 | 4 |
+| 3 | 2026-08-04 | folk → hotell | 3 | 30 | 4 | 5 |
+| 4 | 2026-08-05 | mat → pizza | 3 | 32 | 3 | 4 |
+| 5 | 2026-08-06 | grund → gäst | 3 | 29 | 10 | 4 |
 
-`python3 -m kedjan.cli lint ../public/days.json` reports zero errors.
+`python3 -m kedjan.cli lint ../public/days.json --dic sv_SE.dic` reports zero
+errors — **every compound in every day is verified present in the dictionary.**
+One warning: mat→pizza has 32 pairs against a healthy band of 20–30.
 
-## What was cut, and why
+## The whole prototype calendar was cut
 
-The prototype shipped eight days. Four were dropped:
+All eight prototype days are gone. They failed on four separate counts.
 
-- **till → kör** — `till` is a prefix particle. The handover records this
-  exact day as flagged in playtesting, so the rule is now enforced in
-  `usable_endpoint()` and in the lint.
-- **grupp → synd**, **flyg → hård**, **hund → hundra** — all three carry welds
-  that are verb conjugations rather than compounds: *riskerar* is not risk+rar,
-  *grupperas* is not grupp+ras, *modelleras* is not modell+ras, *värderas* is
-  not värd+ras. The splitter's foge-e rule manufactured them. Two of the three
-  also had `rar` as a pool chip, which is not a Swedish word at all.
+- **till → kör** — `till` is a prefix particle, flagged in playtesting.
+- **grupp → synd, flyg → hård, hund → hundra** — welds that are verb
+  conjugations, not compounds: *riskerar* is not risk+rar, *grupperas* is not
+  grupp+ras, *värderas* is not värd+ras. Two also had `rar` as a pool chip.
+- **huvud → tusen** — a pool of numerals (fyra, hundra, tjugo, två, fem, tio),
+  which combine without limit exactly as colours do. Four of its welds were
+  also absent from the dictionary.
+- **full → rock, het → bank** — one valid opening move each, so there was no
+  choice to make on move one. het→bank also rested on *hetsbrott*, which is
+  hets+brott, not het+s+brott.
+- **färg → broder** — *farbroder* is archaic; live Swedish is *farbror*. The
+  pool also held both `far` and `fader`, two register forms of one lexeme.
 
-  These are **false acceptances** — the mirror of the false rejections the
-  handover names as the top quality metric, and arguably worse: a rejection
-  annoys a player, an acceptance teaches them a rule the game does not follow.
+## Rules added as a result
 
-The lint rule that catches these turns on the linking morpheme, not the tail.
-`hund` + `ras` is *hundras*, a perfectly good compound, because *ras* is a real
-noun; it is `risk` + **e** + `ras` that spells a conjugated verb. Flagging the
-tail alone condemned six innocent pairs on the first pass.
+Each of these is now enforced in `kedjan/graph.py` or `kedjan/curate.py`:
 
-## Warnings knowingly overruled
+| rule | what it stops |
+|---|---|
+| `linking_is_sound` | het+s+brott, when *hets* is itself a word |
+| `NUMERALS` ban | pools that drift into arithmetic |
+| `TONE_BAN` | subtitle-corpus profanity ranking as "common Swedish" |
+| `CLOSED_CLASS` | jag/har/för/som as parts |
+| `is_surface_form` | ögat, mans — definite and genitive forms |
+| `LINKED_VERB_TAILS` | risk+e+ras spelling a conjugated verb |
+| lexicon-backed weld check | any compound not actually in the dictionary |
 
-```
-warn  full→rock  start 'full' is a derivational suffix
-warn  het→bank   start 'het' is a derivational suffix
-```
+## Known gaps
 
-Both are real standalone words (*full*, *het*) and both appear here as the
-**start** of a chain, welding forwards. `SUFFIX_STOP` exists to stop a compound
-*ending* in a derivational suffix, which is not what these days do. Kept.
-
-## What has NOT been checked
-
-**The lexicon-backed weld check has not been run.** `kedjan.cli lint --dic …`
-verifies that every witness word actually exists in the corpus, and that is the
-check that would catch a structurally valid but non-existent compound. It needs
-the corpora, which are not in this repository. Until it runs, the shipped days
-are structurally sound but not lexically verified — `senfull` in the full→rock
-day is the kind of thing to look at first.
-
-Run before shipping to real players:
-
-```
-cd generator
-python3 -m kedjan.cli lint ../public/days.json --dic swedish.dic
-```
-
-Tone has not been re-reviewed either. The pipeline once proposed *maskingevär*
-into a cozy garden puzzle; het→bank is a crime-desk day (mord, vapen, brott)
-which is coherent but worth a deliberate yes.
+- **Register and currency are not checked.** *farbroder* is in the dictionary,
+  so no existence check catches it. Distinguishing live from archaic needs
+  SALDO, which is blocked by network policy here.
+- **Positional forms are not modelled.** *broder-* is right initially
+  (broderskärlek) and wrong finally (farbroder → farbror). This is the
+  spad/spade problem the handover names, and it also needs SALDO.
+- **`linking_is_sound` over-rejects.** The hunspell dictionary lists
+  compound-only stems like *familje*, so familj+e+far is refused. This costs
+  coverage, not correctness — a lost pair is invisible, a wrong pair is not.
 
 ## The checklist
 
-For every proposed day, before it ships:
-
 1. `kedjan.cli lint` clean, **with `--dic`**.
-2. Endpoints: real lemmas, no particles, no plurals, words a player would
-   volunteer unprompted.
-3. Tone: does the pool hang together, and is that a tone you want that day?
-4. Pool sanity: read all ten chips aloud. Anything that is not a word you would
-   use in a sentence is a splitter artefact.
+2. At least three opening moves from the start, or move one is not a choice.
+3. Endpoints: real lemmas, no particles, plurals, definite forms or slang.
+4. Tone: read all ten chips aloud. Would you put this in front of a stranger?
 5. Par matches the shortest route; 3 for weekdays, 4 for harder days.

@@ -53,8 +53,14 @@ export default function App() {
   }, [calendar, released, pickedDate, today]);
 
   const game = useKedjan(day);
-  const zoneRef = useRef<HTMLDivElement>(null);
-  const { drag, handlers } = useChipDrag(zoneRef, game.place);
+  const chainRef = useRef<HTMLDivElement>(null);
+  const poolRef = useRef<HTMLDivElement>(null);
+  // Chips travel both ways: pool chips land in the chain, chain chips land
+  // back in the pool.
+  const { drag, handlers } = useChipDrag({
+    chain: { ref: chainRef, accept: game.place },
+    pool: { ref: poolRef, accept: game.removeFrom },
+  });
 
   const openDay = (date: string) => {
     setPickedDate(date);
@@ -141,8 +147,10 @@ export default function App() {
               chain={game.chain}
               solved={game.solved}
               marked={game.marked}
-              dragging={drag !== null}
-              zoneRef={zoneRef}
+              incoming={drag?.target === "chain"}
+              liftedPart={drag?.target === "pool" ? drag.part : null}
+              zoneRef={chainRef}
+              handlers={handlers}
               onFinish={game.finish}
             />
 
@@ -156,8 +164,10 @@ export default function App() {
                 <Pool
                   parts={game.pool}
                   marked={game.marked}
-                  liftedPart={drag?.part ?? null}
+                  liftedPart={drag?.target === "chain" ? drag.part : null}
+                  incoming={drag?.target === "pool"}
                   current={game.current}
+                  zoneRef={poolRef}
                   handlers={handlers}
                 />
 
@@ -230,7 +240,7 @@ export default function App() {
         className="mt-auto pt-10 text-center text-[0.7rem]"
         style={{ color: "var(--ink-soft)" }}
       >
-        Ordmaterial från öppna svenska ordlistor.
+        Ordmaterial från SFOL — Den stora fria ordlistan (LGPL-3.0).
       </footer>
     </div>
   );

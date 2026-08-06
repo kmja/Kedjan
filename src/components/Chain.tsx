@@ -1,13 +1,23 @@
 import type { RefObject } from "react";
 import type { Day } from "../types";
+import type { DropTarget } from "../game/useChipDrag";
+import { plural } from "../game/plural";
+
+type ChipHandlers = ReturnType<
+  (part: string, target: DropTarget) => Record<string, unknown>
+>;
 
 interface Props {
   day: Day;
   chain: string[];
   solved: boolean;
   marked: string | null;
-  dragging: boolean;
+  /** Set while a chip is being dragged *into* the chain. */
+  incoming: boolean;
+  /** The chain part currently being dragged back out to the pool, if any. */
+  liftedPart: string | null;
   zoneRef: RefObject<HTMLDivElement | null>;
+  handlers: (part: string, target: DropTarget) => ChipHandlers;
   onFinish: () => void;
 }
 
@@ -15,9 +25,21 @@ interface Props {
  * The bridge under construction: start, the parts placed so far, the slots the
  * budget still pays for, and the target. The slots are the budget made
  * visible — they deplete as the chain grows.
+ *
+ * Placed parts are buttons: activating one takes it back out of the chain,
+ * along with everything downstream of it.
  */
-export function Chain({ day, chain, solved, marked, dragging, zoneRef, onFinish }: Props) {
-  const placed = [day.start, ...chain];
+export function Chain({
+  day,
+  chain,
+  solved,
+  marked,
+  incoming,
+  liftedPart,
+  zoneRef,
+  handlers,
+  onFinish,
+}: Props) {
   const emptySlots = solved ? 0 : day.budget - 1 - chain.length;
 
   const spoken = [
@@ -29,31 +51,54 @@ export function Chain({ day, chain, solved, marked, dragging, zoneRef, onFinish 
     .filter(Boolean)
     .join(", ");
 
+  const removalHint = (index: number) => {
+    const after = chain.length - index - 1;
+    return after === 0
+      ? " Ta bort från kedjan."
+      : ` Ta bort från kedjan, tillsammans med ${plural(after, "del", "delar")} efter den.`;
+  };
+
   return (
     <div
       ref={zoneRef}
       className={`dropzone flex flex-wrap items-center justify-center gap-1 px-1 py-2 ${
-        dragging ? "dropzone--armed" : ""
+        incoming ? "dropzone--armed" : ""
       }`}
     >
       <ol className="contents" aria-label={`Kedjan: ${spoken}`}>
-        {placed.map((part, i) => {
-          const isStart = i === 0;
-          const isHead = !solved && i === placed.length - 1 && !isStart;
+        <li className="flex items-center">
+          <span className="node node--endpoint">{day.start}</span>
+        </li>
+
+        {chain.map((part, i) => {
+          const isHead = i === chain.length - 1;
+          const classes = [
+            "node",
+            solved ? "" : "node--removable",
+            isHead && !solved ? "node--head" : "",
+            isHead ? "snap" : "",
+            liftedPart === part ? "chip--lifted" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+
           return (
-            <li key={`${part}-${i}`} className="flex items-center">
-              {i > 0 && (
-                <span className="joint" aria-hidden="true">
-                  +
-                </span>
-              )}
-              <span
-                className={`node ${isStart ? "node--endpoint" : ""} ${
-                  isHead ? "node--head" : ""
-                } ${i === placed.length - 1 ? "snap" : ""}`}
-              >
-                {part}
+            <li key={part} className="flex items-center">
+              <span className="joint" aria-hidden="true">
+                +
               </span>
+              {solved ? (
+                <span className={classes}>{part}</span>
+              ) : (
+                <button
+                  type="button"
+                  {...handlers(part, "pool")}
+                  className={classes}
+                  aria-label={`Länk ${i + 1}, ${part}.${removalHint(i)}`}
+                >
+                  {part}
+                </button>
+              )}
             </li>
           );
         })}
@@ -61,8 +106,8 @@ export function Chain({ day, chain, solved, marked, dragging, zoneRef, onFinish 
         {Array.from({ length: emptySlots }, (_, i) => (
           <li key={`slot-${i}`} className="flex items-center" aria-hidden="true">
             <span className="joint">+</span>
-            <span className={`node node--slot ${dragging && i === 0 ? "node--slot-active" : ""}`}>
-              {dragging && i === 0 ? "här" : "··"}
+            <span className={`node node--slot ${incoming && i === 0 ? "node--slot-active" : ""}`}>
+              {incoming && i === 0 ? "här" : "··"}
             </span>
           </li>
         ))}

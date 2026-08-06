@@ -18,6 +18,7 @@ import {
   recordSolve,
 } from "./storage";
 import { todayISO } from "./dates";
+import { plural } from "./plural";
 
 export type Status = { kind: "ok" | "no" | "info"; msg: string };
 
@@ -118,13 +119,39 @@ export function useKedjan(day: Day | null) {
     say({ kind: "ok", msg: `${w} ✓ — klart!` });
   }, [day, solved, current, chain.length, say, patch]);
 
+  /**
+   * Take a part back out of the chain.
+   *
+   * The chain is a bridge, so a part cannot be plucked from the middle and
+   * leave the rest standing — every weld after it was made against a
+   * neighbour that is now gone. Removing a part therefore removes everything
+   * downstream of it too. One rule, always, which makes removing the last
+   * part exactly an undo.
+   */
+  const removeFrom = useCallback(
+    (part: string) => {
+      if (!day || solved) return;
+      const at = chain.indexOf(part);
+      if (at < 0) return;
+
+      const alsoDropped = chain.length - at - 1;
+      patch((p) => ({ ...p, chain: p.chain.slice(0, at) }));
+      setMarked(null);
+      setLastMiss(null);
+      say({
+        kind: "info",
+        msg: alsoDropped === 0
+          ? `${upper(part)} tillbaka i poolen.`
+          : `${upper(part)} och ${plural(alsoDropped, "del", "delar")} efter den togs bort.`,
+      });
+    },
+    [day, solved, chain, say, patch],
+  );
+
   const undo = useCallback(() => {
-    if (!day || solved || !chain.length) return;
-    const dropped = chain.at(-1)!;
-    patch((p) => ({ ...p, chain: p.chain.slice(0, -1) }));
-    setMarked(null);
-    say({ kind: "info", msg: `${upper(dropped)} tillbaka i poolen.` });
-  }, [day, solved, chain, say, patch]);
+    const last = chain.at(-1);
+    if (last) removeFrom(last);
+  }, [chain, removeFrom]);
 
   const reset = useCallback(() => {
     if (!day || solved) return;
@@ -195,6 +222,7 @@ export function useKedjan(day: Day | null) {
     ),
     place,
     finish,
+    removeFrom,
     undo,
     reset,
     hint,

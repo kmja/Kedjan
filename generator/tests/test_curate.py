@@ -151,3 +151,14 @@ def test_the_shipped_calendar_has_no_blocking_findings():
     days = json.loads(CALENDAR.read_text(encoding="utf-8"))
     blocking = curate.blocking(curate.check_calendar(days))
     assert blocking == [], "\n".join(str(f) for f in blocking)
+
+
+def test_flags_a_numeral_in_the_pool():
+    day = a_day()
+    day["pool"] = [*day["pool"][:-1], "hundra"]
+    assert any("numeral" in m for m in errors(curate.check_day(day)))
+
+
+def test_flags_an_off_tone_endpoint():
+    day = a_day(target="skit")
+    assert any("off-tone" in m for m in errors(curate.check_day(day)))

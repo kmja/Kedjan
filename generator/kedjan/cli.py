@@ -86,8 +86,8 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     corpus = argparse.ArgumentParser(add_help=False)
-    corpus.add_argument("--dic", default="swedish.dic", help="DSSO hunspell word list")
-    corpus.add_argument("--wordlist", default="swe_wordlist", help="larger open word list")
+    corpus.add_argument("--dic", default="sv_SE.dic", help="Swedish hunspell word list")
+    corpus.add_argument("--wordlist", default=None, help="optional supplementary word list")
     corpus.add_argument("--frequency", default="sv_50k.txt", help="hermitdave FrequencyWords")
 
     gen = sub.add_parser("generate", parents=[corpus], help="propose candidate days")
@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     lint = sub.add_parser("lint", help="check a curated calendar against the rules")
     lint.add_argument("days", help="path to days.json")
     lint.add_argument("--dic", default=None, help="enable the lexicon-backed weld check")
-    lint.add_argument("--wordlist", default="swe_wordlist")
+    lint.add_argument("--wordlist", default=None)
     lint.add_argument("--frequency", default="sv_50k.txt")
     lint.set_defaults(func=cmd_lint)
 

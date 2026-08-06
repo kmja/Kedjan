@@ -3,13 +3,15 @@ dist/
 *.local
 .DS_Store
 
-# Corpora the generator reads. Multi-megabyte, fetched separately — see
-# generator/README.md.
-generator/swedish.dic
-generator/swe_wordlist
+# Corpora the generator reads. Multi-megabyte and separately licensed, so they
+# are fetched rather than vendored — run generator/fetch-corpora.sh.
+generator/*.dic
+generator/*.aff
 generator/sv_50k.txt
+generator/swe_wordlist
 
 __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+generator/candidates.json

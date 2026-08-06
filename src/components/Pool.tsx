@@ -1,30 +1,43 @@
-import type { PointerEvent } from "react";
+import type { RefObject } from "react";
+import type { DropTarget } from "../game/useChipDrag";
 
-type ChipHandlers = {
-  onPointerDown: (e: PointerEvent<HTMLElement>) => void;
-  onPointerMove: (e: PointerEvent<HTMLElement>) => void;
-  onPointerUp: (e: PointerEvent<HTMLElement>) => void;
-  onPointerCancel: () => void;
-  onClick: () => void;
-};
+type ChipHandlers = ReturnType<
+  (part: string, target: DropTarget) => Record<string, unknown>
+>;
 
 interface Props {
   parts: string[];
   marked: string | null;
+  /** The pool chip currently being dragged into the chain, if any. */
   liftedPart: string | null;
+  /** Set while a chain part is being dragged back here. */
+  incoming: boolean;
   current: string;
-  handlers: (part: string) => ChipHandlers;
+  zoneRef: RefObject<HTMLDivElement | null>;
+  handlers: (part: string, target: DropTarget) => ChipHandlers;
 }
 
 /**
  * The pool is the move-space — recognition, not recall. Every chip is a real
  * button, so the game is fully playable from the keyboard and by a screen
- * reader with no drag involved.
+ * reader with no drag involved. It doubles as the drop zone for a part being
+ * taken back out of the chain.
  */
-export function Pool({ parts, marked, liftedPart, current, handlers }: Props) {
+export function Pool({
+  parts,
+  marked,
+  liftedPart,
+  incoming,
+  current,
+  zoneRef,
+  handlers,
+}: Props) {
   return (
     <div
-      className="flex flex-wrap justify-center gap-2"
+      ref={zoneRef}
+      className={`dropzone flex min-h-14 flex-wrap content-start justify-center gap-2 p-1 ${
+        incoming ? "dropzone--armed" : ""
+      }`}
       role="group"
       aria-label={`Delar att välja bland, ${parts.length} kvar`}
     >
@@ -32,7 +45,7 @@ export function Pool({ parts, marked, liftedPart, current, handlers }: Props) {
         <button
           key={part}
           type="button"
-          {...handlers(part)}
+          {...handlers(part, "chain")}
           className={`chip ${marked === part ? "chip--marked" : ""} ${
             liftedPart === part ? "chip--lifted" : ""
           }`}

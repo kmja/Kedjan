@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Iterable, Mapping, Sequence
 
-from .graph import COLORS, INFLECTED_FORMS
+from .graph import COLORS, INFLECTED_FORMS, NUMERALS, TONE_BAN
 from .lexicon import Lexicon
 from .split import CONNECTORS, PREFIX_SET, SUFFIX_STOP
 
@@ -141,6 +141,10 @@ def check_day(day: DayLike, lex: Lexicon | None = None) -> list[Finding]:
             err(f"{role} {endpoint!r} is a prefix particle — flagged in playtesting")
         if endpoint in COLORS:
             err(f"{role} {endpoint!r} is a colour — a universal combiner")
+        if endpoint in NUMERALS:
+            err(f"{role} {endpoint!r} is a numeral — a universal combiner")
+        if endpoint in TONE_BAN:
+            err(f"{role} {endpoint!r} is off-tone for a general-audience daily")
         if endpoint in INFLECTED_FORMS:
             err(f"{role} {endpoint!r} is an inflected form, not a lemma")
         if endpoint in SUFFIX_STOP:
@@ -150,6 +154,10 @@ def check_day(day: DayLike, lex: Lexicon | None = None) -> list[Finding]:
     for part in pool:
         if part in COLORS:
             err(f"pool part {part!r} is a colour — ambiguity without structure")
+        if part in NUMERALS:
+            err(f"pool part {part!r} is a numeral — numerals combine without limit")
+        if part in TONE_BAN:
+            err(f"pool part {part!r} is off-tone for a general-audience daily")
         if part in INFLECTED_FORMS:
             err(f"pool part {part!r} is an inflected form; parts are lemmas only")
         if part in NON_HEAD_PARTS:

@@ -111,12 +111,16 @@ stage is testable without the corpora, and extended with the curation lint. The
 calendar is the thin part — see `CURATION.md`.
 
 1. **Migrate the graph to Språkbanken SALDO** (CC BY 4.0, attribution
-   required): lemma-based part nodes, real linking-form morphology — which
-   fixes the spad/spade display problem properly — and far better compound
-   coverage. Keep the concatenation augmentation even after SALDO; no single
-   lexicon has every compound. Verify the DSSO licence if it stays in the mix.
-   The footer attribution must gain the Språkbanken credit at that point.
-2. **Generate and curate a real calendar.** Four days is a demo, not a daily.
+   required). The hunspell dictionary now in use answers "is this a word" but
+   nothing else, and three defects need more than that: it cannot tell
+   *farbroder* (archaic) from *farbror* (live), cannot tell *riskerar* (a
+   conjugated verb) from a compound, and cannot express that *broder-* is
+   correct initially and *-bror* finally. All three need lemma-based nodes and
+   linking-form morphology. Keep the concatenation augmentation even after
+   SALDO; no single lexicon has every compound. **Språkbanken is currently
+   blocked by the environment's network policy** — allowlisting
+   `spraakbanken.gu.se` is the unblock.
+2. **Grow the calendar.** Five days is a week, not a daily.
 3. **Point the report button at a collector** (`VITE_REPORT_URL`) so false
    rejections become a tracked number rather than an inbox.
 

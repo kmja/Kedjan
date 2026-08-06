@@ -110,6 +110,93 @@ describe("placing parts", () => {
   });
 });
 
+describe("taking parts back out of the chain", () => {
+  const chip = (part: string) => screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+  const link = (n: number, part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^länk ${n}, ${part}\\.`, "i") });
+
+  it("returns a placed part to the pool when its chain chip is clicked", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    expect(screen.queryByRole("button", { name: /^mur\./i })).not.toBeInTheDocument();
+
+    await u.click(link(1, "mur"));
+    await expectStatus("MUR tillbaka i poolen.");
+    expect(chip("mur")).toBeInTheDocument();
+    expect(screen.getByText("0/4 länkar")).toBeInTheDocument();
+  });
+
+  it("takes everything downstream with it when a middle part is removed", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("tak"));
+    await u.click(chip("glas"));
+    expect(screen.getByText("2/4 länkar")).toBeInTheDocument();
+
+    await u.click(link(1, "tak"));
+    await expectStatus("TAK och 1 del efter den togs bort.");
+    expect(screen.getByText("0/4 länkar")).toBeInTheDocument();
+    expect(chip("tak")).toBeInTheDocument();
+    expect(chip("glas")).toBeInTheDocument();
+  });
+
+  it("pluralises the count of parts carried away", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    await u.click(chip("vägg"));
+    await u.click(link(1, "mur"));
+    // budget 4 allows three intermediates, so only two came off here.
+    await expectStatus("MUR och 1 del efter den togs bort.");
+  });
+
+  it("removes a part from the keyboard", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("bro"));
+    link(1, "bro").focus();
+    await u.keyboard("{Enter}");
+    await expectStatus("BRO tillbaka i poolen.");
+  });
+
+  it("never offers the start or the target as removable", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    expect(screen.queryByRole("button", { name: /^länk \d+, sten\./i })).not.toBeInTheDocument();
+    expect(screen.getByText("sten")).toBeInTheDocument();
+  });
+
+  it("freezes the chain once the day is solved", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("bro"));
+    await u.click(screen.getByRole("button", { name: /mål hus\. koppla ihop/i }));
+    await screen.findByText("stenbro → brohus");
+    expect(screen.queryByRole("button", { name: /^länk 1, bro\./i })).not.toBeInTheDocument();
+  });
+
+  it("clears a hint mark that the removal invalidates", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    await u.click(screen.getByRole("button", { name: /^ledtråd/i })); // distance
+    await u.click(screen.getByRole("button", { name: /^ledtråd/i })); // marks a chip
+    expect(screen.getByRole("button", { name: /rätt väg vidare/i })).toBeInTheDocument();
+
+    await u.click(link(1, "mur"));
+    expect(screen.queryByRole("button", { name: /rätt väg vidare/i })).not.toBeInTheDocument();
+  });
+});
+
 describe("undo", () => {
   it("returns the part to the pool", async () => {
     const u = user();

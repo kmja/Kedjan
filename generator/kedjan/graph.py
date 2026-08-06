@@ -6,7 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from .lexicon import Lexicon
-from .split import CONNECTORS
+from .split import CONNECTORS, linking_is_sound
 
 #: Surface forms that are inflections rather than lemmas. The prototype's
 #: hand-list; SALDO replaces it. Parts are lemmas only — lägga, never lagt.
@@ -30,12 +30,76 @@ INFLECTED_FORMS = frozenset(
 #: everywhere adds ambiguity without structure, so colours are banned outright.
 COLORS = frozenset({"blå", "grön", "gul", "röd", "vit", "svart", "brun", "grå", "rosa", "lila", "orange"})
 
+#: Numerals, banned for the same reason as colours: they combine with each
+#: other essentially without limit — tjugofyra, hundrafem, femtio, tvåhundra —
+#: so a pool that drifts into them becomes arithmetic rather than deduction.
+NUMERALS = frozenset(
+    {
+        "två", "tre", "fyra", "fem", "sex", "sju", "åtta", "nio", "tio", "elva",
+        "tolv", "tretton", "fjorton", "femton", "sexton", "sjutton", "arton",
+        "nitton", "tjugo", "trettio", "fyrtio", "femtio", "sextio", "sjuttio",
+        "åttio", "nittio", "hundra", "tusen", "miljon", "miljard", "noll",
+        "första", "andra", "tredje", "fjärde", "femte", "sjätte", "halv",
+        "dubbel", "enkel", "trippel",
+    }
+)
+
+#: Kedjan is a general-audience daily. The frequency list is built from film
+#: subtitles, so "commonest Swedish" by that ranking skews spoken, profane and
+#: slurred — skit, bög, snut, fan and kin all rank high and are not words this
+#: game puts in front of a player at breakfast.
+TONE_BAN = frozenset(
+    {
+        "skit", "bög", "fitta", "kuk", "snut", "fan", "helvete", "jävla", "hora",
+        "knulla", "pissa", "brud", "neger", "as", "idiot", "pack", "svin",
+        "död", "mord", "våld", "vapen", "krig", "nazi", "sex", "porr", "knark",
+    }
+)
+
 #: Irregular plurals that slip past the suffix-based inflection test.
 PLURAL_BAN = frozenset({"söner", "män", "fötter", "händer", "böcker"})
 
+#: Closed-class words: pronouns, determiners, conjunctions, prepositions,
+#: quantifiers, auxiliaries and discourse particles.
+#:
+#: These are never compound parts, but they *are* the commonest words in the
+#: language, so a frequency-ranked filter promotes them straight to the top.
+#: Without this list the hub set comes back as jag/har/för/han/med/som — the
+#: filter selects fluent Swedish rather than compoundable Swedish.
+CLOSED_CLASS = frozenset(
+    {
+        # pronouns and possessives
+        "jag", "du", "han", "hon", "hen", "den", "det", "vi", "ni", "de", "dem",
+        "mig", "dig", "sig", "oss", "honom", "henne", "min", "mitt", "mina",
+        "din", "ditt", "dina", "hans", "hennes", "vår", "vårt", "våra", "era",
+        "deras", "sin", "sitt", "sina", "man", "en", "ett",
+        # determiners and quantifiers
+        "alla", "allt", "all", "ingen", "inget", "inga", "något", "någon",
+        "några", "annan", "andra", "andre", "samma", "sådan", "varje", "vilken",
+        "vilket", "vilka", "mycket", "många", "flera", "både",
+        # conjunctions, subjunctions, interrogatives
+        "som", "att", "och", "eller", "men", "om", "när", "där", "här", "hur",
+        "vad", "vem", "varför", "medan", "fast", "utan", "samt",
+        # adverbs and discourse particles
+        "inte", "icke", "inga", "aldrig", "alltid", "ofta", "ibland", "redan",
+        "ännu", "kanske", "bara", "också", "nog", "väl", "igen", "sedan", "nu",
+        "sen", "bra", "ja", "nej", "jo", "tack", "hej", "helt", "ganska",
+        # auxiliaries, copulas and their finite forms
+        "är", "var", "vara", "blir", "blev", "bli", "har", "hade", "ha", "kan",
+        "kunde", "ska", "skall", "skulle", "vill", "ville", "får", "fick",
+        "gör", "gjorde", "göra", "måste", "bör", "tar", "gick", "kom", "ser",
+        "vet", "säger", "tror", "heter", "finns",
+    }
+)
+
 #: Hub selection. Too few welds and a part is useless; too many and it is a
 #: universal combiner.
-MIN_DEGREE, MAX_DEGREE = 6, 50
+#:
+#: The ceiling scales with the corpus. On the prototype's smaller DSSO graph
+#: 50 sat above the content nouns; against a 250k-word dictionary it sits
+#: *below* them — bil, hus and land all land in the 51-200 band — so the same
+#: number silently inverted the filter's meaning and kept only the junk.
+MIN_DEGREE, MAX_DEGREE = 8, 250
 MAX_HUB_OBSCURITY = 5_000
 HUB_LENGTH = range(3, 7)
 
@@ -68,6 +132,25 @@ def is_inflected_part(part: str, known_parts: frozenset[str]) -> bool:
     )
 
 
+#: Definite and genitive endings. A part must be a lemma, and these are
+#: surface forms of one: ögat is öga, mans is man.
+SURFACE_ENDINGS = ("et", "en", "an", "t", "n")
+
+
+def is_surface_form(part: str, lex: Lexicon) -> bool:
+    """True if the part is a definite or genitive form of a shorter word.
+
+    Catches what the suffix-based inflection test misses — it looks for verb
+    and plural endings, not for the definite article fused onto a noun.
+    """
+    if part.endswith("s") and len(part) >= 4 and part[:-1] in lex.words:
+        return True
+    return any(
+        len(part) - len(suffix) >= 3 and part[: -len(suffix)] in lex.words
+        for suffix in SURFACE_ENDINGS
+    )
+
+
 def witnessed_pairs(compounds: dict[str, list[str]], lex: Lexicon) -> dict[tuple[str, str], str]:
     """Pairs drawn from two-part compounds, each witnessed by its commonest word."""
     pairs: dict[tuple[str, str], str] = {}
@@ -95,8 +178,12 @@ def select_hubs(pairs: dict[tuple[str, str], str], lex: Lexicon) -> frozenset[st
         and lex.obscurity(part) < MAX_HUB_OBSCURITY
         and len(part) in HUB_LENGTH
         and part not in COLORS
+        and part not in NUMERALS
+        and part not in TONE_BAN
         and part not in PLURAL_BAN
+        and part not in CLOSED_CLASS
         and not is_inflected_part(part, known)
+        and not is_surface_form(part, lex)
     )
 
 
@@ -115,7 +202,9 @@ def augment_by_lookup(
         for b in hubs:
             if a == b or (a, b) in pairs:
                 continue
-            for candidate in (a + b, *(a + c + b for c in CONNECTORS)):
+            variants = [a + b]
+            variants += [a + c + b for c in CONNECTORS if linking_is_sound(lex, a, c)]
+            for candidate in variants:
                 if len(candidate) >= 7 and candidate in lex.union:
                     pairs[(a, b)] = candidate
                     recovered += 1

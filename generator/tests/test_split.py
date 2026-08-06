@@ -48,3 +48,23 @@ def test_compounds_skips_inflected_words(lex):
 def test_compounds_rejects_a_prefix_particle_start(lex):
     prefixed = split.compounds(lex)
     assert all(parts[0] not in split.PREFIX_SET for parts in prefixed.values())
+
+
+def test_linking_s_is_rejected_when_the_longer_form_is_itself_a_word(lex):
+    # hetsbrott is hets+brott, not het+s+brott, because "hets" is a word.
+    from kedjan.lexicon import Lexicon
+
+    words = {"het", "hets", "brott", "hetsbrott", "strid", "vagn", "stridsvagn"}
+    l = Lexicon(words=frozenset(words), union=frozenset(words),
+                rank={w: 1 for w in words}, common=frozenset(words))
+    assert split.linking_is_sound(l, "het", "s") is False
+    assert split.linking_is_sound(l, "strid", "s") is True
+
+
+def test_the_splitter_prefers_the_longer_real_first_element(lex):
+    from kedjan.lexicon import Lexicon
+
+    words = {"het", "hets", "brott", "hetsbrott"}
+    l = Lexicon(words=frozenset(words), union=frozenset(words),
+                rank={w: 1 for w in words}, common=frozenset(words))
+    assert split.min_split(l, "hetsbrott") == ["hets", "brott"]

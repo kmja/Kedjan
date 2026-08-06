@@ -34,6 +34,18 @@ PREFIX_SET = frozenset(
 #: Swedish linking morphemes (fogemorfem): kärlek-s-gud, familj-e-far.
 CONNECTORS = ("s", "e")
 
+
+def linking_is_sound(lex: "Lexicon", first: str, connector: str) -> bool:
+    """Is the letter after `first` a linking morpheme, or part of the word?
+
+    `a + "s" + b` does not prove `a` is the first element. *hetsbrott* is
+    hets+brott, not het+s+brott, because *hets* is a word in its own right —
+    whereas *stridsvagn* really is strid+s+vagn, because *strids* is not.
+    Whenever the longer form exists, it is the first element and the shorter
+    reading is a mirage.
+    """
+    return (first + connector) not in lex.words
+
 #: Noun inflections. A part must be a lemma, so inflected surface forms are
 #: rejected outright: lägga, never lagt or lägger.
 INFLECTIONS = ("erna", "arna", "orna", "er", "ar", "or", "en", "et", "na")
@@ -82,8 +94,9 @@ def min_split(lex: Lexicon, word: str) -> list[str] | None:
             if rest is not None and (best is None or 1 + len(rest) < len(best)):
                 best = (part, *rest)
 
-            # ...or the same part followed by a linking morpheme.
-            if j < n and word[j] in CONNECTORS:
+            # ...or the same part followed by a linking morpheme, but only
+            # where that letter is not the tail of a longer real word.
+            if j < n and word[j] in CONNECTORS and linking_is_sound(lex, part, word[j]):
                 rest = best_from(j + 1)
                 if rest and (best is None or 1 + len(rest) < len(best)):
                     best = (part, *rest)

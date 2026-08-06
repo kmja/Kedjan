@@ -76,12 +76,16 @@ def read_frequency(path: Path | str, common_size: int = 20_000) -> tuple[dict[st
 
 
 def load(
-    dic_path: Path | str = "swedish.dic",
-    wordlist_path: Path | str = "swe_wordlist",
+    dic_path: Path | str = "sv_SE.dic",
+    wordlist_path: Path | str | None = None,
     frequency_path: Path | str = "sv_50k.txt",
 ) -> Lexicon:
+    """Load the corpora. The supplementary word list is optional — the union
+    simply collapses to the hunspell set when it is absent."""
     words = read_dic(dic_path)
-    union = words | read_plain(wordlist_path)
+    union = set(words)
+    if wordlist_path and Path(wordlist_path).exists():
+        union |= read_plain(wordlist_path)
     rank, common = read_frequency(frequency_path)
     return Lexicon(
         words=frozenset(words),

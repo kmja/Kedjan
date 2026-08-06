@@ -97,3 +97,31 @@ def test_build_only_links_hubs_to_hubs(lex):
     for part, neighbours in built.adjacency.items():
         assert part in built.hubs
         assert neighbours <= built.hubs
+
+
+def test_hub_selection_excludes_numerals():
+    others = [f"del{i}" for i in range(10)]
+    pairs = {}
+    for other in others:
+        pairs[("hundra", other)] = "x"
+        pairs[("kant", other)] = "x"
+    lex = _lex_with(["hundra", "kant", *others])
+    hubs = graph_mod.select_hubs(pairs, lex)
+    assert "kant" in hubs
+    assert "hundra" not in hubs  # numerals combine without limit, like colours
+
+
+def test_hub_selection_excludes_off_tone_parts():
+    others = [f"del{i}" for i in range(10)]
+    pairs = {("skit", other): "x" for other in others}
+    lex = _lex_with(["skit", *others])
+    assert "skit" not in graph_mod.select_hubs(pairs, lex)
+
+
+def test_is_surface_form_catches_definite_and_genitive_forms():
+    words = {"öga", "ögat", "man", "mans", "hus", "flyg", "kant"}
+    lex = _lex_with(words)
+    assert graph_mod.is_surface_form("ögat", lex) is True   # öga + definite -t
+    assert graph_mod.is_surface_form("mans", lex) is True   # man + genitive -s
+    assert graph_mod.is_surface_form("flyg", lex) is False
+    assert graph_mod.is_surface_form("hus", lex) is False

@@ -18,24 +18,31 @@ kedjan/cli.py      generate / lint
 
 ## Corpora
 
-Fetch these into `generator/` — they are gitignored.
+Run `./fetch-corpora.sh`. Both files are gitignored — they are multi-megabyte
+and separately licensed, so they are fetched rather than vendored.
 
-| file | what |
-|------|------|
-| `swedish.dic` | DSSO hunspell word list (affix flags stripped on read) |
-| `swe_wordlist` | a larger open Swedish word list, one word per line |
-| `sv_50k.txt` | [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords), Swedish, `word count` per line |
+| file | what | licence |
+|------|------|---------|
+| `sv_SE.dic` | [yeager/hunspell-sv](https://github.com/yeager/hunspell-sv) — hunspell stem list, upstream **SFOL 2.42** (Den stora fria ordlistan, Göran Andersson), which itself folds in Språkbanken SALDO and SAOL 15 | LGPL-3.0, attribution to SFOL required |
+| `sv_50k.txt` | [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords), Swedish | MIT |
 
-Splitting and the pair graph run against the DSSO set. The union of both lists
-backs the concatenation-lookup augmentation, which only ever asks "is this
-string a word", never "how does it split" — in the reference run it recovered
-1,876 pairs that DSSO's split graph missed.
+The `.dic` declares 279,120 entries; 249,997 survive the reader's filter
+(letters only, three characters or more). Note that only stems are fetched —
+the `.aff` affix rules are not applied, so inflected surface forms are absent
+by design. That is what we want for a lemma-based part graph, and it is also
+why the concatenation-lookup augmentation still earns its place: it asks "is
+this string a word", never "how does it split".
+
+**The frequency list is derived from film subtitles.** It ranks spoken Swedish,
+so it is a good prior for "would a player recognise this" and a bad one for
+tone — `skit`, `bög`, `snut` and `fan` all rank in the first few hundred. Hence
+`TONE_BAN` in `graph.py`.
 
 ## Running it
 
 ```
 python3 -m kedjan.cli generate --out candidates.json --first 2026-08-07 --start-no 5
-python3 -m kedjan.cli lint ../public/days.json --dic swedish.dic
+python3 -m kedjan.cli lint ../public/days.json --dic sv_SE.dic
 python3 -m pytest tests -q
 ```
 
