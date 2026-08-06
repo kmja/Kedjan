@@ -9,10 +9,18 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
-from . import curate, days as day_gen, graph as graph_mod, lexicon as lex_mod, saldo as saldo_mod, split
+from . import (
+    analysis,
+    curate,
+    days as day_gen,
+    graph as graph_mod,
+    lexicon as lex_mod,
+    saldo as saldo_mod,
+    split,
+)
 
 
 def cmd_generate(args: argparse.Namespace) -> int:
@@ -50,7 +58,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
             f"par{d.par} {d.start}→{d.target}: "
             f"{m['valid_pairs']} pairs, {m['solutions']} solutions"
         )
-    findings = curate.check_calendar(payload, lex)
+    findings = curate.check_calendar(payload, lex, saldo)
     _report(findings)
 
     print(
@@ -62,12 +70,118 @@ def cmd_generate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review(args: argparse.Namespace) -> int:
+    """Print what a curator has to judge, and nothing else.
+
+    The measurable part is a table; the part that needs a human — pool sanity
+    and tone — is the pool printed in full, read aloud.
+    """
+    payload = json.loads(Path(args.days).read_text(encoding="utf-8"))
+    saldo = saldo_mod.load_if_present(args.saldo)
+
+    head = f"{'day':18} {'par':>3} {'sols':>4} {'open':>4} {'clos':>4} {'branching':>12}"
+    print(head)
+    print("-" * len(head))
+    reports = []
+    for day in payload:
+        r = analysis.report(day, saldo)
+        reports.append((day, r))
+        print(
+            f"{r.label:18} {r.par:>3} {len(r.solutions):>4} {len(r.openings):>4} "
+            f"{len(r.closings):>4} {str(r.branching):>12}"
+        )
+
+    for day, r in reports:
+        print(f"\n{r.label}  ·  par {r.par}, budget {r.budget}")
+        print(f"  pool    {', '.join(r.pool)}")
+        print(f"  best    {analysis.spell(day, r.solutions[0]) if r.solutions else '—'}")
+        if r.bottlenecks:
+            print(f"  funnel  every solution uses {', '.join(r.bottlenecks)}")
+        if r.weak_welds:
+            print(f"  weak    not in SALDO: {', '.join(r.weak_welds)}")
+
+    print(
+        "\nRead every pool aloud. A chip you would not use in a sentence is a\n"
+        "splitter artefact; a pool that reads as one closed class is arithmetic.\n"
+        "Tone and endpoint taste are yours — the table cannot see them."
+    )
+    return 0
+
+
+def cmd_accept(args: argparse.Namespace) -> int:
+    """Promote chosen candidates into the shipped calendar, and log the rest.
+
+    Curation used to be a throwaway script, which meant the reasons for a cut
+    lived only in whoever ran it. Rejections are recorded here so a reason that
+    recurs can graduate into a rule.
+    """
+    candidates = json.loads(Path(args.candidates).read_text(encoding="utf-8"))
+    by_start = {d["start"]: d for d in candidates}
+    missing = [p for p in args.pick if p not in by_start]
+    if missing:
+        print(f"no candidate starting with: {', '.join(missing)}", file=sys.stderr)
+        return 2
+
+    reasons = dict(r.split("=", 1) for r in args.reject if "=" in r)
+    first = date.fromisoformat(args.first)
+    chosen = []
+    for offset, start in enumerate(args.pick):
+        d = dict(by_start[start])
+        d.pop("_metrics", None)
+        d["date"] = (first + timedelta(days=offset)).isoformat()
+        d["no"] = args.start_no + offset
+        chosen.append(
+            {k: d[k] for k in ("date", "no", "start", "target", "par", "budget", "pool", "pairs")}
+        )
+
+    lex = lex_mod.load(args.dic, args.wordlist, args.frequency) if args.dic else None
+    saldo = saldo_mod.load_if_present(args.saldo)
+    findings = curate.check_calendar(chosen, lex, saldo)
+    _report(findings)
+    if curate.blocking(findings):
+        print("blocking findings — nothing written.", file=sys.stderr)
+        return 1
+
+    Path(args.out).write_text(
+        json.dumps(chosen, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+    )
+
+    ledger_path = Path(args.ledger)
+    ledger = json.loads(ledger_path.read_text(encoding="utf-8")) if ledger_path.exists() else []
+    for d in candidates:
+        ledger.append(
+            {
+                "start": d["start"],
+                "target": d["target"],
+                "par": d["par"],
+                "accepted": d["start"] in args.pick,
+                "reason": reasons.get(d["start"], ""),
+                "metrics": d.get("_metrics", {}),
+            }
+        )
+    ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+    for d in chosen:
+        print(f"#{d['no']} {d['date']} {d['start']}→{d['target']} par{d['par']}")
+    print(f"\n{len(chosen)} accepted, {len(candidates) - len(chosen)} logged as rejected.")
+    return 0
+
+
 def cmd_lint(args: argparse.Namespace) -> int:
     payload = json.loads(Path(args.days).read_text(encoding="utf-8"))
     lex = None
     if args.dic:
         lex = lex_mod.load(args.dic, args.wordlist, args.frequency)
-    findings = curate.check_calendar(payload, lex)
+    elif not args.no_lexicon:
+        print(
+            "refusing to lint without a dictionary: the weld check is the one that\n"
+            "catches a compound that does not exist. Pass --dic, or --no-lexicon to\n"
+            "run the structural checks alone.",
+            file=sys.stderr,
+        )
+        return 2
+    saldo = saldo_mod.load_if_present(args.saldo)
+    findings = curate.check_calendar(payload, lex, saldo)
     _report(findings)
     if curate.blocking(findings):
         return 1
@@ -107,11 +221,33 @@ def main(argv: list[str] | None = None) -> int:
     gen.add_argument("--par4", type=int, default=4, help="how many par-4 days")
     gen.set_defaults(func=cmd_generate)
 
+    review = sub.add_parser("review", help="print what a curator has to judge")
+    review.add_argument("days", help="path to candidates.json or days.json")
+    review.add_argument("--saldo", default="saldo_2.3/saldo20v03.txt")
+    review.set_defaults(func=cmd_review)
+
+    accept = sub.add_parser(
+        "accept", parents=[corpus], help="promote chosen candidates into the calendar"
+    )
+    accept.add_argument("candidates", help="path to candidates.json")
+    accept.add_argument("--pick", nargs="+", required=True, metavar="START",
+                        help="start words of the days to ship, in calendar order")
+    accept.add_argument("--reject", nargs="*", default=[], metavar="START=REASON",
+                        help="why a candidate was cut, for the ledger")
+    accept.add_argument("--first", required=True, help="date of the first accepted day")
+    accept.add_argument("--start-no", type=int, default=1)
+    accept.add_argument("--out", default="../public/days.json")
+    accept.add_argument("--ledger", default="curation-log.json")
+    accept.set_defaults(func=cmd_accept)
+
     lint = sub.add_parser("lint", help="check a curated calendar against the rules")
     lint.add_argument("days", help="path to days.json")
     lint.add_argument("--dic", default=None, help="enable the lexicon-backed weld check")
     lint.add_argument("--wordlist", default=None)
     lint.add_argument("--frequency", default="sv_50k.txt")
+    lint.add_argument("--saldo", default="saldo_2.3/saldo20v03.txt")
+    lint.add_argument("--no-lexicon", action="store_true",
+                      help="run the structural checks without a dictionary")
     lint.set_defaults(func=cmd_lint)
 
     args = parser.parse_args(argv)

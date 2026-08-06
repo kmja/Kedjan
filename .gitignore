@@ -15,3 +15,5 @@ __pycache__/
 .pytest_cache/
 .venv/
 generator/candidates.json
+generator/saldo_2.3/
+generator/saldo_2.3.tgz

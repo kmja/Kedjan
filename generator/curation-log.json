@@ -1,0 +1,236 @@
+[
+ {
+  "start": "slut",
+  "target": "teori",
+  "par": 3,
+  "accepted": false,
+  "reason": "12 weak welds on solution paths",
+  "metrics": {
+   "valid_pairs": 31,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 3
+  }
+ },
+ {
+  "start": "jul",
+  "target": "medlem",
+  "par": 3,
+  "accepted": false,
+  "reason": "weak welds throughout",
+  "metrics": {
+   "valid_pairs": 32,
+   "solutions": 5,
+   "openings": 6,
+   "closings": 2
+  }
+ },
+ {
+  "start": "flyg",
+  "target": "stöd",
+  "par": 3,
+  "accepted": false,
+  "reason": "flygbar marginal, skall ambiguous",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 10,
+   "openings": 6,
+   "closings": 2
+  }
+ },
+ {
+  "start": "tok",
+  "target": "nyckel",
+  "par": 3,
+  "accepted": false,
+  "reason": "tok- intensifier is colloquial across the pool",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 11,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "grund",
+  "target": "slå",
+  "par": 3,
+  "accepted": false,
+  "reason": "verb target (slå), hålslå marginal",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 2
+  }
+ },
+ {
+  "start": "hel",
+  "target": "söt",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "mat",
+  "target": "plikt",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "vår",
+  "target": "tjej",
+  "par": 3,
+  "accepted": false,
+  "reason": "toppen is a definite form",
+  "metrics": {
+   "valid_pairs": 31,
+   "solutions": 3,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "hund",
+  "target": "glas",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 4
+  }
+ },
+ {
+  "start": "hopp",
+  "target": "gräs",
+  "par": 3,
+  "accepted": false,
+  "reason": "svärdgräs, skyddsvärd marginal",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 3
+  }
+ },
+ {
+  "start": "sorg",
+  "target": "mun",
+  "par": 4,
+  "accepted": false,
+  "reason": "guldmun, sorgefest marginal",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 2
+  }
+ },
+ {
+  "start": "musik",
+  "target": "energi",
+  "par": 4,
+  "accepted": false,
+  "reason": "held back as a spare",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "fin",
+  "target": "tro",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 22,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "bär",
+  "target": "glädje",
+  "par": 4,
+  "accepted": false,
+  "reason": "funnel: every solution uses val",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 3
+  }
+ },
+ {
+  "start": "kör",
+  "target": "herre",
+  "par": 4,
+  "accepted": false,
+  "reason": "segerherre marginal",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 5,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "djur",
+  "target": "gäng",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 3,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "slag",
+  "target": "flaska",
+  "par": 4,
+  "accepted": false,
+  "reason": "held back as a spare",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 2
+  }
+ },
+ {
+  "start": "hand",
+  "target": "kaffe",
+  "par": 4,
+  "accepted": false,
+  "reason": "held back as a spare",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 2
+  }
+ }
+]

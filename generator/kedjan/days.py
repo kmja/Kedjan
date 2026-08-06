@@ -27,6 +27,13 @@ SOLUTION_BAND = range(3, 13)
 DECOY_PAIRS = range(2, 6)
 #: No pool part may weld to more than this many others in the pool.
 MAX_IN_POOL_WELDS = 5
+#: A start that welds to one chip means move one is not a choice, and a target
+#: reachable from one chip means the last move is not either. Both were found
+#: in playtesting, at opposite ends of the chain; only the first was noticed.
+MIN_OPENINGS = 3
+MIN_CLOSINGS = 2
+#: At no point on the canonical route should the player have a single option.
+MIN_BRANCHING = 2
 MAX_ENDPOINT_OBSCURITY = 3_000
 PATH_SEARCH_CAP = 3_000
 SOLUTION_SEARCH_CAP = 100
@@ -199,6 +206,27 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
     if len(found) not in SOLUTION_BAND:
         return None
 
+    # Par names the shortest route. If the pool cannot deliver one that short,
+    # the label is a lie and no player can ever make par.
+    if min(len(s) for s in found) + 1 != par:
+        return None
+
+    openings = [p for p in pool if graph.welds(start, p)]
+    closings = [p for p in pool if graph.welds(p, target)]
+    if len(openings) < MIN_OPENINGS or len(closings) < MIN_CLOSINGS:
+        return None
+
+    # Walk the canonical route and refuse any step offering a single chip.
+    best = min(found, key=len)
+    used: list[str] = []
+    for i, part in enumerate([start, *best]):
+        if i:
+            used.append(part)
+        if i < len(best):
+            choices = sum(1 for p in pool if p not in used and graph.welds(part, p))
+            if choices < MIN_BRANCHING:
+                return None
+
     all_parts = with_endpoints(pool)
     pairs = {
         f"{a}>{b}": graph.pairs[(a, b)]
@@ -212,7 +240,12 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
         par=par,
         pool=pool,
         pairs=pairs,
-        metrics={"valid_pairs": count_pairs(graph, all_parts), "solutions": len(found)},
+        metrics={
+            "valid_pairs": count_pairs(graph, all_parts),
+            "solutions": len(found),
+            "openings": len(openings),
+            "closings": len(closings),
+        },
     )
 
 

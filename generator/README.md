@@ -41,16 +41,24 @@ tone — `skit`, `bög`, `snut` and `fan` all rank in the first few hundred. Hen
 ## Running it
 
 ```
-python3 -m kedjan.cli generate --out candidates.json --first 2026-08-07 --start-no 5
-python3 -m kedjan.cli lint ../public/days.json --dic sv_SE.dic
+./fetch-corpora.sh
+python3 -m kedjan.cli generate --out candidates.json --first 2026-08-02 --par3 10 --par4 8
+python3 -m kedjan.cli review  candidates.json
+python3 -m kedjan.cli accept  candidates.json --pick fin hund hel mat djur \
+        --first 2026-08-02 --dic sv_SE.dic --reject "bär=funnel through val"
+python3 -m kedjan.cli lint    ../public/days.json --dic sv_SE.dic
 python3 -m pytest tests -q
 ```
 
-`generate` writes candidates and lints them on the way out. `lint` exits
-non-zero on any error, so it belongs in CI. Passing `--dic` to `lint` enables
-the lexicon-backed weld check — the one that catches a structurally valid but
-non-existent compound — and it is the check most worth running before a day
-reaches a player.
+`generate` proposes and lints on the way out. `review` prints what a curator
+has to judge and decides nothing. `accept` re-lints your picks and writes
+nothing if anything blocks, logging every rejection and its reason to
+`curation-log.json`. `lint` exits non-zero on any error and **refuses to run
+without a dictionary** unless given `--no-lexicon`: the weld check is the one
+that catches a compound that does not exist, and a green lint that skipped it
+is worse than no lint.
+
+The full process, and what it has caught, is in `../CURATION.md`.
 
 ## The heuristics, and what replaces them
 

@@ -22,13 +22,19 @@ from .graph import (
     TONE_BAN,
     doublet_partner,
 )
+from .analysis import report as analyse
 from .lexicon import Lexicon
+from .saldo import Saldo
 from .split import CONNECTORS, PREFIX_SET, SUFFIX_STOP
 
 MIN_POOL = 9
 SOLUTION_BAND = range(3, 13)
 #: The healthy density band measured in playtesting, over roughly twelve parts.
 PAIR_BAND = range(20, 31)
+#: Choice at both ends of the chain, and at every step between.
+MIN_OPENINGS = 3
+MIN_CLOSINGS = 2
+MIN_BRANCHING = 2
 
 #: Verb inflection tails, but only behind the foge-e link. "risk" + e + "rar"
 #: spells riskerar, a conjugated verb rather than a compound — the kind of false
@@ -101,7 +107,9 @@ def solutions_within_budget(day: DayLike) -> list[list[str]]:
     return found
 
 
-def check_day(day: DayLike, lex: Lexicon | None = None) -> list[Finding]:
+def check_day(
+    day: DayLike, lex: Lexicon | None = None, saldo: Saldo | None = None
+) -> list[Finding]:
     """Every rule that can be checked against a single day."""
     out: list[Finding] = []
     label = _label(day)
@@ -132,9 +140,27 @@ def check_day(day: DayLike, lex: Lexicon | None = None) -> list[Finding]:
             f"{len(found)} solutions within budget, needs "
             f"{SOLUTION_BAND.start}-{SOLUTION_BAND.stop - 1}"
         )
+    # Par names the shortest route. A day whose best line is longer than par
+    # is mislabelled, and no player can ever make par on it.
     if found and min(len(s) for s in found) + 1 != par:
         shortest = min(len(s) for s in found) + 1
-        warn(f"par is {par} but the shortest route is {shortest} links")
+        err(f"par is {par} but the shortest route is {shortest} links")
+
+    r = analyse(day, saldo)
+    if len(r.openings) < MIN_OPENINGS:
+        err(
+            f"{len(r.openings)} chip(s) weld to the start — move one is not a choice"
+        )
+    if len(r.closings) < MIN_CLOSINGS:
+        err(
+            f"{len(r.closings)} chip(s) weld into the target — the last move is not a choice"
+        )
+    if r.branching and r.min_branching < MIN_BRANCHING:
+        err(f"branching {r.branching} — the route has a step with no alternative")
+    if r.bottlenecks:
+        warn(f"every solution passes through {', '.join(r.bottlenecks)}")
+    if r.weak_welds:
+        warn(f"not in SALDO, on a solution path: {', '.join(r.weak_welds[:6])}")
     if len(pairs) not in PAIR_BAND:
         warn(f"{len(pairs)} valid pairs, healthy band is {PAIR_BAND.start}-{PAIR_BAND.stop - 1}")
 
@@ -194,11 +220,13 @@ def check_day(day: DayLike, lex: Lexicon | None = None) -> list[Finding]:
     return out
 
 
-def check_calendar(days: Sequence[DayLike], lex: Lexicon | None = None) -> list[Finding]:
+def check_calendar(
+    days: Sequence[DayLike], lex: Lexicon | None = None, saldo: Saldo | None = None
+) -> list[Finding]:
     """Per-day rules plus the ones that only exist across a calendar."""
     out: list[Finding] = []
     for day in days:
-        out += check_day(day, lex)
+        out += check_day(day, lex, saldo)
 
     def duplicates(values: Iterable[str]) -> set[str]:
         seen, dupes = set(), set()

@@ -250,7 +250,7 @@ def augment_by_lookup(
             if a == b or (a, b) in pairs:
                 continue
             variants = [a + b]
-            variants += [a + c + b for c in CONNECTORS if linking_is_sound(lex, a, c)]
+            variants += [a + c + b for c in CONNECTORS if linking_is_sound(lex, a, c, b)]
             for candidate in variants:
                 if len(candidate) >= 7 and candidate in lex.union:
                     pairs[(a, b)] = candidate

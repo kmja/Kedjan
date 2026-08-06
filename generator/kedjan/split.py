@@ -35,16 +35,23 @@ PREFIX_SET = frozenset(
 CONNECTORS = ("s", "e")
 
 
-def linking_is_sound(lex: "Lexicon", first: str, connector: str) -> bool:
-    """Is the letter after `first` a linking morpheme, or part of the word?
+def linking_is_sound(lex: "Lexicon", first: str, connector: str, second: str = "") -> bool:
+    """Is the letter between the parts a linking morpheme, or part of a word?
 
-    `a + "s" + b` does not prove `a` is the first element. *hetsbrott* is
-    hets+brott, not het+s+brott, because *hets* is a word in its own right —
-    whereas *stridsvagn* really is strid+s+vagn, because *strids* is not.
-    Whenever the longer form exists, it is the first element and the shorter
-    reading is a mirage.
+    `a + "s" + b` proves nothing on its own. The letter can belong to either
+    neighbour, and if it belongs to one, the compound is not a+b at all:
+
+      het + s + brott   is really  hets + brott    (*hets* is a word)
+      tok + s + vår     is really  tok + svår      (*svår* is a word)
+      strid + s + vagn  really is  strid-s-vagn    (neither *strids* nor *svagn*)
+
+    Both directions have to be ruled out. The first was found in playtesting;
+    the second turned up in review as båtskatt, benskör, medelsvår and låtskatt
+    — båt+skatt, ben+skör, medel+svår, låt+skatt, every one of them.
     """
-    return (first + connector) not in lex.words
+    if (first + connector) in lex.words:
+        return False
+    return not (second and (connector + second) in lex.words)
 
 #: Noun inflections. A part must be a lemma, so inflected surface forms are
 #: rejected outright: lägga, never lagt or lägger.
@@ -96,7 +103,11 @@ def min_split(lex: Lexicon, word: str) -> list[str] | None:
 
             # ...or the same part followed by a linking morpheme, but only
             # where that letter is not the tail of a longer real word.
-            if j < n and word[j] in CONNECTORS and linking_is_sound(lex, part, word[j]):
+            if (
+                j < n
+                and word[j] in CONNECTORS
+                and linking_is_sound(lex, part, word[j], word[j + 1 :])
+            ):
                 rest = best_from(j + 1)
                 if rest and (best is None or 1 + len(rest) < len(best)):
                     best = (part, *rest)

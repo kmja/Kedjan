@@ -30,8 +30,12 @@ jobs:
           python-version: "3.11"
       - run: pip install pytest
       - run: python -m pytest generator/tests -q
-      # The shipped calendar has to pass the curation rules on every push.
-      # Without --dic this is the structural check only; the lexicon-backed
-      # weld check needs the corpora, which are not in the repository.
-      - run: python -m kedjan.cli lint ../public/days.json
+      # The corpora are fetched, not vendored — see generator/README.md.
+      - run: ./fetch-corpora.sh
+        working-directory: generator
+      # The shipped calendar has to pass on every push, *with* the dictionary:
+      # the weld check is the one that catches a compound that does not exist,
+      # and a green run without it would be worse than no run at all. SALDO is
+      # absent here, so the part-quality checks fall back to the hand lists.
+      - run: python -m kedjan.cli lint ../public/days.json --dic sv_SE.dic
         working-directory: generator
