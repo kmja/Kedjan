@@ -48,7 +48,9 @@ day that fails one can neither be generated nor accepted.
 | requirement | why |
 |---|---|
 | 3–12 solutions within budget | fewer is a single line to find; more and the deduction evaporates |
-| ≥ 2 *independent* routes | raw solution count flatters a day — see below |
+| independent routes: 3 at par 3, 2 at par 4 | raw solution count flatters a day — see below |
+| each route reaches ≥ 2 chips outside itself | otherwise it is an island, found by elimination |
+| ≤ 1 chip welding only inside its own route | two or more and the pool reads as separate groups |
 | ≥ 3 chips weld to the start | move one must be a choice |
 | ≥ 2 chips weld into the target | so must the last move |
 | branching ≥ 2 at every step | a route of single options is a corridor |
@@ -100,6 +102,8 @@ Each entry was a defect found in play or in review, and is now a rule.
 | `hund → höger`: par 4, shortest route 5 | par must equal the shortest route |
 | `ögat`, `mans`, `gör` | definite, genitive and finite forms are not lemmas |
 | `snöande`, `bärande` | `ande` barred as a part — finally it spells a participle |
+| `hund`/`ben`/`böj` welding to nothing else | routes must cross-link; isolated chips capped at one |
+| `benbrott`, `skallbrott`, `hundbett` | an injury pool in a cosy daily — cut on tone |
 
 The two linking-morpheme rules are worth reading together. The letter between
 two parts can belong to either neighbour, and if it belongs to one, the
@@ -113,15 +117,17 @@ strid + s + vagn    really is  strid-s-vagn     (neither strids nor svagn)
 
 ## What shipped
 
-Five days, curated from eighteen candidates.
+Five days, curated from twenty candidates.
 
-| # | date | day | par | sols | indep | open | close | branching |
-|---|------|-----|-----|------|-------|------|-------|-----------|
-| 1 | 2026-08-02 | fin → tro | 4 | 8 | 2 | 4 | 2 | 4, 2, 2 |
-| 2 | 2026-08-03 | hund → glas | 3 | 9 | 4 | 4 | 4 | 4, 2 |
-| 3 | 2026-08-04 | hel → söt | 3 | 6 | 2 | 4 | 2 | 4, 2 |
-| 4 | 2026-08-05 | mat → plikt | 3 | 7 | 2 | 4 | 3 | 4, 3 |
-| 5 | 2026-08-06 | djur → gäng | 4 | 3 | 2 | 4 | 2 | 4, 3, 2 |
+| # | date | day | par | sols | indep | cross | open | close | branching |
+|---|------|-----|-----|------|-------|-------|------|-------|-----------|
+| 1 | 2026-08-02 | slag → flaska | 4 | 6 | 2 | 5 | 4 | 2 | 4, 2, 3 |
+| 2 | 2026-08-03 | hund → glas | 3 | 9 | 4 | 2 | 4 | 4 | 4, 2 |
+| 3 | 2026-08-04 | jul → skydd | 3 | 10 | 3 | 2 | 5 | 3 | 5, 2 |
+| 4 | 2026-08-05 | musik → sätt | 3 | 7 | 3 | 2 | 5 | 3 | 5, 3 |
+| 5 | 2026-08-06 | hel → gäst | 3 | 11 | 3 | 2 | 3 | 5 | 3, 2 |
+
+Four of the five carry no isolated chip at all; `hel→gäst` has one (`egen`).
 
 `lint --dic` reports zero errors. Rejections and their reasons are in
 `generator/curation-log.json`.
@@ -139,8 +145,39 @@ and four independent ones, and is a materially better puzzle at a nearly
 identical count.
 
 `disjoint_routes` is the honest number: the largest set of solutions that
-share no intermediate chip. Two is now a hard requirement, and it is the column
-to read in `review` before the solution count.
+share no intermediate chip. It is the column to read in `review` before the
+solution count.
+
+### The floor has to scale with par
+
+Three disjoint routes need `3 × (par − 1)` chips at minimum length. Against a
+ten-chip pool:
+
+```
+par 3:  3 × 2 = 6 chips,  4 left for decoys
+par 4:  3 × 3 = 9 chips,  1 left for decoys   <- nothing left to deduce
+par 5:  3 × 4 = 12 chips, impossible
+```
+
+So the floor is 3 at par 3 and 2 at par 4 — not a preference, arithmetic.
+Measured before it was decided: of eighteen candidates generated at a flat
+floor of two, three cleared a flat floor of three, and every one was par 3.
+
+### Independent is not enough — routes must be entangled
+
+Three routes that weld only along themselves are three visible islands. Spot
+that `hund`, `ben` and `böj` join nothing else in the pool and elimination
+hands you the answer without any deduction at all. Two rules guard this:
+
+- **`route_cross_links`** — welds from each independent route out to the rest
+  of the pool, endpoints excluded (every route touches both by definition).
+  Fewer than two and the route is an island.
+- **`isolated_chips`** — chips welding to nothing beyond their own route.
+  One is a mild tell and common: fifteen of twenty candidates carried one. Two
+  or more partitions the pool visibly, and blocks the day.
+
+Only five of twenty candidates had *zero* isolated chips, which is why the bar
+is one rather than none — at zero, tone cuts left four days, not five.
 
 ## Known gaps
 

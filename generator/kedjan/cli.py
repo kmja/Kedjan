@@ -80,7 +80,7 @@ def cmd_review(args: argparse.Namespace) -> int:
     saldo = saldo_mod.load_if_present(args.saldo)
 
     head = (
-        f"{'day':18} {'par':>3} {'sols':>4} {'indep':>5} "
+        f"{'day':18} {'par':>3} {'sols':>4} {'indep':>5} {'cross':>5} "
         f"{'open':>4} {'clos':>4} {'branching':>12}"
     )
     print(head)
@@ -91,7 +91,8 @@ def cmd_review(args: argparse.Namespace) -> int:
         reports.append((day, r))
         print(
             f"{r.label:18} {r.par:>3} {len(r.solutions):>4} {r.disjoint_routes:>5} "
-            f"{len(r.openings):>4} {len(r.closings):>4} {str(r.branching):>12}"
+            f"{r.min_cross_links:>5} {len(r.openings):>4} {len(r.closings):>4} "
+            f"{str(r.branching):>12}"
         )
 
     for day, r in reports:
@@ -100,8 +101,9 @@ def cmd_review(args: argparse.Namespace) -> int:
         print(f"  best    {analysis.spell(day, r.solutions[0]) if r.solutions else '—'}")
         print(
             f"  routes  {len(r.solutions)} solutions, {r.disjoint_routes} independent"
-            f"; winning first moves: {', '.join(r.winning_openings)}"
+            f", cross-links {r.route_cross_links}"
         )
+        print(f"  opens   {', '.join(r.winning_openings)} lead to a win")
         if r.bottlenecks:
             print(f"  funnel  every solution uses {', '.join(r.bottlenecks)}")
         if r.weak_welds:

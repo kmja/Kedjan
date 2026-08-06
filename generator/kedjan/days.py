@@ -13,7 +13,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from .analysis import max_disjoint
+from .analysis import cross_links, largest_disjoint_set
 from .graph import PartGraph, doublet_partner
 from .lexicon import Lexicon
 from .split import PREFIX_SET
@@ -36,8 +36,31 @@ MIN_CLOSINGS = 2
 #: At no point on the canonical route should the player have a single option.
 MIN_BRANCHING = 2
 #: Solution count flatters a day — eight routes through one shared part are one
-#: idea with variations. At least two routes must be genuinely independent.
-MIN_DISJOINT_ROUTES = 2
+#: idea with variations — so a floor on genuinely independent routes is the
+#: real requirement. It has to scale with par, because routes consume pool.
+#:
+#: Three disjoint routes need 3 x (par - 1) chips at minimum length. Against a
+#: ten-chip pool that is six chips at par 3, leaving four for decoys, but nine
+#: at par 4, leaving one — and decoys are the thinking, so a par-4 day bought
+#: that way would have nothing left to deduce. Measured, not guessed: of
+#: eighteen candidates generated at a floor of two, three cleared a flat floor
+#: of three and every one of them was par 3.
+MIN_DISJOINT_BY_PAR = {3: 3}
+MIN_DISJOINT_FALLBACK = 2
+
+
+def min_disjoint_routes(par: int) -> int:
+    return MIN_DISJOINT_BY_PAR.get(par, MIN_DISJOINT_FALLBACK)
+
+
+#: Independent routes are only worth having if they are entangled. Three routes
+#: that weld only along themselves are three visible islands — spot that hund,
+#: ben and böj join nothing else and elimination hands you the answer. Each
+#: route must reach at least this many chips outside itself.
+MIN_ROUTE_CROSS_LINKS = 2
+#: At most one chip may weld solely within its own route; beyond that the pool
+#: reads as separate groups and elimination replaces deduction.
+MAX_ISOLATED_CHIPS = 1
 MAX_ENDPOINT_OBSCURITY = 3_000
 PATH_SEARCH_CAP = 3_000
 SOLUTION_SEARCH_CAP = 100
@@ -210,12 +233,37 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
     if len(found) not in SOLUTION_BAND:
         return None
 
+    day_view = {
+        "start": start,
+        "target": target,
+        "pool": pool,
+        "pairs": {
+            f"{a}>{b}": "x"
+            for a in [*pool, start, target]
+            for b in [*pool, start, target]
+            if a != b and graph.welds(a, b)
+        },
+    }
+
     # Par names the shortest route. If the pool cannot deliver one that short,
     # the label is a lie and no player can ever make par.
     if min(len(s) for s in found) + 1 != par:
         return None
 
-    if max_disjoint(found) < MIN_DISJOINT_ROUTES:
+    independent = largest_disjoint_set(found)
+    if len(independent) < min_disjoint_routes(par):
+        return None
+    if any(
+        cross_links(day_view, route) < MIN_ROUTE_CROSS_LINKS for route in independent
+    ):
+        return None
+    isolated = {
+        chip
+        for route in independent
+        for chip in route
+        if cross_links(day_view, [chip], ignoring=route) == 0
+    }
+    if len(isolated) > MAX_ISOLATED_CHIPS:
         return None
 
     openings = [p for p in pool if graph.welds(start, p)]
@@ -252,7 +300,11 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
             "solutions": len(found),
             "openings": len(openings),
             "closings": len(closings),
-            "disjoint_routes": max_disjoint(found),
+            "disjoint_routes": len(independent),
+            "min_cross_links": min(
+                cross_links(day_view, route) for route in independent
+            ),
+            "isolated_chips": len(isolated),
         },
     )
 
@@ -300,7 +352,15 @@ def generate(
                 if graph.welds(start, target) or graph.welds(target, start):
                     continue
                 day = build_day(graph, lex, start, target, par)
-                if day and (best is None or day.metrics["valid_pairs"] > best.metrics["valid_pairs"]):
+                if day is None:
+                    continue
+                # Rank by independence first: a day with more genuinely
+                # different routes beats a denser one with fewer.
+                rank = (day.metrics["disjoint_routes"], day.metrics["valid_pairs"])
+                if best is None or rank > (
+                    best.metrics["disjoint_routes"],
+                    best.metrics["valid_pairs"],
+                ):
                     best = day
 
             if best:

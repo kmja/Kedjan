@@ -112,3 +112,61 @@ def test_every_shipped_day_has_two_independent_routes():
     for day in json.loads(CALENDAR.read_text(encoding="utf-8")):
         r = analysis.report(day)
         assert r.disjoint_routes >= 2, f"{r.label}: {r.disjoint_routes}"
+
+
+def test_cross_links_counts_welds_out_of_a_group():
+    day = a_day()
+    # mur welds to vägg (inside the group) and nothing else in the pool.
+    assert analysis.cross_links(day, ["mur", "vägg"]) == 0
+    # Endpoints are excluded, so bro reaches nothing outside itself either.
+    assert analysis.cross_links(day, ["bro"]) == 0
+
+
+def test_cross_links_can_ignore_a_chips_own_route():
+    day = a_day()
+    # mur reaches vägg, but vägg is its own route — so nothing beyond it.
+    assert analysis.cross_links(day, ["mur"]) == 1
+    assert analysis.cross_links(day, ["mur"], ignoring=["mur", "vägg"]) == 0
+
+
+def test_cross_links_sees_a_link_out_of_the_group():
+    day = a_day()
+    day["pairs"]["mur>tak"] = "murtak"
+    assert analysis.cross_links(day, ["mur", "vägg"]) == 1
+
+
+def test_isolated_chips_name_a_group_that_gives_itself_away():
+    # Three routes that weld only along themselves are three visible islands.
+    day = a_day(
+        pool=["a1", "a2", "b1", "b2", "c1", "c2"],
+        pairs={
+            "sten>a1": "x", "a1>a2": "x", "a2>hus": "x",
+            "sten>b1": "x", "b1>b2": "x", "b2>hus": "x",
+            "sten>c1": "x", "c1>c2": "x", "c2>hus": "x",
+        },
+    )
+    r = analysis.report(day)
+    assert r.disjoint_routes == 3
+    assert r.route_cross_links == [0, 0, 0]
+    assert r.isolated_chips == ["a1", "a2", "b1", "b2", "c1", "c2"]
+
+
+def test_entanglement_clears_once_the_routes_link_up():
+    day = a_day(
+        pool=["a1", "a2", "b1", "b2"],
+        pairs={
+            "sten>a1": "x", "a1>a2": "x", "a2>hus": "x",
+            "sten>b1": "x", "b1>b2": "x", "b2>hus": "x",
+            "a1>b2": "x", "b1>a2": "x",   # false paths crossing the routes
+        },
+    )
+    r = analysis.report(day)
+    assert r.isolated_chips == []
+    assert r.min_cross_links >= 1
+
+
+def test_every_shipped_route_reaches_outside_itself():
+    for day in json.loads(CALENDAR.read_text(encoding="utf-8")):
+        r = analysis.report(day)
+        assert len(r.isolated_chips) <= 1, f"{r.label}: {r.isolated_chips}"
+        assert r.min_cross_links >= 2, f"{r.label}: {r.route_cross_links}"

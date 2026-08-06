@@ -83,9 +83,16 @@ descriptive number for a day is the pairs-to-solutions ratio: many welds, few
 escapes.
 
 Solution count alone flatters a day, though. Eight routes that all funnel
-through one part are one idea with variations, so at least **two routes must be
-genuinely independent** — sharing no intermediate chip. That is a separate hard
-requirement, and the number worth reading first.
+through one part are one idea with variations, so routes must be **genuinely
+independent** — sharing no intermediate chip. The floor scales with par (3 at
+par 3, 2 at par 4) because `3 × (par − 1)` chips of a ten-chip pool is all the
+room there is, and decoys need the rest.
+
+Independence alone is not enough either. Three routes that weld only along
+themselves are three visible islands, and a player who spots that `hund`, `ben`
+and `böj` join nothing else has been handed the answer by elimination. So every
+route must **cross-link** into the rest of the pool, and at most one chip may
+weld solely within its own route.
 
 ## Accessibility
 

@@ -232,5 +232,565 @@
    "openings": 4,
    "closings": 2
   }
+ },
+ {
+  "start": "slut",
+  "target": "färdig",
+  "par": 3,
+  "accepted": false,
+  "reason": "körslag, måttord marginal; both endpoints adjectives",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "flyg",
+  "target": "ställe",
+  "par": 3,
+  "accepted": false,
+  "reason": "bett/brott/skallbrott reads violent",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "jul",
+  "target": "skydd",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "tok",
+  "target": "skada",
+  "par": 3,
+  "accepted": false,
+  "reason": "tok- intensifier across the pool; höger/skada off-tone",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "grund",
+  "target": "glad",
+  "par": 3,
+  "accepted": false,
+  "reason": "only three winning openings",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 5,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "hel",
+  "target": "gäst",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 11,
+   "openings": 3,
+   "closings": 5,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "mat",
+  "target": "dörr",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "vår",
+  "target": "mjölk",
+  "par": 3,
+  "accepted": false,
+  "reason": "toppen is a definite form",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 6,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "hund",
+  "target": "glas",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "hopp",
+  "target": "gräs",
+  "par": 3,
+  "accepted": false,
+  "reason": "svärdgräs, skyddsvärd marginal",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "musik",
+  "target": "sätt",
+  "par": 3,
+  "accepted": false,
+  "reason": "poängsätt, körsätt marginal; sätt is abstract",
+  "metrics": {
+   "valid_pairs": 30,
+   "solutions": 7,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "sorg",
+  "target": "kött",
+  "par": 3,
+  "accepted": false,
+  "reason": "hundkött, hästkött off-tone",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "natt",
+  "target": "plikt",
+  "par": 4,
+  "accepted": false,
+  "reason": "only two winning first moves (mat, vakt)",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "fin",
+  "target": "tro",
+  "par": 4,
+  "accepted": false,
+  "reason": "only two independent routes, cross-links [7,2]",
+  "metrics": {
+   "valid_pairs": 22,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "bär",
+  "target": "öppen",
+  "par": 4,
+  "accepted": false,
+  "reason": "bärgrund marginal, three winning openings",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 11,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "dans",
+  "target": "trick",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 10,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "hand",
+  "target": "taxi",
+  "par": 4,
+  "accepted": false,
+  "reason": "cross-links [3,1] — one route is nearly an island",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 4,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "djur",
+  "target": "gäng",
+  "par": 4,
+  "accepted": false,
+  "reason": "three solutions, bottom of the band",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 3,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "slag",
+  "target": "flaska",
+  "par": 4,
+  "accepted": false,
+  "reason": "held back as a spare",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "kör",
+  "target": "herre",
+  "par": 4,
+  "accepted": false,
+  "reason": "held back as a spare",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 5,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "slut",
+  "target": "färdig",
+  "par": 3,
+  "accepted": false,
+  "reason": "held back as a spare",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "flyg",
+  "target": "ställe",
+  "par": 3,
+  "accepted": false,
+  "reason": "benbrott, skallbrott, hundbett — an injury pool in a cosy daily",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "jul",
+  "target": "skydd",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "tok",
+  "target": "skada",
+  "par": 3,
+  "accepted": false,
+  "reason": "tok- intensifier; höger/skada off-tone",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "grund",
+  "target": "glad",
+  "par": 3,
+  "accepted": false,
+  "reason": "only three winning openings",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 5,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "hel",
+  "target": "gäst",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 11,
+   "openings": 3,
+   "closings": 5,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "mat",
+  "target": "dörr",
+  "par": 3,
+  "accepted": false,
+  "reason": "two isolated chips",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "vår",
+  "target": "mjölk",
+  "par": 3,
+  "accepted": false,
+  "reason": "toppen is a definite form; two isolated chips",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 6,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "hund",
+  "target": "glas",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4
+  }
+ },
+ {
+  "start": "hopp",
+  "target": "gräs",
+  "par": 3,
+  "accepted": false,
+  "reason": "svärdgräs marginal",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "musik",
+  "target": "sätt",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 30,
+   "solutions": 7,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "sorg",
+  "target": "kött",
+  "par": 3,
+  "accepted": false,
+  "reason": "hundkött, hästkött off-tone",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3
+  }
+ },
+ {
+  "start": "natt",
+  "target": "plikt",
+  "par": 4,
+  "accepted": false,
+  "reason": "only two winning first moves",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "fin",
+  "target": "tro",
+  "par": 4,
+  "accepted": false,
+  "reason": "two isolated chips",
+  "metrics": {
+   "valid_pairs": 22,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "bär",
+  "target": "öppen",
+  "par": 4,
+  "accepted": false,
+  "reason": "bärgrund marginal",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 11,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "dans",
+  "target": "trick",
+  "par": 4,
+  "accepted": false,
+  "reason": "fall and rep isolated",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 10,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "hand",
+  "target": "taxi",
+  "par": 4,
+  "accepted": false,
+  "reason": "cross-links [3,1], three isolated chips",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 4,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "djur",
+  "target": "gäng",
+  "par": 4,
+  "accepted": false,
+  "reason": "two isolated chips",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 3,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "slag",
+  "target": "flaska",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
+ },
+ {
+  "start": "kör",
+  "target": "herre",
+  "par": 4,
+  "accepted": false,
+  "reason": "three isolated chips",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 5,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2
+  }
  }
 ]

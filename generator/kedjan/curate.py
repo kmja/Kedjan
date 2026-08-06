@@ -35,7 +35,18 @@ PAIR_BAND = range(20, 31)
 MIN_OPENINGS = 3
 MIN_CLOSINGS = 2
 MIN_BRANCHING = 2
-MIN_DISJOINT_ROUTES = 2
+#: Mirrors days.py — the floor scales with par because routes consume pool.
+MIN_DISJOINT_BY_PAR = {3: 3}
+MIN_DISJOINT_FALLBACK = 2
+#: Each independent route must reach this many chips outside itself, or it is
+#: an island a player can find by elimination rather than deduction.
+MIN_ROUTE_CROSS_LINKS = 2
+#: Chips welding to nothing beyond their own route are tells. One is a mild
+#: one and common — fifteen of twenty candidates carry it — but two or more
+#: start to partition the pool into visible groups, which is the failure this
+#: guards against: notice that hund, ben and böj join nothing else and
+#: elimination hands you the answer.
+MAX_ISOLATED_CHIPS = 1
 
 #: Verb inflection tails, but only behind the foge-e link. "risk" + e + "rar"
 #: spells riskerar, a conjugated verb rather than a compound — the kind of false
@@ -158,10 +169,23 @@ def check_day(
         )
     if r.branching and r.min_branching < MIN_BRANCHING:
         err(f"branching {r.branching} — the route has a step with no alternative")
-    if r.disjoint_routes < MIN_DISJOINT_ROUTES:
+    floor = MIN_DISJOINT_BY_PAR.get(par, MIN_DISJOINT_FALLBACK)
+    if r.disjoint_routes < floor:
         err(
-            f"{len(r.solutions)} solutions but no two are independent — "
-            "they are one route with variations"
+            f"{len(r.solutions)} solutions but only {r.disjoint_routes} independent "
+            f"(par {par} needs {floor}) — the rest are one route with variations"
+        )
+    if len(r.isolated_chips) > MAX_ISOLATED_CHIPS:
+        err(
+            f"{', '.join(r.isolated_chips)} weld to nothing outside their own "
+            "routes — the pool falls into visible groups"
+        )
+    elif r.isolated_chips:
+        warn(f"{r.isolated_chips[0]} welds only within its own route")
+    if r.route_cross_links and r.min_cross_links < MIN_ROUTE_CROSS_LINKS:
+        err(
+            f"an independent route reaches only {r.min_cross_links} chip(s) outside "
+            f"itself (cross-links {r.route_cross_links}) — it is an island"
         )
     if r.bottlenecks:
         warn(f"every solution passes through {', '.join(r.bottlenecks)}")

@@ -83,6 +83,12 @@ class DayReport:
     #: through the same part are one idea with variations, and a player who
     #: finds the part has finished thinking.
     disjoint_routes: int = 0
+    #: Welds from each independent route out to the rest of the pool. A zero
+    #: means that route is an island the player can spot by elimination.
+    route_cross_links: list[int] = field(default_factory=list)
+    #: Solution chips that weld to nothing outside their own route — the tell
+    #: that gives a group away.
+    isolated_chips: list[str] = field(default_factory=list)
     #: Welds on solution paths whose witness SALDO does not record. SALDO is a
     #: curated lexicon, so absence is a decent proxy for "marginal compound".
     weak_welds: list[str] = field(default_factory=list)
@@ -97,6 +103,11 @@ class DayReport:
     @property
     def min_branching(self) -> int:
         return min(self.branching, default=0)
+
+    @property
+    def min_cross_links(self) -> int:
+        """Entanglement of the least-connected independent route."""
+        return min(self.route_cross_links, default=0)
 
     @property
     def saldo_share(self) -> float:
@@ -124,6 +135,19 @@ def report(day: DayLike, saldo: Saldo | None = None) -> DayReport:
     every = [set(s) for s in found]
     bottlenecks = sorted(set.intersection(*every)) if every else []
 
+    independent = largest_disjoint_set(found)
+    crossings = [cross_links(day, route) for route in independent]
+    # A chip is a tell when it welds to nothing beyond its *own* route — that
+    # is what lets a player pick the group out by elimination.
+    isolated = sorted(
+        {
+            chip
+            for route in independent
+            for chip in route
+            if cross_links(day, [chip], ignoring=route) == 0
+        }
+    )
+
     on_paths = set()
     for chain in found:
         seq = [start, *chain, target]
@@ -150,31 +174,53 @@ def report(day: DayLike, saldo: Saldo | None = None) -> DayReport:
         branching=branching,
         bottlenecks=bottlenecks,
         winning_openings=sorted({chain[0] for chain in found if chain}),
-        disjoint_routes=max_disjoint(found),
+        disjoint_routes=len(independent),
+        route_cross_links=crossings,
+        isolated_chips=isolated,
         weak_welds=sorted(set(weak)),
         total_welds=len(pairs),
         saldo_welds=saldo_welds,
     )
 
 
-def max_disjoint(routes: Sequence[Sequence[str]]) -> int:
+def largest_disjoint_set(routes: Sequence[Sequence[str]]) -> list[list[str]]:
     """The largest set of routes that pairwise share no intermediate chip.
 
-    This is the number that answers "are there really different ways to win".
-    The generator caps a day at twelve solutions, so the search is tiny.
+    This answers "are there really different ways to win". The generator caps a
+    day at twelve solutions, so the search is tiny.
     """
-    sets = [set(r) for r in routes]
-    if not sets:
-        return 0
+    if not routes:
+        return []
+    for size in range(len(routes), 1, -1):
+        for combo in combinations(routes, size):
+            if all(set(a).isdisjoint(b) for a, b in combinations(combo, 2)):
+                return [list(r) for r in combo]
+    return [list(routes[0])]
 
-    best = 1
-    for size in range(len(sets), 1, -1):
-        if size <= best:
-            break
-        for combo in combinations(sets, size):
-            if all(a.isdisjoint(b) for a, b in combinations(combo, 2)):
-                return size
-    return best
+
+def max_disjoint(routes: Sequence[Sequence[str]]) -> int:
+    return len(largest_disjoint_set(routes))
+
+
+def cross_links(day: DayLike, group: Sequence[str], *, ignoring: Sequence[str] = ()) -> int:
+    """Welds between chips inside `group` and pool chips outside it.
+
+    Independent routes are only worth having if they are *entangled*. Three
+    routes that weld only along themselves are three visible islands: a player
+    who notices that hund, ben and böj join nothing else has been handed the
+    answer by elimination rather than deduction. Endpoints are excluded, since
+    every route touches both by definition and would look connected on that
+    account alone.
+    """
+    pairs = day.get("pairs", {})
+    inside = set(group) | set(ignoring)
+    outside = [p for p in _pool(day) if p not in inside]
+    return sum(
+        1
+        for a in group
+        for b in outside
+        if f"{a}>{b}" in pairs or f"{b}>{a}" in pairs
+    )
 
 
 def spell(day: DayLike, chain: Sequence[str]) -> str:
