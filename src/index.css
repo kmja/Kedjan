@@ -1,0 +1,286 @@
+@import "tailwindcss";
+
+/*
+ * Palette: Falun red, birch, honey, spruce. Every foreground/background pair
+ * used for text clears WCAG AA (4.5:1) in both themes — honey is a fill colour
+ * only, never a text colour, because honey-on-paper lands at 2.6:1.
+ */
+:root {
+  color-scheme: light dark;
+
+  --paper: #faf7f0;
+  --surface: #ffffff;
+  --panel: #efe6d6;
+  --edge: #ddd0b8;
+  --ink: #22302a;
+  --ink-soft: #5f665d;
+  --falu: #7e2d26;
+  --falu-deep: #63201b;
+  --falu-ink: #7e2d26;
+  --honey: #c8921f;
+  --honey-ink: #7a5a12;
+  --on-falu: #faf7f0;
+  --on-honey: #22302a;
+  --shadow: rgb(34 48 42 / 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #171c19;
+    --surface: #212925;
+    --panel: #263029;
+    --edge: #3a453e;
+    --ink: #efe6d6;
+    --ink-soft: #98a29a;
+    --falu: #e0736a;
+    --falu-deep: #c4544a;
+    --falu-ink: #e0736a;
+    --honey: #e8b355;
+    --honey-ink: #e8b355;
+    --on-falu: #171c19;
+    --on-honey: #171c19;
+    --shadow: rgb(0 0 0 / 0.4);
+  }
+}
+
+@theme inline {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Figtree", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A visible, high-contrast focus ring everywhere — the pool is navigable by
+   keyboard, so the caret has to be impossible to lose. */
+:where(button, a, [tabindex]):focus-visible {
+  outline: 3px solid var(--falu);
+  outline-offset: 3px;
+  border-radius: 0.35rem;
+}
+
+@layer components {
+  /* ── chips ─────────────────────────────────────────────────── */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0.55rem 0.8rem;
+    border-radius: 0.75rem;
+    border: 2px solid var(--edge);
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 0 var(--edge);
+    touch-action: none;
+    cursor: grab;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  }
+  .chip:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 0 var(--edge);
+  }
+  .chip:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 var(--edge);
+  }
+  .chip[aria-disabled="true"] {
+    cursor: default;
+    opacity: 0.45;
+  }
+  /* The hint's mark is a star and a border weight, not a hue — colour is never
+     the only signal. */
+  .chip--marked {
+    border-color: var(--honey);
+    box-shadow: 0 2px 0 var(--honey), inset 0 0 0 1px var(--honey);
+  }
+  .chip--lifted {
+    opacity: 0.28;
+  }
+  .chip--ghost {
+    position: fixed;
+    z-index: 50;
+    pointer-events: none;
+    border-color: var(--honey);
+    box-shadow: 0 8px 18px var(--shadow);
+    transform: translate(-50%, -130%);
+  }
+
+  /* ── the chain ─────────────────────────────────────────────── */
+  .node {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.45rem;
+    border: 1px solid var(--edge);
+    background: var(--panel);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .node--endpoint {
+    background: var(--falu);
+    border-color: var(--falu-deep);
+    color: var(--on-falu);
+  }
+  .node--head {
+    background: var(--honey);
+    border-color: var(--honey);
+    color: var(--on-honey);
+  }
+  .node--slot {
+    min-width: 2.2rem;
+    justify-content: center;
+    border-style: dashed;
+    background: transparent;
+    color: var(--ink-soft);
+  }
+  .node--slot-active {
+    border-color: var(--honey);
+    border-style: solid;
+    background: var(--surface);
+    color: var(--honey-ink);
+  }
+  .node--goal {
+    background: transparent;
+    border: 2px dashed var(--falu);
+    color: var(--falu-ink);
+    cursor: pointer;
+  }
+  .node--goal:hover {
+    background: color-mix(in srgb, var(--falu) 10%, transparent);
+  }
+  .joint {
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding-inline: 0.1rem;
+  }
+  .dropzone {
+    border-radius: 0.9rem;
+    outline: 2px dashed transparent;
+    outline-offset: 6px;
+    transition: outline-color 0.15s ease;
+  }
+  .dropzone--armed {
+    outline-color: var(--honey);
+  }
+
+  /* ── buttons ───────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 0.6rem;
+    border: 1px solid var(--edge);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .btn--accent {
+    background: var(--honey);
+    border-color: var(--honey);
+    color: var(--on-honey);
+  }
+  .btn--major {
+    width: 100%;
+    padding: 0.85rem;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    border: 2px solid var(--falu);
+    background: transparent;
+    color: var(--falu-ink);
+    border-radius: 0.85rem;
+  }
+  .btn--major:hover {
+    background: color-mix(in srgb, var(--falu) 10%, transparent);
+  }
+
+  .tab {
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tab[aria-selected="true"] {
+    background: var(--falu);
+    border-color: var(--falu-deep);
+    color: var(--on-falu);
+  }
+
+  .card {
+    border-radius: 0.9rem;
+    border: 1px solid var(--edge);
+    background: var(--panel);
+    padding: 1rem;
+  }
+}
+
+@keyframes snap-in {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.snap {
+  animation: snap-in 0.28s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

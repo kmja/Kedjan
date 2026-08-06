@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+
+# Corpora the generator reads. Multi-megabyte, fetched separately — see
+# generator/README.md.
+generator/swedish.dic
+generator/swe_wordlist
+generator/sv_50k.txt
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
