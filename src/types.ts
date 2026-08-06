@@ -18,11 +18,16 @@ export interface Day {
 
 /** Per-day progress, persisted so a reload never costs the player their chain. */
 export interface DayProgress {
-  /** Intermediate parts placed so far, start and target excluded. */
-  chain: string[];
+  /**
+   * The budget's slots, in order, `budget - 1` of them. A slot holds a part or
+   * nothing; parts go in in any order and nothing is checked until the player
+   * closes the chain onto the target. Empty slots simply drop out, so a
+   * two-link answer is one filled slot and the rest left blank.
+   */
+  slots: (string | null)[];
   solved: boolean;
   hints: number;
-  /** Rejected welds — "är inte ett ord" — counted for the share line. */
+  /** Chains submitted that did not hold — counted for the share line. */
   misses: number;
   /** Set once, when the day is first solved. */
   solvedAt?: string;

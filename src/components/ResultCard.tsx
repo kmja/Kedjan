@@ -3,6 +3,7 @@ import type { Day, DayProgress } from "../types";
 import { spellChain } from "../game/graph";
 import { shareResult, shareText } from "../game/share";
 import { plural } from "../game/plural";
+import { chainOf } from "../game/storage";
 
 interface Props {
   day: Day;
@@ -17,7 +18,8 @@ const parVerdict = (links: number, par: number) =>
 export function ResultCard({ day, progress, otherSolutions, streak }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
   const [showRoutes, setShowRoutes] = useState(false);
-  const links = progress.chain.length + 1;
+  const chain = chainOf(progress);
+  const links = chain.length + 1;
 
   const onShare = async () => {
     const outcome = await shareResult(shareText(day, progress, window.location.origin));
@@ -38,7 +40,7 @@ export function ResultCard({ day, progress, otherSolutions, streak }: Props) {
           className="font-[family-name:var(--font-display)] text-lg leading-snug font-extrabold"
           style={{ fontWeight: 800 }}
         >
-          {spellChain(day, progress.chain).join(" → ")}
+          {spellChain(day, chain).join(" → ")}
         </p>
         <p className="mt-1 text-sm font-semibold" style={{ color: "var(--honey-ink)" }}>
           {plural(links, "ord", "ord")} — {parVerdict(links, day.par)}

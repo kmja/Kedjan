@@ -1,131 +1,123 @@
-import type { RefObject } from "react";
 import type { Day } from "../types";
-import type { DropTarget } from "../game/useChipDrag";
-import { plural } from "../game/plural";
+import { weld } from "../game/graph";
 
-type ChipHandlers = ReturnType<
-  (part: string, target: DropTarget) => Record<string, unknown>
->;
+type ChipHandlers = Record<string, unknown>;
 
 interface Props {
   day: Day;
-  chain: string[];
+  slots: (string | null)[];
   solved: boolean;
   marked: string | null;
-  /** Set while a chip is being dragged *into* the chain. */
-  incoming: boolean;
-  /** The chain part currently being dragged back out to the pool, if any. */
+  armedSlot: number | null;
+  /** Joints that failed the last time the chain was closed. */
+  failedJoints: number[];
+  /** Zone id under the pointer mid-drag, e.g. "slot:1". */
+  dragOver: string | null;
   liftedPart: string | null;
-  zoneRef: RefObject<HTMLDivElement | null>;
-  handlers: (part: string, target: DropTarget) => ChipHandlers;
-  onFinish: () => void;
+  handlers: (part: string, source: "pool" | "chain") => ChipHandlers;
+  onSlot: (index: number) => void;
+  onSubmit: () => void;
 }
 
 /**
- * The bridge under construction: start, the parts placed so far, the slots the
- * budget still pays for, and the target. The slots are the budget made
- * visible — they deplete as the chain grows.
+ * The bridge under construction: start, the budget's slots, and the target.
  *
- * Placed parts are buttons: activating one takes it back out of the chain,
- * along with everything downstream of it.
+ * Parts go into any slot in any order and nothing is checked as they land.
+ * The target is the final link — activating it closes the chain and judges
+ * every joint at once.
  */
 export function Chain({
   day,
-  chain,
+  slots,
   solved,
   marked,
-  incoming,
+  armedSlot,
+  failedJoints,
+  dragOver,
   liftedPart,
-  zoneRef,
   handlers,
-  onFinish,
+  onSlot,
+  onSubmit,
 }: Props) {
-  const emptySlots = solved ? 0 : day.budget - 1 - chain.length;
+  const filled = slots.filter((s): s is string => s !== null);
+  // Joint indices run over [start, ...filled, target], and a slot's joint is
+  // the one before it — counted among filled slots, since gaps do not exist
+  // once the chain is read.
+  const jointBefore = (slotIndex: number) =>
+    slots.slice(0, slotIndex).filter(Boolean).length;
 
+  const broken = new Set(failedJoints);
   const spoken = [
     `Start ${day.start}`,
-    ...chain.map((p, i) => `länk ${i + 1} ${p}`),
-    emptySlots > 0 ? `${emptySlots} lediga platser kvar` : null,
+    ...slots.map((s, i) => (s ? `plats ${i + 1} ${s}` : `plats ${i + 1} tom`)),
     `mål ${day.target}`,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  ].join(", ");
 
-  const removalHint = (index: number) => {
-    const after = chain.length - index - 1;
-    return after === 0
-      ? " Ta bort från kedjan."
-      : ` Ta bort från kedjan, tillsammans med ${plural(after, "del", "delar")} efter den.`;
-  };
+  const Joint = ({ index, show }: { index: number; show: boolean }) => (
+    <span className={`joint ${show && broken.has(index) ? "joint--broken" : ""}`}>
+      <span aria-hidden="true">{show && broken.has(index) ? "✗" : "+"}</span>
+      {show && broken.has(index) && <span className="sr-only">bruten länk</span>}
+    </span>
+  );
 
   return (
-    <div
-      ref={zoneRef}
-      className={`dropzone flex flex-wrap items-center justify-center gap-1 px-1 py-2 ${
-        incoming ? "dropzone--armed" : ""
-      }`}
-    >
+    <div className="flex flex-wrap items-center justify-center gap-1 px-1 py-2">
       <ol className="contents" aria-label={`Kedjan: ${spoken}`}>
         <li className="flex items-center">
           <span className="node node--endpoint">{day.start}</span>
         </li>
 
-        {chain.map((part, i) => {
-          const isHead = i === chain.length - 1;
-          const classes = [
-            "node",
-            solved ? "" : "node--removable",
-            isHead && !solved ? "node--head" : "",
-            isHead ? "snap" : "",
-            liftedPart === part ? "chip--lifted" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-
-          return (
-            <li key={part} className="flex items-center">
-              <span className="joint" aria-hidden="true">
-                +
-              </span>
-              {solved ? (
-                <span className={classes}>{part}</span>
-              ) : (
-                <button
-                  type="button"
-                  {...handlers(part, "pool")}
-                  className={classes}
-                  aria-label={`Länk ${i + 1}, ${part}.${removalHint(i)}`}
-                >
-                  {part}
-                </button>
-              )}
-            </li>
-          );
-        })}
-
-        {Array.from({ length: emptySlots }, (_, i) => (
-          <li key={`slot-${i}`} className="flex items-center" aria-hidden="true">
-            <span className="joint">+</span>
-            <span className={`node node--slot ${incoming && i === 0 ? "node--slot-active" : ""}`}>
-              {incoming && i === 0 ? "här" : "··"}
-            </span>
+        {slots.map((part, i) => (
+          <li key={i} className="flex items-center">
+            <Joint index={jointBefore(i)} show={part !== null} />
+            {part === null ? (
+              <button
+                type="button"
+                data-drop-zone={`slot:${i}`}
+                onClick={() => onSlot(i)}
+                disabled={solved}
+                className={`node node--slot ${
+                  armedSlot === i ? "node--slot-armed" : ""
+                } ${dragOver === `slot:${i}` ? "node--slot-active" : ""}`}
+                aria-label={
+                  armedSlot === i
+                    ? `Plats ${i + 1}, vald. Välj en del att lägga här.`
+                    : `Plats ${i + 1}, tom. Välj den för att lägga nästa del här.`
+                }
+              >
+                <span aria-hidden="true">{armedSlot === i ? "▸" : "··"}</span>
+              </button>
+            ) : solved ? (
+              <span className="node">{part}</span>
+            ) : (
+              <button
+                type="button"
+                data-drop-zone={`slot:${i}`}
+                {...handlers(part, "chain")}
+                className={`node node--removable ${
+                  liftedPart === part ? "chip--lifted" : ""
+                } ${dragOver === `slot:${i}` ? "node--slot-active" : ""}`}
+                aria-label={`Plats ${i + 1}, ${part}. Ta bort den ur kedjan.`}
+              >
+                {part}
+              </button>
+            )}
           </li>
         ))}
 
         <li className="flex items-center">
-          <span className="joint" aria-hidden="true">
-            +
-          </span>
+          <Joint index={filled.length} show={filled.length > 0} />
           {solved ? (
             <span className="node node--endpoint snap">{day.target}</span>
           ) : (
             <button
               type="button"
-              onClick={onFinish}
+              onClick={onSubmit}
               className={`node node--goal ${marked === day.target ? "chip--marked" : ""}`}
-              aria-label={`Mål ${day.target}. Koppla ihop och avsluta kedjan.${
-                marked === day.target ? " Ledtråd: det här är rätt drag." : ""
-              }`}
+              aria-label={
+                `Mål ${day.target}. Slut kedjan här och kontrollera den.` +
+                (marked === day.target ? " Ledtråd: det här är rätt drag." : "")
+              }
             >
               {marked === day.target && <span aria-hidden="true">⭐&nbsp;</span>}
               {day.target}
@@ -133,6 +125,15 @@ export function Chain({
           )}
         </li>
       </ol>
+
+      {solved && (
+        <p className="sr-only">
+          {[day.start, ...filled, day.target]
+            .map((p, i, a) => (i < a.length - 1 ? weld(day, p, a[i + 1]!) : null))
+            .filter(Boolean)
+            .join(", ")}
+        </p>
+      )}
     </div>
   );
 }

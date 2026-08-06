@@ -162,3 +162,9 @@ def test_flags_a_numeral_in_the_pool():
 def test_flags_an_off_tone_endpoint():
     day = a_day(target="skit")
     assert any("off-tone" in m for m in errors(curate.check_day(day)))
+
+
+def test_flags_a_register_doublet_in_one_pool():
+    day = a_day()
+    day["pool"] = [*day["pool"][:-2], "far", "fader"]
+    assert any("register forms" in m for m in errors(curate.check_day(day)))

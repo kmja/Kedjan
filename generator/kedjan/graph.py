@@ -6,6 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from .lexicon import Lexicon
+from .saldo import Saldo
 from .split import CONNECTORS, linking_is_sound
 
 #: Surface forms that are inflections rather than lemmas. The prototype's
@@ -53,8 +54,34 @@ TONE_BAN = frozenset(
         "skit", "bög", "fitta", "kuk", "snut", "fan", "helvete", "jävla", "hora",
         "knulla", "pissa", "brud", "neger", "as", "idiot", "pack", "svin",
         "död", "mord", "våld", "vapen", "krig", "nazi", "sex", "porr", "knark",
+        # Recurred in curation: likbjörn, rörbomb, blodsnö all reached the
+        # shortlist before these went in.
+        "lik", "bomb", "cancer", "sjuk", "blod", "gift", "sjukdom",
     }
 )
+
+#: Fragments that are never the head of a Swedish compound. `ande` is a real
+#: noun (a spirit) and SALDO rightly admits it, but *as a final element* it
+#: spells a present participle — snöande, bärande, blodande — so it is barred
+#: from being a part at all. Position, not the lexicon, is what condemns it.
+NON_HEAD_PARTS = frozenset({"ande", "ende", "rar", "rat", "rade", "rats"})
+
+#: Register doublets: one lexeme in a full and a short form. Swedish takes the
+#: full form initially (broderskärlek, faderskärlek) and the short form finally
+#: (farbror, morfar), so they are not interchangeable — and two members of one
+#: doublet in a single pool are confusable rather than selective. Reported in
+#: playtesting as "far, fader, mor — very close options".
+DOUBLETS = frozenset({("far", "fader"), ("mor", "moder"), ("bror", "broder")})
+
+
+def doublet_partner(part: str) -> str | None:
+    for a, b in DOUBLETS:
+        if part == a:
+            return b
+        if part == b:
+            return a
+    return None
+
 
 #: Irregular plurals that slip past the suffix-based inflection test.
 PLURAL_BAN = frozenset({"söner", "män", "fötter", "händer", "böcker"})
@@ -163,13 +190,36 @@ def witnessed_pairs(compounds: dict[str, list[str]], lex: Lexicon) -> dict[tuple
     return pairs
 
 
-def select_hubs(pairs: dict[tuple[str, str], str], lex: Lexicon) -> frozenset[str]:
-    """Simple, common, well-connected, lemma-only, no colours."""
+def select_hubs(
+    pairs: dict[tuple[str, str], str],
+    lex: Lexicon,
+    saldo: Saldo | None = None,
+) -> frozenset[str]:
+    """Simple, common, well-connected, lemma-only, no colours.
+
+    With SALDO present, part-of-speech does the work that CLOSED_CLASS,
+    NUMERALS, INFLECTED_FORMS, PLURAL_BAN and the surface-form heuristic were
+    all approximating: a part must be a lemma SALDO tags as a noun or
+    adjective. The hand-built lists stay as the fallback for a SALDO-less run,
+    and COLORS and TONE_BAN stay in both paths — those are editorial
+    judgements, not facts a lexicon can settle.
+    """
     degree: dict[str, int] = defaultdict(int)
     for a, b in pairs:
         degree[a] += 1
         degree[b] += 1
     known = frozenset(degree)
+
+    def lexically_ok(part: str) -> bool:
+        if saldo is not None:
+            return saldo.is_part_candidate(part)
+        return (
+            part not in NUMERALS
+            and part not in PLURAL_BAN
+            and part not in CLOSED_CLASS
+            and not is_inflected_part(part, known)
+            and not is_surface_form(part, lex)
+        )
 
     return frozenset(
         part
@@ -178,12 +228,9 @@ def select_hubs(pairs: dict[tuple[str, str], str], lex: Lexicon) -> frozenset[st
         and lex.obscurity(part) < MAX_HUB_OBSCURITY
         and len(part) in HUB_LENGTH
         and part not in COLORS
-        and part not in NUMERALS
         and part not in TONE_BAN
-        and part not in PLURAL_BAN
-        and part not in CLOSED_CLASS
-        and not is_inflected_part(part, known)
-        and not is_surface_form(part, lex)
+        and part not in NON_HEAD_PARTS
+        and lexically_ok(part)
     )
 
 
@@ -212,9 +259,11 @@ def augment_by_lookup(
     return recovered
 
 
-def build(compounds: dict[str, list[str]], lex: Lexicon) -> PartGraph:
+def build(
+    compounds: dict[str, list[str]], lex: Lexicon, saldo: Saldo | None = None
+) -> PartGraph:
     pairs = witnessed_pairs(compounds, lex)
-    hubs = select_hubs(pairs, lex)
+    hubs = select_hubs(pairs, lex, saldo)
     augment_by_lookup(pairs, hubs, lex)
 
     adjacency: dict[str, set[str]] = defaultdict(set)

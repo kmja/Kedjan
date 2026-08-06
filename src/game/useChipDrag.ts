@@ -1,52 +1,69 @@
-import { useRef, useState, type PointerEvent, type RefObject } from "react";
-
-/** Where a chip is being dragged *to*. A pool chip aims for the chain; a chip
- *  already in the chain aims back at the pool. */
-export type DropTarget = "chain" | "pool";
-
-export interface Zone {
-  ref: RefObject<HTMLElement | null>;
-  /** Run when a chip lands here — by drop, tap, click or keyboard. */
-  accept: (part: string) => void;
-}
+import { useRef, useState, type PointerEvent } from "react";
 
 export interface DragState {
   part: string;
-  target: DropTarget;
   x: number;
   y: number;
+  /** The zone currently under the pointer, so the board can show the target. */
+  over: string | null;
 }
 
 /** Movement past this many pixels turns a press into a drag rather than a tap. */
 const DRAG_THRESHOLD = 8;
-/** Generous slop around a zone so a drop near it still lands. */
-const DROP_SLOP = { x: 12, y: 28 };
+/** Generous slop around a zone, since slots are small targets on a phone. */
+const SLOP = { x: 14, y: 24 };
 
-function within(rect: DOMRect | undefined, x: number, y: number): boolean {
-  if (!rect) return false;
-  return (
-    x >= rect.left - DROP_SLOP.x &&
-    x <= rect.right + DROP_SLOP.x &&
-    y >= rect.top - DROP_SLOP.y &&
-    y <= rect.bottom + DROP_SLOP.y
-  );
+/**
+ * Drop zones declare themselves in the DOM with `data-drop-zone="<id>"`, so a
+ * board with a variable number of slots does not have to register refs for
+ * each one. Ids are `slot:<n>` and `pool`.
+ */
+function zoneAt(x: number, y: number): string | null {
+  const zones = Array.from(document.querySelectorAll<HTMLElement>("[data-drop-zone]"));
+  let best: { id: string; distance: number } | null = null;
+
+  for (const el of zones) {
+    const r = el.getBoundingClientRect();
+    const inside =
+      x >= r.left - SLOP.x &&
+      x <= r.right + SLOP.x &&
+      y >= r.top - SLOP.y &&
+      y <= r.bottom + SLOP.y;
+    if (!inside) continue;
+
+    // Overlapping slop regions are resolved by centre distance, so a drop
+    // between two slots lands in the nearer one rather than the first found.
+    const distance = Math.hypot(x - (r.left + r.right) / 2, y - (r.top + r.bottom) / 2);
+    if (!best || distance < best.distance) {
+      best = { id: el.dataset.dropZone!, distance };
+    }
+  }
+  return best?.id ?? null;
+}
+
+export interface DragActions {
+  /** A pool chip landed on slot `index`. */
+  onDropInSlot: (part: string, index: number) => void;
+  /** A chip landed back in the pool. */
+  onReturnToPool: (part: string) => void;
+  /** Activated without a drag — click, tap, Enter, or a screen reader. */
+  onActivate: (part: string, source: "pool" | "chain") => void;
 }
 
 /**
- * Pointer drag over chips that are ordinary buttons, in both directions:
- * pool → chain to place a part, chain → pool to take it back.
+ * Pointer drag over chips that are ordinary buttons.
  *
- * Landing has two routes. A drag resolves on pointerup against the target
- * zone; everything else — mouse click, tap, Enter, Space, a screen reader's
- * activation — resolves on click, so the keyboard never needs the drag at all.
- * The click browsers synthesise after a drag is swallowed, so a chip dropped
- * outside its zone is not also actioned by the click that follows.
+ * A drag resolves on pointerup against whichever zone is under the pointer;
+ * everything else — click, tap, Enter, Space, assistive activation — resolves
+ * on click, so the keyboard never needs the drag. The click browsers
+ * synthesise after a drag is swallowed, so a dropped chip is not also actioned
+ * by the click that follows it.
  */
-export function useChipDrag(zones: Record<DropTarget, Zone>) {
+export function useChipDrag(actions: DragActions) {
   const [drag, setDrag] = useState<DragState | null>(null);
   const press = useRef<{
     part: string;
-    target: DropTarget;
+    source: "pool" | "chain";
     sx: number;
     sy: number;
     moved: boolean;
@@ -54,13 +71,13 @@ export function useChipDrag(zones: Record<DropTarget, Zone>) {
   const swallowClick = useRef(false);
 
   // Deliberately not memoised: these spread onto a dozen buttons with no memo
-  // boundary downstream, and a stable identity would only invite a stale zone.
-  const handlers = (part: string, target: DropTarget) => ({
+  // boundary downstream, and a stable identity would only invite stale actions.
+  const handlers = (part: string, source: "pool" | "chain") => ({
     onPointerDown(e: PointerEvent<HTMLElement>) {
       if (e.button !== 0) return;
       swallowClick.current = false;
       e.currentTarget.setPointerCapture?.(e.pointerId);
-      press.current = { part, target, sx: e.clientX, sy: e.clientY, moved: false };
+      press.current = { part, source, sx: e.clientX, sy: e.clientY, moved: false };
     },
 
     onPointerMove(e: PointerEvent<HTMLElement>) {
@@ -68,7 +85,7 @@ export function useChipDrag(zones: Record<DropTarget, Zone>) {
       if (!p) return;
       if (!p.moved && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < DRAG_THRESHOLD) return;
       p.moved = true;
-      setDrag({ part: p.part, target: p.target, x: e.clientX, y: e.clientY });
+      setDrag({ part: p.part, x: e.clientX, y: e.clientY, over: zoneAt(e.clientX, e.clientY) });
     },
 
     onPointerUp(e: PointerEvent<HTMLElement>) {
@@ -78,9 +95,11 @@ export function useChipDrag(zones: Record<DropTarget, Zone>) {
       if (!p?.moved) return; // a plain press — let the click handler action it
 
       swallowClick.current = true;
-      const zone = zones[p.target];
-      if (within(zone.ref.current?.getBoundingClientRect(), e.clientX, e.clientY)) {
-        zone.accept(p.part);
+      const zone = zoneAt(e.clientX, e.clientY);
+      if (zone === "pool") {
+        if (p.source === "chain") actions.onReturnToPool(p.part);
+      } else if (zone?.startsWith("slot:")) {
+        actions.onDropInSlot(p.part, Number(zone.slice(5)));
       }
     },
 
@@ -94,7 +113,7 @@ export function useChipDrag(zones: Record<DropTarget, Zone>) {
         swallowClick.current = false;
         return;
       }
-      zones[target].accept(part);
+      actions.onActivate(part, source);
     },
   });
 

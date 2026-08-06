@@ -5,7 +5,12 @@ pool of ten part-chips. You drag or tap chips into a fixed row of slots to build
 a bridge from start to target, where **every adjacent pair of parts must fuse
 into a real Swedish compound** — grund+val → grundval, val+natt → valnatt. The
 chain has a fixed budget of links (par + 1); winning means reaching the target
-within budget, with under-par as the flex.
+within budget.
+
+**Parts go down in any order and nothing is checked as they land.** The target
+is the final link: close the chain onto it and every joint is judged at once,
+with each break named and marked. The game is arrangement and deduction, not
+probing — a chip you are unsure of costs you a thought, not a slap.
 
 ```
 npm install
@@ -16,7 +21,7 @@ npm run dev
 
 ```
 src/            the game — React, TypeScript, fully client-side
-  game/         graph, hints, storage, sharing, day rotation
+  game/         graph, validation, hints, storage, sharing, day rotation
   components/   chain, pool, controls, result, archive, stats
 public/days.json  the curated calendar the client fetches at runtime
 generator/      the data pipeline: lexicons → compounds → part graph → days
@@ -61,10 +66,15 @@ and `generator/kedjan/curate.py` enforces them as a lint.
   cannot refund. It is a lexicon-coverage problem, and the in-game report
   button exists to track it as a KPI.
 - **Hints are pathfinding, not content.** Breadth-first search over the day's
-  pool graph from the player's current position. The first hint gives
-  distance-from-here, the second marks the optimal next chip, and a position
-  that cannot reach the target yields a free rescue. No AI, no authoring,
-  always adaptive.
+  pool graph, anchored to the end of the longest run that already holds — the
+  only position that means anything once parts can be arranged out of order.
+  The first hint gives distance-from-there, the second marks the optimal next
+  chip, and a position that cannot reach the target yields a free rescue. No
+  AI, no authoring, always adaptive.
+- **A day needs at least three opening moves.** A start that welds to only one
+  chip means move one is not a choice. Two prototype days died on this.
+- **One lexeme, one form.** `far` and `fader` in the same pool is a guess, not
+  a choice; the generator refuses register doublets outright.
 
 Difficulty has three measured dials: par (3 for weekdays, 4 for harder days),
 valid-pairs count (a healthy band is roughly 20–30 over twelve parts), and

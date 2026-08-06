@@ -5,11 +5,9 @@ interface Props {
   day: Day;
   status: Status | null;
   announceKey: number;
-  links: number;
+  placed: number;
   hints: number;
-  canUndo: boolean;
   onHint: () => void;
-  onUndo: () => void;
   onReset: () => void;
 }
 
@@ -23,11 +21,9 @@ export function Controls({
   day,
   status,
   announceKey,
-  links,
+  placed,
   hints,
-  canUndo,
   onHint,
-  onUndo,
   onReset,
 }: Props) {
   return (
@@ -48,8 +44,8 @@ export function Controls({
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-semibold" style={{ color: "var(--ink-soft)" }}>
-          <span aria-label={`${links} av ${day.budget} länkar använda`}>
-            {links}/{day.budget} länkar
+          <span aria-label={`${placed} av ${day.budget - 1} platser fyllda`}>
+            {placed}/{day.budget - 1} placerade
           </span>
           <span aria-hidden="true"> · </span>
           <span>par {day.par}</span>
@@ -68,10 +64,7 @@ export function Controls({
           >
             Ledtråd{hints > 0 ? ` (${hints})` : ""}
           </button>
-          <button type="button" onClick={onUndo} className="btn" disabled={!canUndo}>
-            Ångra
-          </button>
-          <button type="button" onClick={onReset} className="btn" disabled={!canUndo}>
+          <button type="button" onClick={onReset} className="btn" disabled={placed === 0}>
             Rensa
           </button>
         </div>

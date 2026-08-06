@@ -12,7 +12,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from . import curate, days as day_gen, graph as graph_mod, lexicon as lex_mod, split
+from . import curate, days as day_gen, graph as graph_mod, lexicon as lex_mod, saldo as saldo_mod, split
 
 
 def cmd_generate(args: argparse.Namespace) -> int:
@@ -24,8 +24,15 @@ def cmd_generate(args: argparse.Namespace) -> int:
     compounds = split.compounds(lex)
     print(f"  {len(compounds):,} compounds", file=sys.stderr)
 
+    saldo = saldo_mod.load_if_present(args.saldo)
+    print(
+        f"  SALDO: {len(saldo.pos):,} lemmas" if saldo
+        else "  SALDO absent — falling back to the hand-built filters",
+        file=sys.stderr,
+    )
+
     print("building the part graph…", file=sys.stderr)
-    graph = graph_mod.build(compounds, lex)
+    graph = graph_mod.build(compounds, lex, saldo)
     print(f"  {len(graph.pairs):,} pairs over {len(graph.hubs):,} hub parts", file=sys.stderr)
 
     print("generating days…", file=sys.stderr)
@@ -89,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
     corpus.add_argument("--dic", default="sv_SE.dic", help="Swedish hunspell word list")
     corpus.add_argument("--wordlist", default=None, help="optional supplementary word list")
     corpus.add_argument("--frequency", default="sv_50k.txt", help="hermitdave FrequencyWords")
+    corpus.add_argument("--saldo", default="saldo_2.3/saldo20v03.txt",
+                        help="Språkbanken SALDO, the lemma inventory")
 
     gen = sub.add_parser("generate", parents=[corpus], help="propose candidate days")
     gen.add_argument("--out", default="kedjan-days.json")

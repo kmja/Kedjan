@@ -1,5 +1,6 @@
 import type { Day, DayProgress } from "../types";
 import { plural } from "./plural";
+import { chainOf } from "./storage";
 
 /**
  * The share line, as specified in the handover:
@@ -12,7 +13,7 @@ import { plural } from "./plural";
  * to a measure of how hard the day fought back.
  */
 export function shareText(day: Day, progress: DayProgress, url?: string): string {
-  const links = progress.chain.length + 1;
+  const links = chainOf(progress).length + 1;
   const notes = [
     progress.hints > 0 ? plural(progress.hints, "ledtråd", "ledtrådar") : null,
     progress.misses > 0 ? plural(progress.misses, "felförsök", "felförsök") : null,

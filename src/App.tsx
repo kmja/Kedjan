@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Day } from "./types";
 import { dayForDate, fetchCalendar, releasedDays } from "./game/days";
 import { formatSwedishDate, todayISO } from "./game/dates";
@@ -53,13 +53,13 @@ export default function App() {
   }, [calendar, released, pickedDate, today]);
 
   const game = useKedjan(day);
-  const chainRef = useRef<HTMLDivElement>(null);
-  const poolRef = useRef<HTMLDivElement>(null);
-  // Chips travel both ways: pool chips land in the chain, chain chips land
-  // back in the pool.
+  // Chips travel both ways and land in a specific slot. Nothing is validated
+  // on the way down — the chain is judged only when it is closed.
   const { drag, handlers } = useChipDrag({
-    chain: { ref: chainRef, accept: game.place },
-    pool: { ref: poolRef, accept: game.removeFrom },
+    onDropInSlot: game.placeAt,
+    onReturnToPool: game.removeFrom,
+    onActivate: (part, source) =>
+      source === "pool" ? game.placeAt(part) : game.removeFrom(part),
   });
 
   const openDay = (date: string) => {
@@ -144,30 +144,32 @@ export default function App() {
 
             <Chain
               day={day}
-              chain={game.chain}
+              slots={game.slots}
               solved={game.solved}
               marked={game.marked}
-              incoming={drag?.target === "chain"}
-              liftedPart={drag?.target === "pool" ? drag.part : null}
-              zoneRef={chainRef}
+              armedSlot={game.armedSlot}
+              failedJoints={game.failedJoints}
+              dragOver={drag?.over ?? null}
+              liftedPart={drag?.part ?? null}
               handlers={handlers}
-              onFinish={game.finish}
+              onSlot={game.toggleSlot}
+              onSubmit={game.submit}
             />
 
             {!game.solved && (
               <>
                 <p className="-mt-3 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
-                  Nå {day.target.toUpperCase()} på högst {day.budget} länkar — varje par av
-                  grannar måste bilda ett riktigt ord.
+                  Lägg delarna i vilken ordning du vill. Tryck på{" "}
+                  {day.target.toUpperCase()} när du är klar — då kontrolleras hela
+                  kedjan.
                 </p>
 
                 <Pool
                   parts={game.pool}
                   marked={game.marked}
-                  liftedPart={drag?.target === "chain" ? drag.part : null}
-                  incoming={drag?.target === "pool"}
-                  current={game.current}
-                  zoneRef={poolRef}
+                  liftedPart={drag?.part ?? null}
+                  incoming={drag?.over === "pool"}
+                  armedSlot={game.armedSlot}
                   handlers={handlers}
                 />
 
@@ -175,11 +177,9 @@ export default function App() {
                   day={day}
                   status={game.status}
                   announceKey={game.announceKey}
-                  links={game.links}
+                  placed={game.chain.length}
                   hints={game.hints}
-                  canUndo={game.chain.length > 0}
                   onHint={game.hint}
-                  onUndo={game.undo}
                   onReset={game.reset}
                 />
 

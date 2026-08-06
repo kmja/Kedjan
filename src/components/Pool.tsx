@@ -1,20 +1,14 @@
-import type { RefObject } from "react";
-import type { DropTarget } from "../game/useChipDrag";
-
-type ChipHandlers = ReturnType<
-  (part: string, target: DropTarget) => Record<string, unknown>
->;
+type ChipHandlers = Record<string, unknown>;
 
 interface Props {
   parts: string[];
   marked: string | null;
-  /** The pool chip currently being dragged into the chain, if any. */
   liftedPart: string | null;
-  /** Set while a chain part is being dragged back here. */
+  /** True while a chain part is being dragged back here. */
   incoming: boolean;
-  current: string;
-  zoneRef: RefObject<HTMLDivElement | null>;
-  handlers: (part: string, target: DropTarget) => ChipHandlers;
+  /** Where the next click will land, so the chip can say so. */
+  armedSlot: number | null;
+  handlers: (part: string, source: "pool" | "chain") => ChipHandlers;
 }
 
 /**
@@ -23,18 +17,13 @@ interface Props {
  * reader with no drag involved. It doubles as the drop zone for a part being
  * taken back out of the chain.
  */
-export function Pool({
-  parts,
-  marked,
-  liftedPart,
-  incoming,
-  current,
-  zoneRef,
-  handlers,
-}: Props) {
+export function Pool({ parts, marked, liftedPart, incoming, armedSlot, handlers }: Props) {
+  const destination =
+    armedSlot === null ? "nästa lediga plats" : `plats ${armedSlot + 1}`;
+
   return (
     <div
-      ref={zoneRef}
+      data-drop-zone="pool"
       className={`dropzone flex min-h-14 flex-wrap content-start justify-center gap-2 p-1 ${
         incoming ? "dropzone--armed" : ""
       }`}
@@ -45,13 +34,13 @@ export function Pool({
         <button
           key={part}
           type="button"
-          {...handlers(part, "chain")}
+          {...handlers(part, "pool")}
           className={`chip ${marked === part ? "chip--marked" : ""} ${
             liftedPart === part ? "chip--lifted" : ""
           }`}
           aria-label={
-            `${part}. Lägg efter ${current}.` +
-            (marked === part ? " Ledtråd: det här är rätt väg vidare." : "")
+            `${part}. Lägg på ${destination}.` +
+            (marked === part ? " Ledtråd: den här passar." : "")
           }
         >
           {marked === part && <span aria-hidden="true">⭐</span>}

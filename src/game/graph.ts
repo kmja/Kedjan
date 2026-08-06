@@ -110,6 +110,45 @@ export function allSolutions(day: Day, cap = 64): string[][] {
   return found.sort((a, b) => a.length - b.length);
 }
 
+/** The full sequence a chain represents, endpoints included. */
+export function fullChain(day: Day, chain: readonly string[]): string[] {
+  return [day.start, ...chain, day.target];
+}
+
+/**
+ * Indices of the joints that do not weld, over `fullChain`. Joint `i` sits
+ * between element `i` and `i + 1`.
+ *
+ * Parts are placed freely and nothing is checked until the player closes the
+ * chain onto the target, so this runs over the whole bridge at once and
+ * reports every failure rather than stopping at the first.
+ */
+export function brokenJoints(day: Day, chain: readonly string[]): number[] {
+  const full = fullChain(day, chain);
+  const broken: number[] = [];
+  for (let i = 0; i < full.length - 1; i++) {
+    if (!weld(day, full[i]!, full[i + 1]!)) broken.push(i);
+  }
+  return broken;
+}
+
+/**
+ * How many links from the start hold before the first break, and the part the
+ * player has effectively reached. Hints anchor here: pathfinding from the end
+ * of what already works is the only position that means anything once parts
+ * can be arranged out of order.
+ */
+export function validPrefix(day: Day, chain: readonly string[]): { length: number; at: string } {
+  let at = day.start;
+  let length = 0;
+  for (const part of chain) {
+    if (!weld(day, at, part)) break;
+    at = part;
+    length++;
+  }
+  return { length, at };
+}
+
 /** Render a chain as the compounds it spells: "grundval → valnatt → nattskär". */
 export function spellChain(day: Day, chain: readonly string[]): string[] {
   const full = [day.start, ...chain, day.target];

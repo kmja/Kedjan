@@ -19,13 +19,30 @@ export const emptyStats = (): Stats => ({
 });
 
 export const emptyProgress = (): DayProgress => ({
-  chain: [],
+  slots: [],
   solved: false,
   hints: 0,
   misses: 0,
 });
 
+/**
+ * Saves written before parts could be placed out of order stored a compact
+ * `chain`. Read it as slots filled from the left so an in-progress day is not
+ * thrown away by the upgrade.
+ */
+function migrate(p: Partial<DayProgress> & { chain?: string[] }): DayProgress {
+  return {
+    ...emptyProgress(),
+    ...p,
+    slots: p.slots ?? p.chain ?? [],
+  };
+}
+
 const emptySave = (): Save => ({ progress: {}, stats: emptyStats() });
+
+/** Slots read as a sequence: empty ones simply drop out. */
+export const chainOf = (p: DayProgress): string[] =>
+  p.slots.filter((s): s is string => s !== null);
 
 /**
  * Storage is best-effort: Safari private mode throws on both read and write,
@@ -37,10 +54,10 @@ export function loadSave(): Save {
     const raw = localStorage.getItem(KEY);
     if (!raw) return emptySave();
     const parsed = JSON.parse(raw) as Partial<Save>;
-    return {
-      progress: parsed.progress ?? {},
-      stats: { ...emptyStats(), ...parsed.stats },
-    };
+    const progress = Object.fromEntries(
+      Object.entries(parsed.progress ?? {}).map(([date, p]) => [date, migrate(p)]),
+    );
+    return { progress, stats: { ...emptyStats(), ...parsed.stats } };
   } catch {
     return emptySave();
   }

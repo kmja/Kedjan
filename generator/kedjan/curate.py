@@ -14,7 +14,14 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Iterable, Mapping, Sequence
 
-from .graph import COLORS, INFLECTED_FORMS, NUMERALS, TONE_BAN
+from .graph import (
+    COLORS,
+    INFLECTED_FORMS,
+    NON_HEAD_PARTS,
+    NUMERALS,
+    TONE_BAN,
+    doublet_partner,
+)
 from .lexicon import Lexicon
 from .split import CONNECTORS, PREFIX_SET, SUFFIX_STOP
 
@@ -32,10 +39,6 @@ PAIR_BAND = range(20, 31)
 #: good compound, because ras is a real noun. Flagging the tail alone would
 #: condemn the innocent along with the guilty.
 LINKED_VERB_TAILS = frozenset({"ras", "rar", "rat", "rad", "rade", "rats"})
-
-#: Fragments that are never the head of a Swedish compound, however they are
-#: joined. A pool chip drawn from this set is a splitter artefact.
-NON_HEAD_PARTS = frozenset({"rar", "rat", "rade", "rats", "ande", "ende"})
 
 #: -aren forms an agent noun from an infinitive (rädda -> räddaren). That is
 #: derivation, not compounding.
@@ -162,6 +165,12 @@ def check_day(day: DayLike, lex: Lexicon | None = None) -> list[Finding]:
             err(f"pool part {part!r} is an inflected form; parts are lemmas only")
         if part in NON_HEAD_PARTS:
             err(f"pool part {part!r} is never a compound head — a splitter artefact")
+
+    everything = [*pool, start, target]
+    for part in everything:
+        partner = doublet_partner(part)
+        if partner and partner in everything and part < partner:
+            err(f"{part!r} and {partner!r} are register forms of one lexeme")
 
     # ── weld sanity ──────────────────────────────────────────────
     for key, witness in pairs.items():

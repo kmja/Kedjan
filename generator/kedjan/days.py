@@ -13,7 +13,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from .graph import PartGraph
+from .graph import PartGraph, doublet_partner
 from .lexicon import Lexicon
 from .split import PREFIX_SET
 
@@ -175,6 +175,9 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
                 continue
             if in_pool_welds(graph, candidate, trial) > MAX_IN_POOL_WELDS:
                 continue
+            partner = doublet_partner(candidate)
+            if partner and partner in trial:
+                continue  # far and fader in one pool is a guess, not a choice
             if any(in_pool_welds(graph, p, trial) > MAX_IN_POOL_WELDS + 1 for p in with_endpoints(pool)):
                 continue
             scored.append((added, -lex.obscurity(candidate), candidate))
@@ -186,6 +189,10 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
         candidates.remove(chosen)
 
     if len(pool) < MIN_POOL_SIZE:
+        return None
+
+    everything = with_endpoints(pool)
+    if any((doublet_partner(p) or "") in everything for p in everything):
         return None
 
     found = solutions(graph, pool, start, target, budget)

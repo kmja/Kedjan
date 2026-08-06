@@ -62,198 +62,194 @@ describe("the day board", () => {
     render(<App />);
     await board();
     expect(
-      screen.getByRole("button", { name: /mål hus\. koppla ihop/i }),
+      screen.getByRole("button", { name: /mål hus\. slut kedjan/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText("0/4 länkar")).toBeInTheDocument();
+    expect(screen.getByText("0/3 placerade")).toBeInTheDocument();
     // Three empty slots plus the goal: budget 4, nothing spent.
     expect(screen.getAllByText("··")).toHaveLength(3);
   });
 });
 
-describe("placing parts", () => {
-  it("accepts a real weld and names the compound", async () => {
+describe("placing parts freely", () => {
+  const chip = (part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+  const slot = (n: number) =>
+    screen.getByRole("button", { name: new RegExp(`^plats ${n}, tom`, "i") });
+  const placed = (n: number, part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^plats ${n}, ${part}\\.`, "i") });
+
+  it("accepts a part that does not weld, without complaint", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(screen.getByRole("button", { name: /^mur\./i }));
-    await expectStatus("stenmur ✓");
-    expect(screen.getByText("1/4 länkar")).toBeInTheDocument();
+    // STEN+VÄGG is not a word, but nothing is checked until the chain closes.
+    await u.click(chip("vägg"));
+    await expectStatus("VÄGG placerad på plats 1.");
+    expect(placed(1, "vägg")).toBeInTheDocument();
   });
 
-  it("refuses a pair that is not a word, and does not spend a link", async () => {
+  it("fills the first free slot by default", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(screen.getByRole("button", { name: /^vägg\./i }));
-    await expectStatus("STEN+VÄGG är inte ett ord.");
-    expect(screen.getByText("0/4 länkar")).toBeInTheDocument();
+    await u.click(chip("mur"));
+    await u.click(chip("vägg"));
+    expect(placed(1, "mur")).toBeInTheDocument();
+    expect(placed(2, "vägg")).toBeInTheDocument();
   });
 
-  it("offers a report link only after the game has refused something", async () => {
+  it("lets the keyboard aim at a specific slot", async () => {
     const u = user();
     render(<App />);
     await board();
-    expect(screen.queryByRole("link", { name: /rapportera/i })).not.toBeInTheDocument();
-    await u.click(screen.getByRole("button", { name: /^vägg\./i }));
-    expect(
-      await screen.findByRole("link", { name: /är sten\+vägg ett riktigt ord/i }),
-    ).toBeInTheDocument();
+    await u.click(slot(3));
+    await u.click(chip("bro"));
+    await expectStatus("BRO placerad på plats 3.");
+    expect(placed(3, "bro")).toBeInTheDocument();
+    // Slots 1 and 2 are still empty — order of placement is free.
+    expect(slot(1)).toBeInTheDocument();
+  });
+
+  it("moves a part rather than duplicating it", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    await u.click(placed(1, "mur"));   // back to the pool
+    await u.click(slot(3));            // arm the far slot
+    await u.click(chip("mur"));
+    expect(placed(3, "mur")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^plats 1, mur/i })).not.toBeInTheDocument();
+  });
+
+  it("re-aims a placed part into another slot without duplicating it", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    expect(placed(1, "mur")).toBeInTheDocument();
+    await u.click(slot(2));
+    await u.click(placed(1, "mur"));
+    // Removing it frees slot 1; the part exists in exactly one place at a time.
+    expect(screen.getAllByRole("button", { name: /mur/i })).toHaveLength(1);
+  });
+
+  it("returns a part to the pool when its slot is activated", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    await u.click(placed(1, "mur"));
+    await expectStatus("MUR tillbaka i poolen.");
+    expect(chip("mur")).toBeInTheDocument();
+  });
+
+  it("leaves a gap rather than shuffling the rest along", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    await u.click(chip("vägg"));
+    await u.click(placed(1, "mur"));
+    // vägg stays where it was put.
+    expect(placed(2, "vägg")).toBeInTheDocument();
+    expect(slot(1)).toBeInTheDocument();
+  });
+});
+
+describe("closing the chain", () => {
+  const chip = (part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+  const close = () =>
+    screen.getByRole("button", { name: /mål hus\. slut kedjan/i });
+
+  it("validates every joint at once and names what failed", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));  // sten+vägg is not a word
+    await u.click(close());
+    await expectStatus("STEN+VÄGG håller inte.");
+  });
+
+  it("reports more than one break", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("glas"));  // sten+glas ✗
+    await u.click(chip("mur"));   // glas+mur ✗, mur+hus ✗
+    await u.click(close());
+    await expectStatus(/STEN\+GLAS och GLAS\+MUR och 1 länk till håller inte/);
+  });
+
+  it("marks the broken joints in the chain", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    await u.click(close());
+    expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
+  });
+
+  it("clears the marks as soon as the chain is edited", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    await u.click(close());
+    expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
+
+    await u.click(screen.getByRole("button", { name: /^plats 1, vägg\./i }));
+    expect(screen.queryByText("bruten länk")).not.toBeInTheDocument();
+  });
+
+  it("refuses to check an empty chain", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(close());
+    await expectStatus("Lägg minst en del i kedjan först.");
+  });
+
+  it("solves when every joint holds, using fewer slots than the budget", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("bro"));   // sten+bro ✓, bro+hus ✓ — two links, budget 4
+    await u.click(close());
+    expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
+  });
+
+  it("counts a failed check as a felförsök in the share line", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    await u.click(close());
+    await u.click(screen.getByRole("button", { name: /^plats 1, vägg\./i }));
+    await u.click(chip("bro"));
+    await u.click(close());
+    await screen.findByText("stenbro → brohus");
+    await u.click(screen.getByRole("button", { name: "Dela resultat" }));
+    expect(await navigator.clipboard.readText()).toContain("1 felförsök");
   });
 
   it("plays entirely from the keyboard", async () => {
     const u = user();
     render(<App />);
     await board();
-    screen.getByRole("button", { name: /^bro\./i }).focus();
+    chip("bro").focus();
     await u.keyboard("{Enter}");
-    await expectStatus("stenbro ✓");
-  });
-});
-
-describe("taking parts back out of the chain", () => {
-  const chip = (part: string) => screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
-  const link = (n: number, part: string) =>
-    screen.getByRole("button", { name: new RegExp(`^länk ${n}, ${part}\\.`, "i") });
-
-  it("returns a placed part to the pool when its chain chip is clicked", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("mur"));
-    expect(screen.queryByRole("button", { name: /^mur\./i })).not.toBeInTheDocument();
-
-    await u.click(link(1, "mur"));
-    await expectStatus("MUR tillbaka i poolen.");
-    expect(chip("mur")).toBeInTheDocument();
-    expect(screen.getByText("0/4 länkar")).toBeInTheDocument();
-  });
-
-  it("takes everything downstream with it when a middle part is removed", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("tak"));
-    await u.click(chip("glas"));
-    expect(screen.getByText("2/4 länkar")).toBeInTheDocument();
-
-    await u.click(link(1, "tak"));
-    await expectStatus("TAK och 1 del efter den togs bort.");
-    expect(screen.getByText("0/4 länkar")).toBeInTheDocument();
-    expect(chip("tak")).toBeInTheDocument();
-    expect(chip("glas")).toBeInTheDocument();
-  });
-
-  it("pluralises the count of parts carried away", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("mur"));
-    await u.click(chip("vägg"));
-    await u.click(link(1, "mur"));
-    // budget 4 allows three intermediates, so only two came off here.
-    await expectStatus("MUR och 1 del efter den togs bort.");
-  });
-
-  it("removes a part from the keyboard", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("bro"));
-    link(1, "bro").focus();
+    close().focus();
     await u.keyboard("{Enter}");
-    await expectStatus("BRO tillbaka i poolen.");
-  });
-
-  it("never offers the start or the target as removable", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("mur"));
-    expect(screen.queryByRole("button", { name: /^länk \d+, sten\./i })).not.toBeInTheDocument();
-    expect(screen.getByText("sten")).toBeInTheDocument();
-  });
-
-  it("freezes the chain once the day is solved", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("bro"));
-    await u.click(screen.getByRole("button", { name: /mål hus\. koppla ihop/i }));
-    await screen.findByText("stenbro → brohus");
-    expect(screen.queryByRole("button", { name: /^länk 1, bro\./i })).not.toBeInTheDocument();
-  });
-
-  it("clears a hint mark that the removal invalidates", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("mur"));
-    await u.click(screen.getByRole("button", { name: /^ledtråd/i })); // distance
-    await u.click(screen.getByRole("button", { name: /^ledtråd/i })); // marks a chip
-    expect(screen.getByRole("button", { name: /rätt väg vidare/i })).toBeInTheDocument();
-
-    await u.click(link(1, "mur"));
-    expect(screen.queryByRole("button", { name: /rätt väg vidare/i })).not.toBeInTheDocument();
-  });
-});
-
-describe("undo", () => {
-  it("returns the part to the pool", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(screen.getByRole("button", { name: /^mur\./i }));
-    expect(screen.queryByRole("button", { name: /^mur\./i })).not.toBeInTheDocument();
-
-    await u.click(screen.getByRole("button", { name: "Ångra" }));
-    expect(screen.getByRole("button", { name: /^mur\./i })).toBeInTheDocument();
-    expect(screen.getByText("0/4 länkar")).toBeInTheDocument();
-  });
-
-  it("is unavailable on an empty chain", async () => {
-    render(<App />);
-    await board();
-    expect(screen.getByRole("button", { name: "Ångra" })).toBeDisabled();
-  });
-});
-
-describe("hints", () => {
-  it("gives the distance first, then marks the chip", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    const hintBtn = () => screen.getByRole("button", { name: /^ledtråd/i });
-
-    await u.click(hintBtn());
-    await expectStatus("Målet är 2 ord bort");
-
-    await u.click(hintBtn());
-    await expectStatus("BRO är rätt väg vidare");
-    expect(
-      screen.getByRole("button", { name: /ledtråd: det här är rätt väg vidare/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("rescues a dead end for free instead of charging a hint", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(screen.getByRole("button", { name: /^tak\./i }));
-    await u.click(screen.getByRole("button", { name: /^glas\./i }));
-
-    await u.click(screen.getByRole("button", { name: /^ledtråd/i }));
-    await expectStatus("Härifrån når du inte målet");
-    // Free: the counter never moved off zero.
-    expect(screen.getByRole("button", { name: /^ledtråd/i })).toHaveTextContent(
-      /^Ledtråd$/,
-    );
+    expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
   });
 });
 
 describe("solving", () => {
   const solveUnderPar = async (u: ReturnType<typeof user>) => {
     await u.click(screen.getByRole("button", { name: /^bro\./i }));
-    await u.click(screen.getByRole("button", { name: /mål hus\. koppla ihop/i }));
+    await u.click(screen.getByRole("button", { name: /mål hus\. slut kedjan/i }));
   };
 
   it("spells the chain back and calls an under-par result", async () => {
@@ -300,7 +296,7 @@ describe("persistence", () => {
 
     render(<App />);
     await board();
-    expect(screen.getByText("1/4 länkar")).toBeInTheDocument();
+    expect(screen.getByText("1/3 placerade")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^mur\./i })).not.toBeInTheDocument();
   });
 });

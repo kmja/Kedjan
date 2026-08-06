@@ -166,6 +166,12 @@ body {
     background: transparent;
     color: var(--ink-soft);
   }
+  /* The slot the keyboard will fill next. */
+  .node--slot-armed {
+    border-color: var(--falu);
+    border-style: solid;
+    color: var(--falu-ink);
+  }
   .node--slot-active {
     border-color: var(--honey);
     border-style: solid;
@@ -180,6 +186,12 @@ body {
   }
   .node--goal:hover {
     background: color-mix(in srgb, var(--falu) 10%, transparent);
+  }
+  /* A joint that failed the last check. The glyph flips from + to ✗ as well,
+     so the break is never signalled by colour alone. */
+  .joint--broken {
+    color: var(--falu-ink);
+    font-size: 0.85rem;
   }
   .joint {
     color: var(--ink-soft);

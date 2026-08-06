@@ -69,11 +69,11 @@ describe("loadSave", () => {
 
   it("round-trips a save", () => {
     persistSave({
-      progress: { "2026-08-06": { chain: ["mur"], solved: false, hints: 1, misses: 2 } },
+      progress: { "2026-08-06": { slots: ["mur"], solved: false, hints: 1, misses: 2 } },
       stats: recordSolve(emptyStats(), "2026-08-05", 3, 3),
     });
     const back = loadSave();
-    expect(back.progress["2026-08-06"]?.chain).toEqual(["mur"]);
+    expect(back.progress["2026-08-06"]?.slots).toEqual(["mur"]);
     expect(back.stats.solved).toBe(1);
   });
 

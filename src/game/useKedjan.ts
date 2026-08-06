@@ -4,11 +4,12 @@ import {
   allSolutions,
   availableParts,
   bestNextPart,
+  brokenJoints,
   distanceToTarget,
+  fullChain,
   isDeadEnd,
-  linksRemaining,
   sameChain,
-  weld,
+  validPrefix,
 } from "./graph";
 import {
   emptyProgress,
@@ -28,12 +29,13 @@ export function useKedjan(day: Day | null) {
   const [save, setSave] = useState(loadSave);
   const [status, setStatus] = useState<Status | null>(null);
   const [marked, setMarked] = useState<string | null>(null);
+  /** Slot waiting for the next chip, so the keyboard can aim as a drag does. */
+  const [armedSlot, setArmedSlot] = useState<number | null>(null);
   /**
-   * The last pair the game refused. False rejections are the top quality
-   * metric — every "är inte ett ord" for a word the player knows is real
-   * spends trust — so the rejected pair is kept for the report button.
+   * Joints that failed the last time the player closed the chain. Cleared by
+   * any edit — a mark that outlives the arrangement it described is a lie.
    */
-  const [lastMiss, setLastMiss] = useState<[string, string] | null>(null);
+  const [failedJoints, setFailedJoints] = useState<number[]>([]);
   const today = useMemo(todayISO, []);
 
   // Bump on every status message so an unchanged string still re-announces.
@@ -46,16 +48,27 @@ export function useKedjan(day: Day | null) {
   useEffect(() => persistSave(save), [save]);
 
   const key = day?.date ?? "";
-  const progress: DayProgress = save.progress[key] ?? emptyProgress();
+  const stored = save.progress[key];
+  const slotCount = day ? day.budget - 1 : 0;
 
-  // Switching days clears the transient layer; the chain itself is persisted.
+  const progress: DayProgress = useMemo(() => {
+    const base = stored ?? emptyProgress();
+    // The budget is the authority on slot count, not whatever was saved.
+    return {
+      ...base,
+      slots: Array.from({ length: slotCount }, (_, i) => base.slots[i] ?? null),
+    };
+  }, [stored, slotCount]);
+
+  // Switching days clears the transient layer; the arrangement is persisted.
   const lastKey = useRef(key);
   useEffect(() => {
     if (lastKey.current !== key) {
       lastKey.current = key;
       setStatus(null);
       setMarked(null);
-      setLastMiss(null);
+      setArmedSlot(null);
+      setFailedJoints([]);
     }
   }, [key]);
 
@@ -69,130 +82,156 @@ export function useKedjan(day: Day | null) {
     [key],
   );
 
-  const { chain, solved, hints, misses } = progress;
-  const current = day ? (solved ? day.target : chain.at(-1) ?? day.start) : "";
-  const links = chain.length + (solved ? 1 : 0);
+  const { slots, solved, hints, misses } = progress;
+  /** The arrangement as a sequence: empty slots simply drop out. */
+  const chain = useMemo(() => slots.filter((s): s is string => s !== null), [slots]);
+  const links = chain.length + 1;
   const pool = day ? availableParts(day, chain) : [];
-  const remaining = day ? linksRemaining(day, chain) : 0;
 
-  /** Place a pool part at the end of the chain. */
-  const place = useCallback(
-    (part: string) => {
-      if (!day || solved) return;
-      // The last link is reserved for the target: an intermediate part placed
-      // there could never be welded onward.
-      if (chain.length >= day.budget - 1) {
-        say({ kind: "no", msg: "Budgeten är full — koppla till målet eller ångra." });
-        return;
-      }
-      const w = weld(day, current, part);
-      if (!w) {
-        say({ kind: "no", msg: `${upper(current)}+${upper(part)} är inte ett ord.` });
-        setLastMiss([current, part]);
-        patch((p) => ({ ...p, misses: p.misses + 1 }));
-        return;
-      }
-      setMarked(null);
-      setLastMiss(null);
-      patch((p) => ({ ...p, chain: [...p.chain, part] }));
-      say({ kind: "ok", msg: `${w} ✓` });
-    },
-    [day, solved, chain.length, current, say, patch],
-  );
-
-  /** Weld the current part onto the target and finish the day. */
-  const finish = useCallback(() => {
-    if (!day || solved) return;
-    const w = weld(day, current, day.target);
-    if (!w) {
-      say({ kind: "no", msg: `${upper(current)}+${upper(day.target)} är inte ett ord.` });
-      setLastMiss([current, day.target]);
-      patch((p) => ({ ...p, misses: p.misses + 1 }));
-      return;
-    }
+  /** Any edit invalidates the last verdict. */
+  const edited = useCallback(() => {
+    setFailedJoints([]);
     setMarked(null);
-    setLastMiss(null);
-    patch(
-      (p) => ({ ...p, solved: true, solvedAt: new Date().toISOString() }),
-      (s) => recordSolve(s, day.date, chain.length + 1, day.par),
-    );
-    say({ kind: "ok", msg: `${w} ✓ — klart!` });
-  }, [day, solved, current, chain.length, say, patch]);
+  }, []);
 
   /**
-   * Take a part back out of the chain.
-   *
-   * The chain is a bridge, so a part cannot be plucked from the middle and
-   * leave the rest standing — every weld after it was made against a
-   * neighbour that is now gone. Removing a part therefore removes everything
-   * downstream of it too. One rule, always, which makes removing the last
-   * part exactly an undo.
+   * Put a part into a slot. Nothing is validated here — parts go down in any
+   * order, and the chain is judged only when the player closes it. Dropping
+   * onto an occupied slot swaps rather than refuses.
    */
+  const placeAt = useCallback(
+    (part: string, index?: number) => {
+      if (!day || solved) return;
+      const at = index ?? armedSlot ?? slots.findIndex((s) => s === null);
+      if (at < 0 || at >= slotCount) {
+        say({ kind: "no", msg: "Alla platser är fulla — ta bort en del först." });
+        return;
+      }
+      patch((p) => {
+        const next = Array.from({ length: slotCount }, (_, i) => p.slots[i] ?? null);
+        // A part lives in one slot only, so moving it vacates the old one.
+        const previous = next.indexOf(part);
+        if (previous >= 0) next[previous] = null;
+        next[at] = part;
+        return { ...p, slots: next };
+      });
+      setArmedSlot(null);
+      edited();
+      say({ kind: "info", msg: `${upper(part)} placerad på plats ${at + 1}.` });
+    },
+    [day, solved, armedSlot, slots, slotCount, patch, say, edited],
+  );
+
+  /** Take a part back out. It leaves a gap; nothing else is disturbed. */
   const removeFrom = useCallback(
     (part: string) => {
-      if (!day || solved) return;
-      const at = chain.indexOf(part);
-      if (at < 0) return;
-
-      const alsoDropped = chain.length - at - 1;
-      patch((p) => ({ ...p, chain: p.chain.slice(0, at) }));
-      setMarked(null);
-      setLastMiss(null);
-      say({
-        kind: "info",
-        msg: alsoDropped === 0
-          ? `${upper(part)} tillbaka i poolen.`
-          : `${upper(part)} och ${plural(alsoDropped, "del", "delar")} efter den togs bort.`,
-      });
+      if (!day || solved || !slots.includes(part)) return;
+      patch((p) => ({ ...p, slots: p.slots.map((s) => (s === part ? null : s)) }));
+      edited();
+      say({ kind: "info", msg: `${upper(part)} tillbaka i poolen.` });
     },
-    [day, solved, chain, say, patch],
+    [day, solved, slots, patch, say, edited],
   );
 
-  const undo = useCallback(() => {
-    const last = chain.at(-1);
-    if (last) removeFrom(last);
-  }, [chain, removeFrom]);
-
-  const reset = useCallback(() => {
-    if (!day || solved) return;
-    patch((p) => ({ ...p, chain: [] }));
-    setMarked(null);
-    say({ kind: "info", msg: "Kedjan rensad." });
-  }, [day, solved, say, patch]);
+  /** Clicking a slot empties it, or arms it to receive the next chip. */
+  const toggleSlot = useCallback(
+    (index: number) => {
+      if (solved) return;
+      const part = slots[index];
+      if (part) removeFrom(part);
+      else setArmedSlot((a) => (a === index ? null : index));
+    },
+    [solved, slots, removeFrom],
+  );
 
   /**
-   * Two-tier hint. First press gives the distance, second marks the chip.
-   * A dead end costs nothing — the player is told to back up instead, because
-   * charging a hint for a position the game let them walk into is a swindle.
+   * Close the chain onto the target — the final link, and the only moment
+   * anything is checked. Every joint is judged at once and every failure is
+   * reported, rather than halting the player at the first one.
+   */
+  const submit = useCallback(() => {
+    if (!day || solved) return;
+    if (!chain.length) {
+      say({ kind: "no", msg: "Lägg minst en del i kedjan först." });
+      return;
+    }
+
+    const broken = brokenJoints(day, chain);
+    if (broken.length === 0) {
+      setMarked(null);
+      setFailedJoints([]);
+      patch(
+        (p) => ({ ...p, solved: true, solvedAt: new Date().toISOString() }),
+        (s) => recordSolve(s, day.date, chain.length + 1, day.par),
+      );
+      say({ kind: "ok", msg: "Kedjan håller — klart!" });
+      return;
+    }
+
+    const full = fullChain(day, chain);
+    const named = broken.slice(0, 2).map((i) => `${upper(full[i]!)}+${upper(full[i + 1]!)}`);
+    const rest = broken.length - named.length;
+    setFailedJoints(broken);
+    patch((p) => ({ ...p, misses: p.misses + 1 }));
+    say({
+      kind: "no",
+      msg:
+        named.join(" och ") +
+        (rest > 0 ? ` och ${plural(rest, "länk till", "länkar till")}` : "") +
+        " håller inte.",
+    });
+  }, [day, solved, chain, patch, say]);
+
+  const reset = useCallback(() => {
+    if (!day || solved || !chain.length) return;
+    patch((p) => ({ ...p, slots: p.slots.map(() => null) }));
+    setArmedSlot(null);
+    edited();
+    say({ kind: "info", msg: "Kedjan rensad." });
+  }, [day, solved, chain.length, patch, say, edited]);
+
+  /**
+   * Two-tier hint, anchored to the longest run that already holds — the only
+   * position that means anything once parts can be arranged out of order.
+   * First press gives the distance from there, second marks the chip. A dead
+   * end costs nothing: charging for a position the game let the player build
+   * would be a swindle.
    */
   const hint = useCallback(() => {
     if (!day || solved) return;
-    if (isDeadEnd(day, chain, current)) {
-      say({ kind: "no", msg: "Härifrån når du inte målet — ångra dig tillbaka." });
+    const { length, at } = validPrefix(day, chain);
+    const consumed = chain.slice(0, length);
+
+    if (isDeadEnd(day, consumed, at)) {
+      say({ kind: "no", msg: "Härifrån når du inte målet — ta bort en del och försök igen." });
       return;
     }
-    const d = distanceToTarget(day, chain, current)!;
+    const d = distanceToTarget(day, consumed, at)!;
+    const where = length === 0 ? "från starten" : `efter ${upper(at)}`;
+
     if (hints % 2 === 0) {
       say({
         kind: "info",
-        msg: d === 1 ? "Målet är ett enda ord bort." : `Målet är ${d} ord bort härifrån.`,
+        msg: d === 1
+          ? `Målet är ett enda ord bort ${where}.`
+          : `Målet är ${d} ord bort ${where}.`,
       });
     } else {
-      const next = bestNextPart(day, chain, current);
+      const next = bestNextPart(day, consumed, at);
       if (!next) {
-        say({ kind: "no", msg: "Härifrån når du inte målet — ångra dig tillbaka." });
+        say({ kind: "no", msg: "Härifrån når du inte målet — ta bort en del och försök igen." });
         return;
       }
       setMarked(next);
       say({
         kind: "info",
         msg: next === day.target
-          ? `Koppla ${upper(current)} direkt till målet ⭐`
-          : `${upper(next)} är rätt väg vidare ⭐`,
+          ? `Koppla ${upper(at)} direkt till målet ⭐`
+          : `${upper(next)} passar ${where} ⭐`,
       });
     }
     patch((p) => ({ ...p, hints: p.hints + 1 }));
-  }, [day, solved, chain, current, hints, say, patch]);
+  }, [day, solved, chain, hints, say, patch]);
 
   /** Alternative routes, revealed only once the day is won. */
   const otherSolutions = useMemo(() => {
@@ -200,30 +239,41 @@ export function useKedjan(day: Day | null) {
     return allSolutions(day).filter((s) => !sameChain(s, chain));
   }, [day, solved, chain]);
 
+  const solvedDates = useMemo(
+    () => new Set(Object.entries(save.progress).filter(([, p]) => p.solved).map(([d]) => d)),
+    [save.progress],
+  );
+
+  /** The pair a player is most likely to dispute, for the report link. */
+  const lastMiss = useMemo((): [string, string] | null => {
+    if (!day || !failedJoints.length) return null;
+    const full = fullChain(day, chain);
+    const i = failedJoints[0]!;
+    return [full[i]!, full[i + 1]!];
+  }, [day, chain, failedJoints]);
+
   return {
     progress,
+    slots,
     chain,
     solved,
     hints,
     misses,
-    current,
     links,
     pool,
-    remaining,
     marked,
+    armedSlot,
+    failedJoints,
     lastMiss,
     status,
     announceKey,
     stats: save.stats,
     streak: liveStreak(save.stats, today),
-    solvedDates: useMemo(
-      () => new Set(Object.entries(save.progress).filter(([, p]) => p.solved).map(([d]) => d)),
-      [save.progress],
-    ),
-    place,
-    finish,
+    solvedDates,
+    placeAt,
     removeFrom,
-    undo,
+    toggleSlot,
+    submit,
     reset,
     hint,
     otherSolutions,
