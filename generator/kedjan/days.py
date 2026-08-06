@@ -13,6 +13,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
+from .analysis import max_disjoint
 from .graph import PartGraph, doublet_partner
 from .lexicon import Lexicon
 from .split import PREFIX_SET
@@ -34,6 +35,9 @@ MIN_OPENINGS = 3
 MIN_CLOSINGS = 2
 #: At no point on the canonical route should the player have a single option.
 MIN_BRANCHING = 2
+#: Solution count flatters a day — eight routes through one shared part are one
+#: idea with variations. At least two routes must be genuinely independent.
+MIN_DISJOINT_ROUTES = 2
 MAX_ENDPOINT_OBSCURITY = 3_000
 PATH_SEARCH_CAP = 3_000
 SOLUTION_SEARCH_CAP = 100
@@ -211,6 +215,9 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
     if min(len(s) for s in found) + 1 != par:
         return None
 
+    if max_disjoint(found) < MIN_DISJOINT_ROUTES:
+        return None
+
     openings = [p for p in pool if graph.welds(start, p)]
     closings = [p for p in pool if graph.welds(p, target)]
     if len(openings) < MIN_OPENINGS or len(closings) < MIN_CLOSINGS:
@@ -245,6 +252,7 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
             "solutions": len(found),
             "openings": len(openings),
             "closings": len(closings),
+            "disjoint_routes": max_disjoint(found),
         },
     )
 

@@ -82,6 +82,11 @@ solution count (a hard requirement of 3–12 within budget). The single most
 descriptive number for a day is the pairs-to-solutions ratio: many welds, few
 escapes.
 
+Solution count alone flatters a day, though. Eight routes that all funnel
+through one part are one idea with variations, so at least **two routes must be
+genuinely independent** — sharing no intermediate chip. That is a separate hard
+requirement, and the number worth reading first.
+
 ## Accessibility
 
 Every chip is a real `<button>`, so the game is fully playable from the

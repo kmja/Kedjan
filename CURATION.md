@@ -48,6 +48,7 @@ day that fails one can neither be generated nor accepted.
 | requirement | why |
 |---|---|
 | 3–12 solutions within budget | fewer is a single line to find; more and the deduction evaporates |
+| ≥ 2 *independent* routes | raw solution count flatters a day — see below |
 | ≥ 3 chips weld to the start | move one must be a choice |
 | ≥ 2 chips weld into the target | so must the last move |
 | branching ≥ 2 at every step | a route of single options is a corridor |
@@ -114,16 +115,32 @@ strid + s + vagn    really is  strid-s-vagn     (neither strids nor svagn)
 
 Five days, curated from eighteen candidates.
 
-| # | date | day | par | sols | open | close | branching |
-|---|------|-----|-----|------|------|-------|-----------|
-| 1 | 2026-08-02 | fin → tro | 4 | 8 | 4 | 2 | 4, 2, 2 |
-| 2 | 2026-08-03 | hund → glas | 3 | 9 | 4 | 3 | 4, 3 |
-| 3 | 2026-08-04 | hel → söt | 3 | 6 | 4 | 2 | 4, 2 |
-| 4 | 2026-08-05 | mat → plikt | 3 | 7 | 5 | 2 | 5, 2 |
-| 5 | 2026-08-06 | djur → gäng | 4 | 3 | 4 | 2 | 4, 2, 2 |
+| # | date | day | par | sols | indep | open | close | branching |
+|---|------|-----|-----|------|-------|------|-------|-----------|
+| 1 | 2026-08-02 | fin → tro | 4 | 8 | 2 | 4 | 2 | 4, 2, 2 |
+| 2 | 2026-08-03 | hund → glas | 3 | 9 | 4 | 4 | 4 | 4, 2 |
+| 3 | 2026-08-04 | hel → söt | 3 | 6 | 2 | 4 | 2 | 4, 2 |
+| 4 | 2026-08-05 | mat → plikt | 3 | 7 | 2 | 4 | 3 | 4, 3 |
+| 5 | 2026-08-06 | djur → gäng | 4 | 3 | 2 | 4 | 2 | 4, 3, 2 |
 
 `lint --dic` reports zero errors. Rejections and their reasons are in
 `generator/curation-log.json`.
+
+## Solution count is not route diversity
+
+The band is 3–12, and the ceiling is deliberate: the design wants *many welds,
+few escapes*, so a day with thirty ways to win has no deduction left in it.
+More is not better past a point.
+
+Worse, the raw count flatters. `fin→tro` has eight solutions and only **two**
+that are genuinely independent — the rest funnel through `gäst`, so a player
+who finds that one chip has finished thinking. `hund→glas` has nine solutions
+and four independent ones, and is a materially better puzzle at a nearly
+identical count.
+
+`disjoint_routes` is the honest number: the largest set of solutions that
+share no intermediate chip. Two is now a hard requirement, and it is the column
+to read in `review` before the solution count.
 
 ## Known gaps
 

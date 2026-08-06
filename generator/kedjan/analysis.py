@@ -14,6 +14,7 @@ human, who still has the last word on taste and tone.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from itertools import combinations
 from typing import Mapping, Sequence
 
 from .saldo import Saldo
@@ -73,6 +74,15 @@ class DayReport:
     #: Parts that appear in *every* solution. There is no way around these, so
     #: the "several ways to win" promise is thinner than the count suggests.
     bottlenecks: list[str] = field(default_factory=list)
+    #: Distinct first chips across winning routes. `openings` counts every chip
+    #: that welds off the start, decoys included — this counts the ones that
+    #: actually go somewhere.
+    winning_openings: list[str] = field(default_factory=list)
+    #: The largest set of solutions that share no intermediate chip with each
+    #: other. Raw solution count flatters a day: eight routes that all funnel
+    #: through the same part are one idea with variations, and a player who
+    #: finds the part has finished thinking.
+    disjoint_routes: int = 0
     #: Welds on solution paths whose witness SALDO does not record. SALDO is a
     #: curated lexicon, so absence is a decent proxy for "marginal compound".
     weak_welds: list[str] = field(default_factory=list)
@@ -139,10 +149,32 @@ def report(day: DayLike, saldo: Saldo | None = None) -> DayReport:
         closings=[p for p in _pool(day) if f"{p}>{target}" in pairs],
         branching=branching,
         bottlenecks=bottlenecks,
+        winning_openings=sorted({chain[0] for chain in found if chain}),
+        disjoint_routes=max_disjoint(found),
         weak_welds=sorted(set(weak)),
         total_welds=len(pairs),
         saldo_welds=saldo_welds,
     )
+
+
+def max_disjoint(routes: Sequence[Sequence[str]]) -> int:
+    """The largest set of routes that pairwise share no intermediate chip.
+
+    This is the number that answers "are there really different ways to win".
+    The generator caps a day at twelve solutions, so the search is tiny.
+    """
+    sets = [set(r) for r in routes]
+    if not sets:
+        return 0
+
+    best = 1
+    for size in range(len(sets), 1, -1):
+        if size <= best:
+            break
+        for combo in combinations(sets, size):
+            if all(a.isdisjoint(b) for a, b in combinations(combo, 2)):
+                return size
+    return best
 
 
 def spell(day: DayLike, chain: Sequence[str]) -> str:

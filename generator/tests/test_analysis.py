@@ -80,3 +80,35 @@ def test_every_shipped_day_offers_a_choice_at_both_ends():
         assert len(r.closings) >= 2, f"{r.label}: {len(r.closings)} closings"
         assert r.min_branching >= 2, f"{r.label}: branching {r.branching}"
         assert r.shortest == r.par, f"{r.label}: par {r.par}, shortest {r.shortest}"
+
+
+def test_max_disjoint_counts_routes_that_share_nothing():
+    assert analysis.max_disjoint([["a"], ["b", "c"], ["a", "d"]]) == 2
+    assert analysis.max_disjoint([["a"], ["b"], ["c"]]) == 3
+    assert analysis.max_disjoint([]) == 0
+
+
+def test_max_disjoint_is_one_when_every_route_shares_a_part():
+    # Eight solutions through one shared chip are one idea with variations.
+    assert analysis.max_disjoint([["a"], ["a", "b"], ["a", "c"], ["a", "d"]]) == 1
+
+
+def test_report_separates_solution_count_from_independence():
+    day = a_day()
+    r = analysis.report(day)
+    assert len(r.solutions) == 2
+    assert r.disjoint_routes == 2          # [bro] and [mur, vägg] share nothing
+    assert r.winning_openings == ["bro", "mur"]
+
+
+def test_winning_openings_exclude_chips_that_lead_nowhere():
+    r = analysis.report(a_day())
+    # tak welds off the start but dead-ends at glas, so it opens nothing.
+    assert "tak" in r.openings
+    assert "tak" not in r.winning_openings
+
+
+def test_every_shipped_day_has_two_independent_routes():
+    for day in json.loads(CALENDAR.read_text(encoding="utf-8")):
+        r = analysis.report(day)
+        assert r.disjoint_routes >= 2, f"{r.label}: {r.disjoint_routes}"

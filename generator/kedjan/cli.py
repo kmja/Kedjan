@@ -79,7 +79,10 @@ def cmd_review(args: argparse.Namespace) -> int:
     payload = json.loads(Path(args.days).read_text(encoding="utf-8"))
     saldo = saldo_mod.load_if_present(args.saldo)
 
-    head = f"{'day':18} {'par':>3} {'sols':>4} {'open':>4} {'clos':>4} {'branching':>12}"
+    head = (
+        f"{'day':18} {'par':>3} {'sols':>4} {'indep':>5} "
+        f"{'open':>4} {'clos':>4} {'branching':>12}"
+    )
     print(head)
     print("-" * len(head))
     reports = []
@@ -87,14 +90,18 @@ def cmd_review(args: argparse.Namespace) -> int:
         r = analysis.report(day, saldo)
         reports.append((day, r))
         print(
-            f"{r.label:18} {r.par:>3} {len(r.solutions):>4} {len(r.openings):>4} "
-            f"{len(r.closings):>4} {str(r.branching):>12}"
+            f"{r.label:18} {r.par:>3} {len(r.solutions):>4} {r.disjoint_routes:>5} "
+            f"{len(r.openings):>4} {len(r.closings):>4} {str(r.branching):>12}"
         )
 
     for day, r in reports:
         print(f"\n{r.label}  ·  par {r.par}, budget {r.budget}")
         print(f"  pool    {', '.join(r.pool)}")
         print(f"  best    {analysis.spell(day, r.solutions[0]) if r.solutions else '—'}")
+        print(
+            f"  routes  {len(r.solutions)} solutions, {r.disjoint_routes} independent"
+            f"; winning first moves: {', '.join(r.winning_openings)}"
+        )
         if r.bottlenecks:
             print(f"  funnel  every solution uses {', '.join(r.bottlenecks)}")
         if r.weak_welds:

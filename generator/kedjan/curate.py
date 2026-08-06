@@ -35,6 +35,7 @@ PAIR_BAND = range(20, 31)
 MIN_OPENINGS = 3
 MIN_CLOSINGS = 2
 MIN_BRANCHING = 2
+MIN_DISJOINT_ROUTES = 2
 
 #: Verb inflection tails, but only behind the foge-e link. "risk" + e + "rar"
 #: spells riskerar, a conjugated verb rather than a compound — the kind of false
@@ -157,6 +158,11 @@ def check_day(
         )
     if r.branching and r.min_branching < MIN_BRANCHING:
         err(f"branching {r.branching} — the route has a step with no alternative")
+    if r.disjoint_routes < MIN_DISJOINT_ROUTES:
+        err(
+            f"{len(r.solutions)} solutions but no two are independent — "
+            "they are one route with variations"
+        )
     if r.bottlenecks:
         warn(f"every solution passes through {', '.join(r.bottlenecks)}")
     if r.weak_welds:
