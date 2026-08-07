@@ -173,7 +173,34 @@ def cmd_accept(args: argparse.Namespace) -> int:
     for d in chosen:
         print(f"#{d['no']} {d['date']} {d['start']}→{d['target']} par{d['par']}")
     print(f"\n{len(chosen)} accepted, {len(candidates) - len(chosen)} logged as rejected.")
+
+    # A reason that recurs is a rule waiting to be written. Say so out loud —
+    # tok- was rejected by hand twice before it became a rule, and nobody
+    # noticed until the ledger was read back months of edits later.
+    repeats = _recurring_rejections(ledger)
+    if repeats:
+        print("\nRejected before, for a reason that has now recurred:", file=sys.stderr)
+        for start, reasons in repeats.items():
+            print(f"  {start}: {'; '.join(reasons)}", file=sys.stderr)
+        print(
+            "  Consider encoding these as rules rather than re-deciding them.",
+            file=sys.stderr,
+        )
     return 0
+
+
+def _recurring_rejections(ledger: list[dict]) -> dict[str, list[str]]:
+    """Starts rejected more than once, with the distinct reasons given."""
+    seen: dict[str, list[str]] = {}
+    for entry in ledger:
+        if entry.get("accepted") or not entry.get("reason"):
+            continue
+        seen.setdefault(entry["start"], []).append(entry["reason"])
+    return {
+        start: sorted(set(reasons))
+        for start, reasons in seen.items()
+        if len(reasons) > 1
+    }
 
 
 def cmd_lint(args: argparse.Namespace) -> int:

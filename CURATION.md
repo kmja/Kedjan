@@ -36,6 +36,17 @@ Rejections go to `curation-log.json` with a reason. That ledger is the point:
 **a reason that recurs is a rule waiting to be written.** Every rule in the
 table below started as a sentence typed into `--reject`.
 
+`accept` now reads the ledger back and names anything rejected more than once,
+because relying on a human to notice is how `tok-` got rejected by hand twice
+and encoded zero times — until `hel-` shipped for exactly the same reason.
+Current repeat offenders worth turning into rules:
+
+```
+flyg: an injury pool in a cosy daily / bett, brott, skallbrott reads violent
+vår:  toppen is a definite form (twice)
+hopp: svärdgräs, skyddsvärd marginal (twice)
+```
+
 **4 — Verify.** `lint` refuses to run without a dictionary unless you pass
 `--no-lexicon` explicitly, because a green lint that skipped the weld check is
 worse than no lint. CI runs it with `--dic` on every push.
@@ -224,7 +235,11 @@ as the fallback for a SALDO-less run.
   (broderskärlek) and wrong finally (farbroder → farbror). SALDO's *morphology*
   layer has this; the semantic lexicon shipped here does not.
 - **Tone bans are a denylist**, so they only ever catch what has already been
-  found once.
+  found once. `flyg→ställe` has now been rejected twice for the same injury
+  pool — `bett`, `ben`, `brott`, `skall` — and passes every metric both times.
+  The problem is the *cluster*, not any single word: `brott` is ordinary in
+  `brottsplats`. SALDO is a semantic lexicon and its descriptor column could
+  measure that clustering directly, which is the obvious next move.
 - **A concatenation can coincide with an unrelated word.** `skydd` + `svärd`
   spells *skyddsvärd*, which is real but parses as skydds+värd, "worthy of
   protection" — an adjective, not a compound of shield and sword. SALDO's POS

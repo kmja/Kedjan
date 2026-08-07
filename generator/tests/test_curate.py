@@ -180,3 +180,17 @@ def test_flags_a_degree_prefix_in_the_pool():
     day = a_day()
     day["pool"] = [*day["pool"][:-1], "jätte"]
     assert any("degree prefix" in m for m in errors(curate.check_day(day)))
+
+
+def test_recurring_rejections_surface_repeat_offenders():
+    from kedjan.cli import _recurring_rejections
+
+    ledger = [
+        {"start": "tok", "accepted": False, "reason": "tok- intensifier"},
+        {"start": "tok", "accepted": False, "reason": "tok- intensifier across the pool"},
+        {"start": "hund", "accepted": True, "reason": ""},
+        {"start": "flyg", "accepted": False, "reason": "injury pool"},
+    ]
+    repeats = _recurring_rejections(ledger)
+    assert set(repeats) == {"tok"}          # rejected twice
+    assert len(repeats["tok"]) == 2         # both distinct reasons kept
