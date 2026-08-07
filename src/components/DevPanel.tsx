@@ -4,21 +4,19 @@ import { allSolutions, spellChain, weld } from "../game/graph";
 
 interface Props {
   day: Day;
-  solved: boolean;
-  onReplay: () => void;
   onClearAll: () => void;
 }
 
 /**
  * Playtesting tools, off unless asked for with `?dev`.
  *
- * The game deliberately withholds two things from a player that a tester
- * needs. Replaying a solved day is one. Seeing every weld at once is the
- * other, and it is the more valuable: `morfin` sat in a shipped pool through
- * several rounds of review precisely because probing a pool one tap at a time
- * never shows you the whole table.
+ * Replaying a day is no longer among them — that is on the result card for
+ * everyone. What is left is what a player should never see: every weld at
+ * once. `morfin` sat in a shipped pool through several rounds of review
+ * precisely because probing a pool one tap at a time never shows you the
+ * whole table.
  */
-export function DevPanel({ day, solved, onReplay, onClearAll }: Props) {
+export function DevPanel({ day, onClearAll }: Props) {
   const [showWelds, setShowWelds] = useState(false);
   const [showRoutes, setShowRoutes] = useState(false);
   /**
@@ -59,9 +57,6 @@ export function DevPanel({ day, solved, onReplay, onClearAll }: Props) {
       </p>
 
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn" onClick={onReplay} disabled={!solved}>
-          Spela om dagen
-        </button>
         <button
           type="button"
           className="btn"

@@ -201,6 +201,7 @@ export default function App() {
                 progress={game.progress}
                 otherSolutions={game.otherSolutions}
                 streak={game.streak}
+                onReplay={game.replay}
               />
             )}
 
@@ -209,8 +210,6 @@ export default function App() {
             {dev && (
               <DevPanel
                 day={day}
-                solved={game.solved}
-                onReplay={game.replay}
                 onClearAll={() => {
                   clearSave();
                   window.location.reload();
@@ -230,6 +229,7 @@ export default function App() {
               selected={day.date}
               solvedDates={game.solvedDates}
               onSelect={openDay}
+              onReplayAll={game.replayAll}
             />
           </section>
 

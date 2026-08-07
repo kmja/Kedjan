@@ -271,6 +271,56 @@ obvious wider set — N, P, M, K, L — leaks into adjectives and would have
 condemned `sockersöt` and `tänkvärd`. The narrow rule drops 47 hub welds
 (0.9%), every one a verb: *ondgöra*, *handhälsa*, *soltorka*, *kallröka*.
 
+## The dictionary also lists words it wants rejected
+
+The `.dic` is a speller's file, and a speller has to know about misspellings in
+order to flag them. 1,534 of its entries carry `%`, which `sv_SE.aff` declares
+as `FORBIDDENWORD`:
+
+```
+FORBIDDENWORD %
+
+barock/ADXY        hårdrock/AD        the words
+barrock/%          hårrock/%AD        the misspellings, listed to be refused
+```
+
+The reader kept both. Every rule up to here was about whether a *split* was
+sound — whether the parts were really the parts — and none of them could fire,
+because at the bottom of the stack the question "is this a word at all" was
+being answered from a list that includes words that are not. Four of the first
+five shipped days welded on one of these:
+
+| day | weld | should be |
+|---|---|---|
+| `kärlek→person` | `ordnatt` | — |
+| `fin→vakt` | `barvakt` | — |
+| `grund→rum` | `ordnatt` | — |
+| `konst→band` | `hårrock`, `barrock` | hårdrock, barock |
+
+Three flags are now honoured, read from the affix file rather than guessed:
+
+- **`%` FORBIDDENWORD** — listed so the speller can refuse it. Not a word.
+- **`¤` NEEDAFFIX** — a stem that never appears unaffixed.
+- **`Z` ONLYINCOMPOUND** — a compound-initial form: `abborr-`, `adoptiv-`,
+  `affärsföreståndar-`. These are 2,545 entries of exactly the positional
+  morphology listed under Known gaps as missing, and they are worth revisiting
+  as a source of first elements — but a form that never stands alone can never
+  be a chip, and can never be what a weld spells.
+
+`!` NOSUGGEST is deliberately not among them. It marks 2,000 words a speller
+should not *offer* as a correction — `ajvar`, `akutfas`, `ablution` — which are
+rare, not wrong. `glasbåt`, queried twice in review as unexplained, is one of
+these: real, and rare enough that nothing else vouched for it.
+
+Usability is judged **per entry**, not over the union of a word's flags. Words
+recur on several lines with different paradigms — `blind` is both `blind/XZ`,
+the compound-initial form, and `blind/OPQk`, the ordinary adjective — and
+unioning the flags would condemn every word that also has a compound form.
+
+The curation check that catches a survivor now names the cause, because "is not
+in the lexicon" and "is in the lexicon, as a word to reject" are different
+facts and only the second means the graph found a real entry and misread it.
+
 ## A part must not double as a common verb stem
 
 `kör` is a choir here — SALDO records exactly one sense — but the *string*
@@ -367,7 +417,15 @@ None of these would have been noticed by eye. All three were found because
   worth reading; the percentage is not worth computing.
 - **Positional forms are not modelled.** `broder-` is right initially
   (broderskärlek) and wrong finally (farbroder → farbror). SALDO's *morphology*
-  layer has this; the semantic lexicon shipped here does not.
+  layer has this; the semantic lexicon shipped here does not. The `.dic`'s 2,545
+  ONLYINCOMPOUND entries are a partial substitute nobody has mined yet — they
+  are compound-initial forms and nothing else.
+- **A word can be real and still be the wrong parts.** `marketing` is an
+  English loan the dictionary lists, and the splitter reads it as `mark` + *e* +
+  `ting` — both real Swedish words, a linking morpheme that is genuinely
+  productive, and a noun head, so every existing rule passes it. SALDO glosses
+  it *marknadsföring*, which is the tell, but only to a human reading the gloss.
+  Cut `djur→domare` by hand; not caught by any check.
 - **Tone bans are a denylist**, so they only ever catch what has already been
   found once. `flyg→ställe` has now been rejected twice for the same injury
   pool and passes every metric both times. SALDO's association links were tried

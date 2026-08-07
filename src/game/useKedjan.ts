@@ -202,17 +202,39 @@ export function useKedjan(day: Day | null) {
   );
 
   /**
-   * Put a solved day back on the table. Test mode only: the stats keep the
-   * first result, so this buys a fresh board without rewriting history.
+   * Put a solved day back on the table.
+   *
+   * `solvedAt` is deliberately left in place. It is what marks the day as
+   * already counted, so replaying explores the puzzle without inflating
+   * played/solved or handing out a second streak day for the same date.
    */
   const replay = useCallback(() => {
     if (!day) return;
-    patch((p) => ({ ...p, chain: [], solved: false }));
+    patch((p) => ({ ...p, chain: [], solved: false, hints: 0, misses: 0 }));
     setArmedJoint(null);
     setJointMarks([]);
     setMarked(null);
+    setDimmed(new Set());
     say({ kind: "info", msg: "Dagen är öppen igen — statistiken står kvar." });
   }, [day, patch, say]);
+
+  /** The same, for every day the player has finished. */
+  const replayAll = useCallback(() => {
+    setSave((prev) => ({
+      ...prev,
+      progress: Object.fromEntries(
+        Object.entries(prev.progress).map(([date, p]) => [
+          date,
+          { ...p, chain: [], solved: false, hints: 0, misses: 0 },
+        ]),
+      ),
+    }));
+    setArmedJoint(null);
+    setJointMarks([]);
+    setMarked(null);
+    setDimmed(new Set());
+    say({ kind: "info", msg: "Alla dagar är öppna igen — statistiken står kvar." });
+  }, [say]);
 
   const reset = useCallback(() => {
     if (!day || solved || !chain.length) return;
@@ -335,6 +357,7 @@ export function useKedjan(day: Day | null) {
     removeFrom,
     toggleJoint,
     replay,
+    replayAll,
     reset,
     hint,
     otherSolutions,

@@ -347,10 +347,14 @@ describe("test mode", () => {
     expect(saved.stats.linkHistogram).toEqual({ 2: 1 });
   });
 
-  it("cannot be replayed before the day is solved", async () => {
+  it("offers no replay before the day is solved", async () => {
     render(<App />);
     await board();
-    expect(screen.getByRole("button", { name: "Spela om dagen" })).toBeDisabled();
+    // Replay rides on the result card, which only exists once there is a
+    // result. Nothing to disable, and nothing to explain.
+    expect(
+      screen.queryByRole("button", { name: "Spela om dagen" }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -391,6 +395,56 @@ describe("the archive", () => {
 
     expect(screen.getByText(/#1 · onsdag 5 augusti · arkiv/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^salt\./i })).toBeInTheDocument();
+  });
+
+  const openArchive = async (u: ReturnType<typeof user>) =>
+    u.click(screen.getByRole("tab", { name: "Arkiv" }));
+  const replayAll = () =>
+    screen.queryByRole("button", { name: /spela om alla klarade dagar/i });
+
+  it("offers no bulk replay until something has been finished", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await openArchive(u);
+    expect(replayAll()).not.toBeInTheDocument();
+  });
+
+  it("puts every finished day back on the table, keeping the stats", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(screen.getByRole("button", { name: /^bro\./i }));
+    await screen.findByText("stenbro → brohus");
+
+    await openArchive(u);
+    await u.click(replayAll()!);
+    await u.click(screen.getByRole("button", { name: "Öppna igen" }));
+
+    await u.click(screen.getByRole("tab", { name: "Dagens" }));
+    expect(screen.getByRole("button", { name: /^bro\./i })).toBeInTheDocument();
+    expect(screen.queryByText("stenbro → brohus")).not.toBeInTheDocument();
+
+    // The day was played and solved; reopening it does not un-play it, and
+    // re-solving must not count it a second time either.
+    const saved = JSON.parse(localStorage.getItem("kedjan.v1") ?? "{}");
+    expect(saved.stats.solved).toBe(1);
+    expect(saved.progress["2026-08-06"].solvedAt).toBeTruthy();
+  });
+
+  it("leaves the days alone when the reset is waved off", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(screen.getByRole("button", { name: /^bro\./i }));
+    await screen.findByText("stenbro → brohus");
+
+    await openArchive(u);
+    await u.click(replayAll()!);
+    await u.click(screen.getByRole("button", { name: "Avbryt" }));
+
+    await u.click(screen.getByRole("tab", { name: "Dagens" }));
+    expect(screen.getByText("stenbro → brohus")).toBeInTheDocument();
   });
 });
 

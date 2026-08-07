@@ -269,7 +269,12 @@ def check_day(
                 f"{witness!r} is a verb form, not a compound — the base form is "
                 f"{witness}a, so this is not {a}+{b}"
             )
-        if lex is not None and witness not in lex.union:
+        if lex is not None and witness in lex.forbidden:
+            err(
+                f"{witness!r} is in the dictionary only as a word to reject — "
+                "a misspelling, or a form that never stands alone"
+            )
+        elif lex is not None and witness not in lex.union:
             err(f"{witness!r} is not in the lexicon — a false acceptance")
         if link and len(a) < 3:
             warn(f"{witness!r} uses linking -{link}- on a very short part {a!r}")

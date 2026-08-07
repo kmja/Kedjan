@@ -10,12 +10,20 @@ interface Props {
   progress: DayProgress;
   otherSolutions: string[][];
   streak: number;
+  /** Put this day back on the table. The result above it stays counted. */
+  onReplay: () => void;
 }
 
 const parVerdict = (links: number, par: number) =>
   links < par ? "Under par — briljant!" : links === par ? "På par!" : "Inom budget!";
 
-export function ResultCard({ day, progress, otherSolutions, streak }: Props) {
+export function ResultCard({
+  day,
+  progress,
+  otherSolutions,
+  streak,
+  onReplay,
+}: Props) {
   const [copied, setCopied] = useState<string | null>(null);
   const [showRoutes, setShowRoutes] = useState(false);
   const chain = chainOf(progress);
@@ -84,6 +92,12 @@ export function ResultCard({ day, progress, otherSolutions, streak }: Props) {
 
       <button type="button" onClick={onShare} className="btn--major btn">
         {copied ?? "Dela resultat"}
+      </button>
+
+      {/* Second, and quieter: the result is the point of the card, and a day
+          worth replaying is worth replaying after reading it. */}
+      <button type="button" onClick={onReplay} className="btn">
+        Spela om dagen
       </button>
     </div>
   );

@@ -45,6 +45,11 @@ class Lexicon:
     #: never heard of it — which is how `poängsätt` is caught: it is the stem
     #: of the verb poängsätta, not a compound whose head is the noun `sätt`.
     verb_forms: frozenset[str] = frozenset()
+    #: Words the dictionary lists only so a speller can reject them, or only as
+    #: a compound-initial form. Kept so a curation finding can say which it is:
+    #: "barrock is listed as a misspelling" is a different fact from "barrock
+    #: is absent", and only the first tells you the graph found a real entry.
+    forbidden: frozenset[str] = frozenset()
 
     def obscurity(self, word: str) -> int:
         """Frequency rank, or UNRANKED for anything off the list."""
@@ -58,25 +63,56 @@ class Lexicon:
 #: N, P, M, K, L — leaks into adjectives and would condemn sockersöt.
 VERB_ONLY_FLAGS = frozenset("jm")
 
+#: Flags that mean "this entry is not a word you may use on its own", read from
+#: sv_SE.aff rather than guessed:
+#:
+#:   %  FORBIDDENWORD   listed so the speller can *reject* it. 1,534 entries,
+#:                      and they are ordinary misspellings — barrock for
+#:                      barock, hårrock for hårdrock, barndomsbyggd for
+#:                      barndomsbygd. Reading the .dic without this flag is how
+#:                      four of the first five shipped days came to contain a
+#:                      weld that is not a Swedish word.
+#:   ¤  NEEDAFFIX       a stem that never stands alone unaffixed.
+#:   Z  ONLYINCOMPOUND  a compound-initial form: abborr-, affärsföreståndar-.
+#:                      Real morphology, and the closest thing to the SALDO
+#:                      morphology layer we cannot reach — but never a word by
+#:                      itself, so never a chip and never a weld's result.
+#:
+#: NOSUGGEST (!) is deliberately *not* here. It marks 2,000 words a speller
+#: should not offer as a correction — ablution, akutfas, ajvar — which are
+#: rare, not wrong.
+UNUSABLE_FLAGS = frozenset("%¤Z")
 
-def read_dic(path: Path | str) -> tuple[set[str], set[str]]:
-    """Read a hunspell .dic into (words, verb forms).
+
+def read_dic(path: Path | str) -> tuple[set[str], set[str], set[str]]:
+    """Read a hunspell .dic into (words, verb forms, unusable entries).
 
     The line format is `word/FLAGS`, and the flags are worth keeping: they
     encode the inflection paradigm, which is the only evidence available for a
     word SALDO has never recorded.
+
+    A word may appear on several lines with different flags — `blind` is both
+    a compound-initial form and an ordinary adjective — so usability is judged
+    per entry and a word is kept if *any* entry stands alone.
     """
     words: set[str] = set()
+    unusable: set[str] = set()
     verbs: set[str] = set()
     with open(path, encoding="utf-8") as fh:
         next(fh, None)  # the leading entry count
         for line in fh:
             word, _, flags = line.strip().partition("/")
-            if WORD_RE.fullmatch(word) and len(word) >= 3:
-                words.add(word)
-                if VERB_ONLY_FLAGS & set(flags):
-                    verbs.add(word)
-    return words, verbs
+            if not (WORD_RE.fullmatch(word) and len(word) >= 3):
+                continue
+            if UNUSABLE_FLAGS & set(flags):
+                unusable.add(word)
+                continue
+            words.add(word)
+            if VERB_ONLY_FLAGS & set(flags):
+                verbs.add(word)
+    # A word with both a plain entry and an unusable one — blind is an ordinary
+    # adjective as well as a compound-initial form — is a word.
+    return words, verbs, unusable - words
 
 
 def read_plain(path: Path | str) -> set[str]:
@@ -103,7 +139,7 @@ def load(
 ) -> Lexicon:
     """Load the corpora. The supplementary word list is optional — the union
     simply collapses to the hunspell set when it is absent."""
-    words, verb_forms = read_dic(dic_path)
+    words, verb_forms, forbidden = read_dic(dic_path)
     union = set(words)
     if wordlist_path and Path(wordlist_path).exists():
         union |= read_plain(wordlist_path)
@@ -114,4 +150,5 @@ def load(
         rank=rank,
         common=frozenset(common),
         verb_forms=frozenset(verb_forms),
+        forbidden=frozenset(forbidden),
     )
