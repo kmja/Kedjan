@@ -83,6 +83,27 @@ def doublet_partner(part: str) -> str | None:
     return None
 
 
+#: Degree prefixes: hel-, tok-, jätte- and kin. They attach to almost any
+#: adjective to mean "very", which makes them universal combiners in exactly
+#: the way colours are — the handover names the stor/halv class for the same
+#: reason. They used to be caught by the degree ceiling; raising that ceiling
+#: for the larger corpus quietly let them back in.
+#:
+#: This list is the fallback for a SALDO-less run. With SALDO the test is
+#: measured rather than remembered — see `adjective_head_share`.
+DEGREE_PREFIXES = frozenset(
+    {"hel", "tok", "jätte", "skit", "kanon", "super", "mega", "hyper",
+     "urbota", "stor", "halv", "dunder"}
+)
+
+#: Above this share of adjective heads a part is a degree modifier rather than
+#: a compound part. Measured before it was chosen: genuine parts sit at 7-20%
+#: (hund 13%, mat 17%, natt 20%), and even adjectives that compound properly
+#: stay low (fin 17%, god 27%). hel is 56% and tok 82%.
+MAX_ADJECTIVE_HEAD_SHARE = 0.40
+#: Below this many welds the share is noise rather than signal.
+ADJECTIVE_SHARE_MIN_WELDS = 8
+
 #: Irregular plurals that slip past the suffix-based inflection test.
 PLURAL_BAN = frozenset({"söner", "män", "fötter", "händer", "böcker"})
 
@@ -190,6 +211,23 @@ def witnessed_pairs(compounds: dict[str, list[str]], lex: Lexicon) -> dict[tuple
     return pairs
 
 
+def adjective_head_share(
+    part: str, pairs: dict[tuple[str, str], str], saldo: Saldo
+) -> float:
+    """How much of a part's compounding lands on adjectives.
+
+    A degree prefix modifies adjectives — helfin, helkul, heltokig — so its
+    heads are overwhelmingly adjectives. A real part builds nouns. This is the
+    kind of judgement the hand-written list only ever approximates, and the
+    reason SALDO's part-of-speech tags are worth having.
+    """
+    heads = [b for (a, b) in pairs if a == part]
+    if len(heads) < ADJECTIVE_SHARE_MIN_WELDS:
+        return 0.0
+    adjectives = sum(1 for h in heads if "av" in saldo.pos.get(h, frozenset()))
+    return adjectives / len(heads)
+
+
 def select_hubs(
     pairs: dict[tuple[str, str], str],
     lex: Lexicon,
@@ -212,6 +250,8 @@ def select_hubs(
 
     def lexically_ok(part: str) -> bool:
         if saldo is not None:
+            if adjective_head_share(part, pairs, saldo) > MAX_ADJECTIVE_HEAD_SHARE:
+                return False  # a degree prefix, not a part
             return saldo.is_part_candidate(part)
         return (
             part not in NUMERALS
@@ -230,6 +270,7 @@ def select_hubs(
         and part not in COLORS
         and part not in TONE_BAN
         and part not in NON_HEAD_PARTS
+        and part not in DEGREE_PREFIXES
         and lexically_ok(part)
     )
 

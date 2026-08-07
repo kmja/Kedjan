@@ -61,6 +61,7 @@ day that fails one can neither be generated nor accepted.
 | every witness is its two parts joined | |
 | every witness present in the dictionary | the only check that catches a compound that does not exist |
 | no colour, numeral, closed-class or off-tone part | universal combiners and bad mornings |
+| no degree prefix (hel-, tok-, jätte-) | helfin is "really nice", not a compound |
 | no register doublet in one pool | `far` and `fader` together is a guess, not a choice |
 | no verb conjugation posing as a compound | risk+e+ras is *riskeras* |
 | sound linking morpheme in both directions | see below |
@@ -104,6 +105,7 @@ Each entry was a defect found in play or in review, and is now a rule.
 | `snöande`, `bärande` | `ande` barred as a part — finally it spells a participle |
 | `hund`/`ben`/`böj` welding to nothing else | routes must cross-link; isolated chips capped at one |
 | `benbrott`, `skallbrott`, `hundbett` | an injury pool in a cosy daily — cut on tone |
+| `helfin`, `helkul`, `heltokig` | degree prefixes, caught by adjective-head share |
 
 The two linking-morpheme rules are worth reading together. The letter between
 two parts can belong to either neighbour, and if it belongs to one, the
@@ -122,12 +124,14 @@ Five days, curated from twenty candidates.
 | # | date | day | par | sols | indep | cross | open | close | branching |
 |---|------|-----|-----|------|-------|-------|------|-------|-----------|
 | 1 | 2026-08-02 | slag → flaska | 4 | 6 | 2 | 5 | 4 | 2 | 4, 2, 3 |
-| 2 | 2026-08-03 | hund → glas | 3 | 9 | 4 | 2 | 4 | 4 | 4, 2 |
-| 3 | 2026-08-04 | jul → skydd | 3 | 10 | 3 | 2 | 5 | 3 | 5, 2 |
-| 4 | 2026-08-05 | musik → sätt | 3 | 7 | 3 | 2 | 5 | 3 | 5, 3 |
-| 5 | 2026-08-06 | hel → gäst | 3 | 11 | 3 | 2 | 3 | 5 | 3, 2 |
+| 2 | 2026-08-03 | slut → teori | 3 | 10 | 3 | 6 | 5 | 4 | 5, 2 |
+| 3 | 2026-08-04 | hund → glas | 3 | 9 | 4 | 2 | 4 | 4 | 4, 2 |
+| 4 | 2026-08-05 | jul → skydd | 3 | 10 | 3 | 2 | 5 | 3 | 5, 2 |
+| 5 | 2026-08-06 | musik → sätt | 3 | 7 | 3 | 2 | 5 | 3 | 5, 3 |
 
-Four of the five carry no isolated chip at all; `hel→gäst` has one (`egen`).
+No day carries an isolated chip. `slut→teori` replaced `hel→gäst`, and is placed
+away from `musik→sätt` because their pools share kör, sång, låt and val — two
+near-identical pools on consecutive days would read as a repeat.
 
 `lint --dic` reports zero errors. Rejections and their reasons are in
 `generator/curation-log.json`.
@@ -179,6 +183,37 @@ hands you the answer without any deduction at all. Two rules guard this:
 Only five of twenty candidates had *zero* isolated chips, which is why the bar
 is one rather than none — at zero, tone cuts left four days, not five.
 
+## Degree prefixes: how helfin got in
+
+`helfin` shipped, and its whole verification was presence in the hunspell list.
+It is absent from SALDO, and `review` flagged it as a weak weld — a warning I
+overruled without noticing what class of word it was.
+
+`hel-` is a productive degree prefix meaning "completely". The dictionary's
+coverage of it is arbitrary, which is the tell:
+
+```
+helfin ✓ SFOL ✗ SALDO      helglad ✗ SFOL ✗ SALDO
+helkul ✓ SFOL ✗ SALDO      helstor ✗ SFOL ✗ SALDO
+helsvensk ✓ SFOL ✓ SALDO   (genuine: "wholly Swedish")
+```
+
+The handover names the stor/halv class as universal combiners excluded **by the
+degree ceiling**. Raising that ceiling from 50 to 250 for the larger corpus —
+necessary, or content nouns were excluded instead — quietly reopened the gate.
+
+SALDO's part-of-speech tags make the test measurable rather than remembered.
+What share of a part's welds land on an *adjective*?
+
+```
+hel  56%      hund 13%   mat 17%   natt 20%
+tok  82%      fin  17%   god  27%
+```
+
+Degree prefixes sit at 56–82%; real parts, including adjectives that compound
+properly, stay under 30%. The ceiling is 40%, and the named list survives only
+as the fallback for a SALDO-less run.
+
 ## Known gaps
 
 - **SALDO absence is not a quality score.** Only about 35% of any day's welds
@@ -190,3 +225,8 @@ is one rather than none — at zero, tone cuts left four days, not five.
   layer has this; the semantic lexicon shipped here does not.
 - **Tone bans are a denylist**, so they only ever catch what has already been
   found once.
+- **A concatenation can coincide with an unrelated word.** `skydd` + `svärd`
+  spells *skyddsvärd*, which is real but parses as skydds+värd, "worthy of
+  protection" — an adjective, not a compound of shield and sword. SALDO's POS
+  tag on the witness would catch it (a noun+noun compound that is only ever an
+  adjective is suspect); not yet implemented.

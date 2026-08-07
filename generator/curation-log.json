@@ -792,5 +792,50 @@
    "closings": 2,
    "disjoint_routes": 2
   }
+ },
+ {
+  "start": "slag",
+  "target": "flaska",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
+ },
+ {
+  "start": "slut",
+  "target": "teori",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 31,
+   "solutions": 10,
+   "openings": 5,
+   "closings": 3
+  }
+ },
+ {
+  "start": "hund",
+  "target": "glas",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
+ },
+ {
+  "start": "jul",
+  "target": "skydd",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
+ },
+ {
+  "start": "musik",
+  "target": "sätt",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
  }
 ]

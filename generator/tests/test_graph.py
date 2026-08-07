@@ -125,3 +125,47 @@ def test_is_surface_form_catches_definite_and_genitive_forms():
     assert graph_mod.is_surface_form("mans", lex) is True   # man + genitive -s
     assert graph_mod.is_surface_form("flyg", lex) is False
     assert graph_mod.is_surface_form("hus", lex) is False
+
+
+def _saldo(pos_map):
+    from kedjan.saldo import Saldo
+    return Saldo(pos={w: frozenset(t) for w, t in pos_map.items()})
+
+
+def test_adjective_head_share_separates_a_degree_prefix_from_a_part():
+    # hel- modifies adjectives (helfin, helkul); hund- builds nouns.
+    adjectives = [f"adj{i}" for i in range(10)]
+    nouns = [f"sub{i}" for i in range(10)]
+    pairs = {("hel", a): "x" for a in adjectives}
+    pairs |= {("hund", n): "x" for n in nouns}
+    saldo = _saldo({**{a: ["av"] for a in adjectives}, **{n: ["nn"] for n in nouns}})
+
+    assert graph_mod.adjective_head_share("hel", pairs, saldo) == 1.0
+    assert graph_mod.adjective_head_share("hund", pairs, saldo) == 0.0
+
+
+def test_adjective_head_share_ignores_parts_with_too_few_welds():
+    pairs = {("x", "adj"): "w"}
+    assert graph_mod.adjective_head_share("x", pairs, _saldo({"adj": ["av"]})) == 0.0
+
+
+def test_hub_selection_drops_a_measured_degree_prefix():
+    adjectives = [f"adj{i}" for i in range(12)]
+    pairs = {("modig", a): "x" for a in adjectives}          # 100% adjective heads
+    pairs |= {("kant", f"sub{i}"): "x" for i in range(12)}   # 0%
+    saldo = _saldo({
+        **{a: ["av"] for a in adjectives},
+        **{f"sub{i}": ["nn"] for i in range(12)},
+        "modig": ["av"], "kant": ["nn"],
+    })
+    lex = _lex_with(["modig", "kant", *adjectives, *[f"sub{i}" for i in range(12)]])
+
+    hubs = graph_mod.select_hubs(pairs, lex, saldo)
+    assert "kant" in hubs
+    assert "modig" not in hubs
+
+
+def test_hub_selection_drops_named_degree_prefixes_without_saldo():
+    others = [f"del{i}" for i in range(10)]
+    pairs = {("hel", o): "x" for o in others}
+    assert "hel" not in graph_mod.select_hubs(pairs, _lex_with(["hel", *others]))

@@ -16,6 +16,7 @@ from typing import Iterable, Mapping, Sequence
 
 from .graph import (
     COLORS,
+    DEGREE_PREFIXES,
     INFLECTED_FORMS,
     NON_HEAD_PARTS,
     NUMERALS,
@@ -200,6 +201,8 @@ def check_day(
             err(f"{role} {endpoint!r} is a prefix particle — flagged in playtesting")
         if endpoint in COLORS:
             err(f"{role} {endpoint!r} is a colour — a universal combiner")
+        if endpoint in DEGREE_PREFIXES:
+            err(f"{role} {endpoint!r} is a degree prefix — a universal combiner")
         if endpoint in NUMERALS:
             err(f"{role} {endpoint!r} is a numeral — a universal combiner")
         if endpoint in TONE_BAN:
@@ -219,6 +222,8 @@ def check_day(
             err(f"pool part {part!r} is off-tone for a general-audience daily")
         if part in INFLECTED_FORMS:
             err(f"pool part {part!r} is an inflected form; parts are lemmas only")
+        if part in DEGREE_PREFIXES:
+            err(f"pool part {part!r} is a degree prefix — it modifies any adjective")
         if part in NON_HEAD_PARTS:
             err(f"pool part {part!r} is never a compound head — a splitter artefact")
 

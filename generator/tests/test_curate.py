@@ -168,3 +168,15 @@ def test_flags_a_register_doublet_in_one_pool():
     day = a_day()
     day["pool"] = [*day["pool"][:-2], "far", "fader"]
     assert any("register forms" in m for m in errors(curate.check_day(day)))
+
+
+def test_flags_a_degree_prefix_endpoint():
+    # helfin is "really nice", not a compound — hel- attaches to any adjective.
+    day = a_day(start="hel")
+    assert any("degree prefix" in m for m in errors(curate.check_day(day)))
+
+
+def test_flags_a_degree_prefix_in_the_pool():
+    day = a_day()
+    day["pool"] = [*day["pool"][:-1], "jätte"]
+    assert any("degree prefix" in m for m in errors(curate.check_day(day)))
