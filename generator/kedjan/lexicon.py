@@ -78,10 +78,24 @@ VERB_ONLY_FLAGS = frozenset("jm")
 #:                      morphology layer we cannot reach — but never a word by
 #:                      itself, so never a chip and never a weld's result.
 #:
-#: NOSUGGEST (!) is deliberately *not* here. It marks 2,000 words a speller
-#: should not offer as a correction — ablution, akutfas, ajvar — which are
-#: rare, not wrong.
-UNUSABLE_FLAGS = frozenset("%¤Z")
+#:   !  NOSUGGEST       a word the speller must recognise but must never
+#:                      *offer*. In SFOL that is overwhelmingly profanity and
+#:                      slurs: of its 2,000 entries, 50 sit inside the common
+#:                      20k frequency slice that part selection draws from, and
+#:                      they include neger, nigger, bögjävel, kuksugare, hora,
+#:                      fitta. The rest of the tier is unreliable in a quieter
+#:                      way — glasbåt and finbord are NOSUGGEST entries that no
+#:                      Swedish speaker asked about them recognised, and
+#:                      nothing else in the corpora vouches for either.
+#:
+#: NOSUGGEST was read as "rare, not wrong" on the strength of its first few
+#: alphabetical entries — ablution, ajvar, akutfas. That was a sampling error:
+#: the a's are the innocuous end of the list. Excluding the tier costs real
+#: words (favela, shot) and is still the right trade, because TONE_BAN is a
+#: hand-built denylist of 33 words that only ever catches what has already been
+#: found once, and this is the same judgement made by lexicographers, in
+#: machine-readable form.
+UNUSABLE_FLAGS = frozenset("%¤Z!")
 
 
 def read_dic(path: Path | str) -> tuple[set[str], set[str], set[str]]:

@@ -283,8 +283,9 @@ def check_day(
             )
         if lex is not None and witness in lex.forbidden:
             err(
-                f"{witness!r} is in the dictionary only as a word to reject — "
-                "a misspelling, or a form that never stands alone"
+                f"{witness!r} is in the dictionary only as a word the speller "
+                "must refuse or never offer — a misspelling, a form that does "
+                "not stand alone, or the tier SFOL keeps profanity in"
             )
         elif lex is not None and witness not in lex.union:
             err(f"{witness!r} is not in the lexicon — a false acceptance")

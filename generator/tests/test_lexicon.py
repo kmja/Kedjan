@@ -48,11 +48,19 @@ def test_entry_order_does_not_decide(tmp_path):
     assert words == {"blind"}
 
 
-def test_nosuggest_words_are_kept(tmp_path):
-    """NOSUGGEST (!) means rare, not wrong — ajvar, akutfas, glasbåt."""
-    words, _, forbidden = lexicon.read_dic(write_dic(tmp_path, ["glasbåt/!ADGv"]))
-    assert words == {"glasbåt"}
-    assert forbidden == set()
+def test_nosuggest_words_are_dropped(tmp_path):
+    """NOSUGGEST (!) is where SFOL keeps profanity and slurs.
+
+    A speller has to recognise them without ever offering them. 50 of the
+    2,000 sit inside the common 20k frequency slice that part selection draws
+    from. The tier is unreliable at its quiet end too: glasbåt is a NOSUGGEST
+    entry that no speaker asked about it recognised.
+    """
+    words, _, forbidden = lexicon.read_dic(
+        write_dic(tmp_path, ["neger/!AD", "glasbåt/!ADGv", "båt/AD"])
+    )
+    assert words == {"båt"}
+    assert forbidden == {"neger", "glasbåt"}
 
 
 def test_verb_flags_still_survive_the_filter(tmp_path):
