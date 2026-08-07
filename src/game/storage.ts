@@ -63,6 +63,15 @@ export function loadSave(): Save {
   }
 }
 
+/** Wipe every day's progress and the stats. Test mode only. */
+export function clearSave(): void {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    /* nothing to clear */
+  }
+}
+
 export function persistSave(save: Save): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(save));

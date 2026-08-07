@@ -104,6 +104,22 @@ signal: hints add a star and a border weight, and status messages carry a ✓ or
 light and dark themes (honey is a fill colour only — honey on paper is 2.6:1).
 Motion respects `prefers-reduced-motion`.
 
+## Test mode
+
+Add `?dev` to the URL. It sticks across reloads; `?dev=0` turns it off, and it
+is always on under `npm run dev`.
+
+It gives a tester the two things the game deliberately withholds from a player:
+
+- **Spela om dagen** — put a solved day back on the table. The stats keep the
+  first result, so replaying explores without rewriting history.
+- **The whole weld table** — every pair in the day and the word that witnesses
+  it, unreachable ones greyed out, plus every solution. This is the one that
+  matters: `morfin` sat in a shipped pool through several rounds of review
+  because probing a pool one tap at a time never shows you the whole table.
+
+`Nollställ allt` wipes local progress and stats.
+
 ## Tests
 
 ```

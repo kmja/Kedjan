@@ -4,6 +4,7 @@ import { dayForDate, fetchCalendar, releasedDays } from "./game/days";
 import { formatSwedishDate, todayISO } from "./game/dates";
 import { plural } from "./game/plural";
 import { useKedjan } from "./game/useKedjan";
+import { clearSave } from "./game/storage";
 import { useChipDrag } from "./game/useChipDrag";
 import { Chain } from "./components/Chain";
 import { Pool } from "./components/Pool";
@@ -13,6 +14,8 @@ import { HowToPlay } from "./components/HowToPlay";
 import { StatsPanel } from "./components/StatsPanel";
 import { Archive } from "./components/Archive";
 import { ReportWord } from "./components/ReportWord";
+import { DevPanel } from "./components/DevPanel";
+import { isDevMode } from "./game/dev";
 
 type View = "spel" | "arkiv" | "statistik";
 
@@ -24,6 +27,7 @@ const VIEWS: [View, string][] = [
 
 export default function App() {
   const today = useMemo(todayISO, []);
+  const dev = useMemo(isDevMode, []);
   const [calendar, setCalendar] = useState<Day[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [view, setView] = useState<View>("spel");
@@ -197,6 +201,18 @@ export default function App() {
             )}
 
             <HowToPlay />
+
+            {dev && (
+              <DevPanel
+                day={day}
+                solved={game.solved}
+                onReplay={game.replay}
+                onClearAll={() => {
+                  clearSave();
+                  window.location.reload();
+                }}
+              />
+            )}
           </section>
 
           <section

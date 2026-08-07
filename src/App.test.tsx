@@ -286,6 +286,83 @@ describe("solving", () => {
   });
 });
 
+describe("test mode", () => {
+  const chip = (part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+  const close = () => screen.getByRole("button", { name: /mål hus\. slut kedjan/i });
+  const solve = async (u: ReturnType<typeof user>) => {
+    await u.click(chip("bro"));
+    await u.click(close());
+    await screen.findByText("stenbro → brohus");
+  };
+
+  beforeEach(() => {
+    window.history.replaceState({}, "", "/?dev=1");
+  });
+  afterEach(() => {
+    window.history.replaceState({}, "", "/");
+    localStorage.removeItem("kedjan.dev");
+  });
+
+  it("stays hidden without the flag", async () => {
+    window.history.replaceState({}, "", "/?dev=0");
+    render(<App />);
+    await board();
+    expect(screen.queryByRole("region", { name: "Testverktyg" })).not.toBeInTheDocument();
+  });
+
+  it("lists every weld in the day, so a bad one is visible at a glance", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(screen.getByRole("button", { name: /^7 ord/i }));
+    expect(screen.getByText("stenmur")).toBeInTheDocument();
+    expect(screen.getByText("takglas")).toBeInTheDocument();
+  });
+
+  it("lists every solution", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(screen.getByRole("button", { name: /^2 lösningar/i }));
+    expect(screen.getByText(/stenmur → murvägg → vägghus/)).toBeInTheDocument();
+  });
+
+  it("puts a solved day back on the table", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await solve(u);
+
+    await u.click(screen.getByRole("button", { name: "Spela om dagen" }));
+    expect(screen.queryByText("stenbro → brohus")).not.toBeInTheDocument();
+    expect(chip("bro")).toBeInTheDocument();
+    expect(screen.getByText("0/3 placerade")).toBeInTheDocument();
+  });
+
+  it("does not count a replayed day twice", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await solve(u);
+    await u.click(screen.getByRole("button", { name: "Spela om dagen" }));
+    await solve(u);
+
+    // Read the stats themselves rather than the panel: the histogram also
+    // renders link counts, which look like day counts in the DOM.
+    const saved = JSON.parse(localStorage.getItem("kedjan.v1") ?? "{}");
+    expect(saved.stats.played).toBe(1);
+    expect(saved.stats.solved).toBe(1);
+    expect(saved.stats.linkHistogram).toEqual({ 2: 1 });
+  });
+
+  it("cannot be replayed before the day is solved", async () => {
+    render(<App />);
+    await board();
+    expect(screen.getByRole("button", { name: "Spela om dagen" })).toBeDisabled();
+  });
+});
+
 describe("persistence", () => {
   it("keeps a half-built chain across a reload", async () => {
     const u = user();

@@ -160,9 +160,14 @@ export function useKedjan(day: Day | null) {
     if (broken.length === 0) {
       setMarked(null);
       setFailedJoints([]);
+      // A replayed day must not count twice, so the stats only move on the
+      // first solve — `solvedAt` is written once and never overwritten.
+      const alreadyCounted = Boolean(progress.solvedAt);
       patch(
-        (p) => ({ ...p, solved: true, solvedAt: new Date().toISOString() }),
-        (s) => recordSolve(s, day.date, chain.length + 1, day.par),
+        (p) => ({ ...p, solved: true, solvedAt: p.solvedAt ?? new Date().toISOString() }),
+        alreadyCounted
+          ? undefined
+          : (s) => recordSolve(s, day.date, chain.length + 1, day.par),
       );
       say({ kind: "ok", msg: "Kedjan håller — klart!" });
       return;
@@ -180,7 +185,19 @@ export function useKedjan(day: Day | null) {
         (rest > 0 ? ` och ${plural(rest, "länk till", "länkar till")}` : "") +
         " håller inte.",
     });
-  }, [day, solved, chain, patch, say]);
+  }, [day, solved, chain, progress.solvedAt, patch, say]);
+
+  /**
+   * Put a solved day back on the table. Test mode only: the stats keep the
+   * first result, so this buys a fresh board without rewriting history.
+   */
+  const replay = useCallback(() => {
+    if (!day) return;
+    patch((p) => ({ ...p, slots: p.slots.map(() => null), solved: false }));
+    setArmedSlot(null);
+    edited();
+    say({ kind: "info", msg: "Dagen är öppen igen — statistiken står kvar." });
+  }, [day, patch, say, edited]);
 
   const reset = useCallback(() => {
     if (!day || solved || !chain.length) return;
@@ -274,6 +291,7 @@ export function useKedjan(day: Day | null) {
     removeFrom,
     toggleSlot,
     submit,
+    replay,
     reset,
     hint,
     otherSolutions,

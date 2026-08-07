@@ -29,7 +29,11 @@ export interface DayProgress {
   hints: number;
   /** Chains submitted that did not hold — counted for the share line. */
   misses: number;
-  /** Set once, when the day is first solved. */
+  /**
+   * Set once, when the day is first solved, and never overwritten. Replaying a
+   * day must not tell the stats it was solved twice, so this doubles as the
+   * record of whether the day has already counted.
+   */
   solvedAt?: string;
 }
 
