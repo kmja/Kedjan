@@ -7,10 +7,11 @@ into a real Swedish compound** — grund+val → grundval, val+natt → valnatt.
 chain has a fixed budget of links (par + 1); winning means reaching the target
 within budget.
 
-**Parts go down in any order.** The bridge is built downwards — start at the
-top, target at the foot — and the whole chain is judged after every placement,
-each joint carrying its own green tick or red cross. Placing the chip that
-completes the chain finishes the day; there is nothing further to press.
+**Parts go down in any order.** The chain runs as a zigzag — parts alternating
+high and low, joined by diagonals — and the whole thing is judged after every
+placement, each joint carrying its own green tick or red cross. Placing the
+chip that completes the chain finishes the day; there is nothing further to
+press.
 
 Nothing is ever refused, so a chip you are unsure of costs you a thought rather
 than a slap. The joint *into the target* stays unmarked while slots remain: a
@@ -119,10 +120,19 @@ It gives a tester the two things the game deliberately withholds from a player:
 
 - **Spela om dagen** — put a solved day back on the table. The stats keep the
   first result, so replaying explores without rewriting history.
-- **The whole weld table** — every pair in the day and the word that witnesses
-  it, unreachable ones greyed out, plus every solution. This is the one that
-  matters: `morfin` sat in a shipped pool through several rounds of review
-  because probing a pool one tap at a time never shows you the whole table.
+- **The whole weld table** — every pair in the day, the word that witnesses it,
+  and SALDO's sense for that word, unreachable ones greyed, plus every
+  solution. This is the one that matters: `morfin` sat in a shipped pool
+  through several rounds of review because probing a pool one tap at a time
+  never shows you the whole table.
+
+  The glosses are the *evidence*. SALDO places every sense against two
+  neighbours, and for a compound those two are usually its own analysis, so a
+  gloss that has nothing to do with the claimed parts is the tell:
+  `hundmat · mat, hund` holds up, `morfin · narkotika` does not, and
+  `värddjur · parasit` is the sort of confirmation that saves an argument.
+  Only about 40% of welds have an entry, so **ingen källa** means "no evidence
+  either way", not "not a word".
 
 `Nollställ allt` wipes local progress and stats.
 

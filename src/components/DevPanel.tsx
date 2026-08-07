@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Day } from "../types";
 import { allSolutions, spellChain, weld } from "../game/graph";
 
@@ -21,6 +21,23 @@ interface Props {
 export function DevPanel({ day, solved, onReplay, onClearAll }: Props) {
   const [showWelds, setShowWelds] = useState(false);
   const [showRoutes, setShowRoutes] = useState(false);
+  /**
+   * SALDO's sense for each compound, fetched only in test mode. It is the
+   * evidence behind a judgement: the descriptor pair is usually a compound's
+   * own analysis, so a gloss with nothing to do with the claimed parts is the
+   * tell — morfin reads "narkotika", not anything about mor or fin.
+   */
+  const [glosses, setGlosses] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!showWelds) return;
+    const ctrl = new AbortController();
+    fetch(`${import.meta.env.BASE_URL}glosses.json`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : {}))
+      .then(setGlosses)
+      .catch(() => setGlosses({}));
+    return () => ctrl.abort();
+  }, [showWelds]);
 
   const welds = Object.entries(day.pairs)
     .map(([key, word]) => {
@@ -72,12 +89,18 @@ export function DevPanel({ day, solved, onReplay, onClearAll }: Props) {
             // A weld the player can actually reach is worth more scrutiny than
             // one stranded behind an unreachable part.
             const reachable = a === day.start || day.pool.includes(a);
+            const gloss = glosses[word];
             return (
               <li key={`${a}>${b}`} style={{ opacity: reachable ? 1 : 0.45 }}>
                 <span style={{ color: "var(--ink-soft)" }}>
                   {a}+{b}
                 </span>{" "}
                 = <strong>{word}</strong>
+                {gloss ? (
+                  <span style={{ color: "var(--ink-soft)" }}> · {gloss}</span>
+                ) : (
+                  <span style={{ color: "var(--falu-ink)" }}> · ingen källa</span>
+                )}
               </li>
             );
           })}

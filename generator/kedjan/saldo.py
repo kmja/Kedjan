@@ -40,7 +40,7 @@ BANNED_POS = frozenset(
 )
 
 #: Column layout of saldo20v03.txt, which is tab-separated and commented with #.
-_PRIMARY, _BASEFORM, _POS = 1, 4, 5
+_PRIMARY, _SECONDARY, _BASEFORM, _POS = 1, 2, 4, 5
 
 #: How far to walk the association links when asking what a pool is about.
 #: Measured: at depth 5 every pool converges on the same handful of primitives
@@ -58,6 +58,10 @@ class Saldo:
     #: with. SALDO is an association lexicon, so following these links upward
     #: says roughly what a word is about: kaffe -> dryck, lunch -> måltid.
     primary: dict[str, str] = field(default_factory=dict)
+    #: baseform -> its (primary, secondary) descriptor pair. For a compound
+    #: these two words are effectively its analysis, and the closest thing to a
+    #: definition available under an open licence.
+    descriptors: dict[str, tuple[str, str]] = field(default_factory=dict)
 
     def __contains__(self, word: str) -> bool:
         return word in self.pos
@@ -74,6 +78,29 @@ class Saldo:
             return False
         return bool(tags & PART_POS) and not (tags & BANNED_POS)
 
+
+    def gloss(self, word: str) -> str | None:
+        """A one-line sense for a compound, from SALDO's descriptor pair.
+
+        SALDO places every sense against two neighbours, and for a compound
+        those two are usually its head and its modifier — which makes the pair
+        read as a definition and, more usefully, as *evidence*:
+
+            hundmat     -> mat, hund          a food, for dogs
+            djurskydd   -> skydd, djur        protection, of animals
+            julbord     -> smörgåsbord, jul   a smörgåsbord, at Christmas
+
+        The evidence bites hardest when the pair does not match the parts we
+        claim. `morfin` comes back as *narkotika*, not as anything to do with
+        mor or fin; `skyddsvärd` as *värd, skydda* — skydds+värd, not
+        skydd+svärd; `hårfin` as *obetydlig*, not as hair that is fine.
+        """
+        pair = self.descriptors.get(word)
+        if not pair:
+            return None
+        primary, secondary = pair
+        parts = [p for p in (primary, secondary) if p and p != "PRIM"]
+        return ", ".join(parts) or None
 
     def ancestors(self, word: str, depth: int = CENTRE_DEPTH) -> list[str]:
         """The association links above a word, nearest first."""
@@ -106,6 +133,7 @@ class Saldo:
 def load(path: Path | str = "saldo_2.3/saldo20v03.txt") -> Saldo:
     pos: dict[str, set[str]] = {}
     primary: dict[str, str] = {}
+    descriptors: dict[str, tuple[str, str]] = {}
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             if line.startswith("#") or not line.strip():
@@ -118,9 +146,12 @@ def load(path: Path | str = "saldo_2.3/saldo20v03.txt") -> Saldo:
             root = cols[_PRIMARY].split("..")[0]
             if base not in primary and root not in ("PRIM", base):
                 primary[base] = root
+            if base not in descriptors:
+                descriptors[base] = (root, cols[_SECONDARY].split("..")[0])
     return Saldo(
         pos={w: frozenset(tags) for w, tags in pos.items()},
         primary=primary,
+        descriptors=descriptors,
     )
 
 

@@ -250,6 +250,29 @@ The rule can only judge welds where SALDO records both the head and the
 witness — about 2,300 of the graph's 5,500 hub welds — and stays silent
 otherwise. Within what it can see it removes 109, or 4.7%.
 
+## Evidence for a weld
+
+`review` now prints SALDO's sense beside every weld on a solution path, and the
+same data ships to the test panel as `public/glosses.json`. SALDO places each
+sense against two neighbours, and for a compound those two are usually its own
+analysis — which makes the pair read as a definition and, more usefully, as
+evidence:
+
+```
+hundmat      mat, hund              holds up
+djurskydd    skydd, djur            holds up
+julbord      smörgåsbord, jul       holds up
+värddjur     parasit                holds up
+morfin       narkotika              nothing to do with mor or fin
+skyddsvärd   värd, skydda           skydds+värd, not skydd+svärd
+hårfin       obetydlig              not hair that is fine
+bankett      måltid, högtidlig      not bank+ett
+```
+
+About 40% of welds have an entry. **No entry is not evidence against a weld** —
+it only means SALDO is silent, which is the honest state for `glasbär` and the
+rest of the long tail.
+
 ## What a pool is about
 
 SALDO is an association lexicon, so its links say roughly what a word is for:

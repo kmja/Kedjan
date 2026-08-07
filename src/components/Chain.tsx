@@ -23,12 +23,13 @@ interface Props {
 }
 
 /**
- * The bridge, built downwards: start at the top, the budget's slots beneath it,
- * the target at the foot.
+ * The bridge as a zigzag: parts alternate high and low along a horizontal run,
+ * joined by diagonal links that carry the verdict.
  *
- * Vertical because a chain reads as a chain that way — and because a par-4 day
- * laid out in a row wrapped mid-bridge on a phone, which put the target on its
- * own line looking like a separate thing.
+ * The alternation is what buys the space. Neighbours sit at different heights,
+ * so they can be packed far closer than a straight row allows — a straight row
+ * of a par-4 day wrapped mid-bridge on a phone and left the target stranded on
+ * a line of its own.
  *
  * Parts go into any slot in any order. The chain is judged as a whole after
  * every placement, and each joint carries its own verdict.
@@ -58,10 +59,14 @@ export function Chain({
     `mål ${day.target}`,
   ].join(", ");
 
-  const Joint = ({ index, live }: { index: number; live: boolean }) => {
+  /** `slot` is the position after this joint, which fixes the diagonal's tilt. */
+  const Joint = ({ index, live, slot }: { index: number; live: boolean; slot: number }) => {
     const mark = live ? jointMarks[index] ?? null : null;
+    // Even positions sit high and odd sit low, so a joint running into an odd
+    // position slopes down, and one running into an even position slopes up.
+    const tilt = slot % 2 === 1 ? "down" : "up";
     return (
-      <li className="joint-row" aria-hidden={mark === null}>
+      <li className={`joint joint--${tilt}`} aria-hidden={mark === null}>
         <span className={`joint-line ${mark ? `joint-line--${mark}` : ""}`} />
         {mark && (
           <span key={`${verdictKey}-${index}`} className={`verdict verdict--${mark}`}>
@@ -75,23 +80,29 @@ export function Chain({
     );
   };
 
+  /** Position in the zigzag, endpoints included. */
+  const rung = (i: number) => (i % 2 === 0 ? "rung--high" : "rung--low");
+
   return (
-    <ol className="chain" aria-label={`Kedjan: ${spoken}`}>
-      <li>
-        <span className="node node--endpoint node--wide">{day.start}</span>
+    <ol
+      className={`chain ${slots.length >= 4 ? "chain--long" : ""}`}
+      aria-label={`Kedjan: ${spoken}`}
+    >
+      <li className={rung(0)}>
+        <span className="node node--endpoint">{day.start}</span>
       </li>
 
       {slots.map((part, i) => (
         <Fragment key={i}>
-          <Joint index={jointBefore(i)} live={part !== null} />
-          <li>
+          <Joint index={jointBefore(i)} live={part !== null} slot={i + 1} />
+          <li className={rung(i + 1)}>
             {part === null ? (
               <button
                 type="button"
                 data-drop-zone={`slot:${i}`}
                 onClick={() => onSlot(i)}
                 disabled={solved}
-                className={`node node--wide node--slot ${
+                className={`node node--slot ${
                   armedSlot === i ? "node--slot-armed" : ""
                 } ${dragOver === `slot:${i}` ? "node--slot-active" : ""}`}
                 aria-label={
@@ -103,13 +114,13 @@ export function Chain({
                 <span aria-hidden="true">{armedSlot === i ? "▸" : "··"}</span>
               </button>
             ) : solved ? (
-              <span className="node node--wide">{part}</span>
+              <span className="node">{part}</span>
             ) : (
               <button
                 type="button"
                 data-drop-zone={`slot:${i}`}
                 {...handlers(part, "chain")}
-                className={`node node--wide node--removable ${
+                className={`node node--removable ${
                   liftedPart === part ? "chip--lifted" : ""
                 } ${dragOver === `slot:${i}` ? "node--slot-active" : ""}`}
                 aria-label={`Plats ${i + 1}, ${part}. Ta bort den ur kedjan.`}
@@ -121,10 +132,10 @@ export function Chain({
         </Fragment>
       ))}
 
-      <Joint index={filled} live={filled > 0} />
-      <li>
+      <Joint index={filled} live={filled > 0} slot={slots.length + 1} />
+      <li className={rung(slots.length + 1)}>
         <span
-          className={`node node--endpoint node--wide ${solved ? "snap" : ""} ${
+          className={`node node--endpoint ${solved ? "snap" : ""} ${
             marked === day.target ? "chip--marked" : ""
           }`}
         >

@@ -877,5 +877,45 @@
   "accepted": true,
   "reason": "",
   "metrics": {}
+ },
+ {
+  "start": "slag",
+  "target": "flaska",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
+ },
+ {
+  "start": "slut",
+  "target": "teori",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
+ },
+ {
+  "start": "hund",
+  "target": "glas",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
+ },
+ {
+  "start": "musik",
+  "target": "sätt",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
+ },
+ {
+  "start": "jul",
+  "target": "skydd",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {}
  }
 ]

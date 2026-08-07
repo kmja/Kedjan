@@ -108,8 +108,22 @@ def cmd_review(args: argparse.Namespace) -> int:
             print(f"  about   {', '.join(r.centre)}")
         if r.bottlenecks:
             print(f"  funnel  every solution uses {', '.join(r.bottlenecks)}")
-        if r.weak_welds:
-            print(f"  weak    not in SALDO: {', '.join(r.weak_welds)}")
+        # Glosses are the evidence behind a judgement: SALDO's descriptor pair
+        # is usually a compound's own analysis, so a gloss that has nothing to
+        # do with the claimed parts is the tell.
+        on_path = sorted(
+            {
+                day["pairs"][f"{a}>{b}"]
+                for route in r.solutions
+                for a, b in zip(
+                    [day["start"], *route], [*route, day["target"]]
+                )
+            }
+        )
+        print("  words")
+        for word in on_path:
+            gloss = saldo.gloss(word) if saldo else None
+            print(f"          {word:16} {gloss or '— no SALDO entry'}")
 
     print(
         "\nRead every pool aloud. A chip you would not use in a sentence is a\n"
@@ -117,6 +131,24 @@ def cmd_review(args: argparse.Namespace) -> int:
         "Tone and endpoint taste are yours — the table cannot see them."
     )
     return 0
+
+
+def _write_glosses(days: list[dict], saldo: saldo_mod.Saldo | None, out: Path) -> int:
+    """Emit the glosses for every shipped weld, for the in-game test panel.
+
+    Kept out of days.json deliberately: a player never sees these, and the
+    calendar is fetched by everyone.
+    """
+    if saldo is None:
+        return 0
+    glosses = {
+        word: gloss
+        for day in days
+        for word in day["pairs"].values()
+        if (gloss := saldo.gloss(word))
+    }
+    out.write_text(json.dumps(glosses, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return len(glosses)
 
 
 def cmd_accept(args: argparse.Namespace) -> int:
@@ -171,6 +203,10 @@ def cmd_accept(args: argparse.Namespace) -> int:
             }
         )
     ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+    total = sum(len(d["pairs"]) for d in chosen)
+    n = _write_glosses(chosen, saldo, Path(args.out).with_name("glosses.json"))
+    print(f"glosses written for {n} of {total} welds")
 
     for d in chosen:
         print(f"#{d['no']} {d['date']} {d['start']}→{d['target']} par{d['par']}")

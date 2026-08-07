@@ -125,36 +125,81 @@ body {
     transform: translate(-50%, -130%);
   }
 
-  /* ── the chain, built downwards ────────────────────────────── */
+  /* ── the chain, as a zigzag ────────────────────────────────── */
   .chain {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0;
+    justify-content: center;
+    row-gap: 1.6rem;
     margin: 0;
-    padding: 0;
+    padding: 1.5rem 0;
     list-style: none;
+    /* Scaled to the viewport rather than fixed: a wrapped zigzag puts a joint
+       at the start of a row pointing at nothing, so the run has to stay on one
+       line at any width the game supports. */
+    font-size: clamp(0.56rem, 2.7vw, 0.9rem);
   }
-  .node--wide {
-    min-width: 9.5rem;
-    justify-content: center;
-    font-size: 1rem;
-    padding: 0.6rem 0.9rem;
+  /* A par-4 day is six rungs against par 3's five, and six will not fit a
+     phone at a readable size — that is arithmetic, not tuning. Long chains
+     zigzag downwards instead, keeping the same diagonals and verdicts. */
+  .chain--long {
+    flex-direction: column;
+    row-gap: 0;
+    font-size: 0.95rem;
   }
-  /* A joint is the run of chain between two parts, and carries the verdict. */
-  .joint-row {
+  .chain--long .rung--high {
+    transform: translateX(-2.6rem);
+  }
+  .chain--long .rung--low {
+    transform: translateX(2.6rem);
+  }
+  .chain--long .joint {
+    margin-inline: 0;
+    margin-block: -0.5rem;
+  }
+  .chain--long .joint--down .joint-line {
+    transform: rotate(38deg);
+  }
+  .chain--long .joint--up .joint-line {
+    transform: rotate(-38deg);
+  }
+  /* Alternating heights are what buy the space: neighbours at different
+     heights cannot collide, so the horizontal run stays compact. */
+  .rung--high {
+    transform: translateY(-0.85rem);
+  }
+  .rung--low {
+    transform: translateY(0.85rem);
+  }
+  /* A joint spans the step between two rungs, so its line is the hypotenuse of
+     the horizontal gap and the 2.3rem drop. */
+  /* The negative margin is the point: rungs sit at different heights and
+     cannot collide, so they may overlap horizontally and the whole run fits
+     a phone without wrapping. */
+  .joint {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 2.1rem;
-    width: 100%;
+    width: 2.2rem;
+    height: 2.2rem;
+    margin-inline: -0.5rem;
+    display: grid;
+    place-items: center;
+    flex: none;
+    z-index: 1;
   }
   .joint-line {
-    width: 2px;
-    height: 100%;
+    position: absolute;
+    width: 2.3rem;
+    height: 3px;
+    border-radius: 2px;
     background: var(--edge);
     transition: background 0.2s ease;
+  }
+  .joint--down .joint-line {
+    transform: rotate(52deg);
+  }
+  .joint--up .joint-line {
+    transform: rotate(-52deg);
   }
   .joint-line--ok {
     background: var(--gran-ok);
@@ -166,10 +211,10 @@ body {
     position: absolute;
     display: grid;
     place-items: center;
-    width: 2.15rem;
-    height: 2.15rem;
+    width: 1.75rem;
+    height: 1.75rem;
     border-radius: 999px;
-    font-size: 1.35rem;
+    font-size: 1.2rem;
     font-weight: 800;
     line-height: 1;
     animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
@@ -183,16 +228,17 @@ body {
     color: var(--on-falu);
   }
 
+
   .node {
     display: inline-flex;
     align-items: center;
-    padding: 0.4rem 0.5rem;
+    padding: 0.45rem 0.48rem;
     border-radius: 0.45rem;
     border: 1px solid var(--edge);
     background: var(--panel);
     color: var(--ink);
     font-weight: 700;
-    font-size: 0.875rem;
+    font-size: 1em;
     letter-spacing: 0.03em;
     text-transform: uppercase;
     white-space: nowrap;
@@ -223,7 +269,7 @@ body {
     transform: translateY(1px);
   }
   .node--slot {
-    min-width: 2.2rem;
+    min-width: 3.1rem;
     justify-content: center;
     border-style: dashed;
     background: transparent;
