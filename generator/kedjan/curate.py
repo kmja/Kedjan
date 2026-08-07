@@ -197,6 +197,16 @@ def check_day(
     if len(pairs) not in PAIR_BAND:
         warn(f"{len(pairs)} valid pairs, healthy band is {PAIR_BAND.start}-{PAIR_BAND.stop - 1}")
 
+    # Two families of check below need SALDO's lemma inventory to be right.
+    # Without it they fall back to hand-built lists that are known to be wrong
+    # in places — `såg` is a saw as well as the past tense of se, `band` a
+    # ribbon as well as the preterite of binda, `lång` an adjective long before
+    # it is the stem of the fish-verb långa. They still run and still report,
+    # but they must not *block*: CI has no SALDO, and a red build that is
+    # wrong teaches you to stop reading it.
+    lemma_fail = err if saldo is not None else warn
+    unverified = "" if saldo is not None else " — hand list, no SALDO to check it against"
+
     # ── endpoint taste ───────────────────────────────────────────
     for role, endpoint in (("start", start), ("target", target)):
         if endpoint in PREFIX_SET:
@@ -210,16 +220,16 @@ def check_day(
         if endpoint in TONE_BAN:
             err(f"{role} {endpoint!r} is off-tone for a general-audience daily")
         if endpoint in INFLECTED_FORMS and not (saldo and saldo.is_part_candidate(endpoint)):
-            err(f"{role} {endpoint!r} is an inflected form, not a lemma")
+            lemma_fail(f"{role} {endpoint!r} is an inflected form, not a lemma{unverified}")
         if endpoint in SUFFIX_STOP:
             warn(f"{role} {endpoint!r} is a derivational suffix")
 
     # ── pool sanity ──────────────────────────────────────────────
     for part in [*pool, start, target]:
         if lex is not None and has_common_verb_twin(part, lex, saldo):
-            err(
+            lemma_fail(
                 f"{part!r} is also the stem of the common verb {part}a — it "
-                "inherits welds from a lemma that is not in the game"
+                f"inherits welds from a lemma that is not in the game{unverified}"
             )
 
     for part in pool:
@@ -233,7 +243,9 @@ def check_day(
         # inflection". SALDO answers it properly, and knows that `såg` is a saw
         # as well as the past tense of se — so where SALDO can judge, it wins.
         if part in INFLECTED_FORMS and not (saldo and saldo.is_part_candidate(part)):
-            err(f"pool part {part!r} is an inflected form; parts are lemmas only")
+            lemma_fail(
+                f"pool part {part!r} is an inflected form; parts are lemmas only{unverified}"
+            )
         if part in DEGREE_PREFIXES:
             err(f"pool part {part!r} is a degree prefix — it modifies any adjective")
         if part in NON_HEAD_PARTS:

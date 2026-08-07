@@ -1301,5 +1301,581 @@
    "min_cross_links": 5,
    "isolated_chips": 1
   }
+ },
+ {
+  "start": "liv",
+  "target": "val",
+  "par": 3,
+  "accepted": false,
+  "reason": "pool is ten abstract nouns, reads as one closed class",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 12,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "barn",
+  "target": "skott",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4,
+   "min_cross_links": 3,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "grund",
+  "target": "mor",
+  "par": 3,
+  "accepted": false,
+  "reason": "mor kinship endpoint, and värdmor/familjemor/stödfamilj are thin",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 10,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "jul",
+  "target": "frihet",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4,
+   "min_cross_links": 3,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "mat",
+  "target": "sak",
+  "par": 3,
+  "accepted": false,
+  "reason": "hundsak, affärsvän, familjesak thin; sak is a vague endpoint",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "lång",
+  "target": "verk",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 11,
+   "openings": 5,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 3,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "sorg",
+  "target": "frid",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 30,
+   "solutions": 12,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "hund",
+  "target": "resa",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 11,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4,
+   "min_cross_links": 3,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "natt",
+  "target": "hår",
+  "par": 3,
+  "accepted": false,
+  "reason": "only 5 solutions, and glashår is unexplained",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 5,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "familj",
+  "target": "kvinna",
+  "par": 3,
+  "accepted": false,
+  "reason": "15 of 19 welds unsupported; tjänstekvinna is dated",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 9,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "fin",
+  "target": "blind",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 31,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "musik",
+  "target": "karl",
+  "par": 3,
+  "accepted": false,
+  "reason": "karl is dated and gendered; båtkarl, hästkarl, bokbåt all thin",
+  "metrics": {
+   "valid_pairs": 30,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "djur",
+  "target": "medlem",
+  "par": 3,
+  "accepted": false,
+  "reason": "and is a bad chip, and själand reads as the place name Själland",
+  "metrics": {
+   "valid_pairs": 30,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "slag",
+  "target": "drag",
+  "par": 3,
+  "accepted": false,
+  "reason": "only 6 solutions and drag/slag are near-doublets",
+  "metrics": {
+   "valid_pairs": 30,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 3,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "sång",
+  "target": "läkare",
+  "par": 3,
+  "accepted": false,
+  "reason": "läkare reached only through thin welds",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "guld",
+  "target": "gäst",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 12,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "katt",
+  "target": "känsla",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 31,
+   "solutions": 12,
+   "openings": 3,
+   "closings": 5,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "konst",
+  "target": "grav",
+  "par": 3,
+  "accepted": false,
+  "reason": "grav reads funereal in a daily",
+  "metrics": {
+   "valid_pairs": 31,
+   "solutions": 10,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "hand",
+  "target": "grund",
+  "par": 3,
+  "accepted": false,
+  "reason": "grund as endpoint is flat",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "häst",
+  "target": "brev",
+  "par": 3,
+  "accepted": false,
+  "reason": "13 of 17 welds unsupported; hästgrund, beteskrav, vänbok all thin",
+  "metrics": {
+   "valid_pairs": 30,
+   "solutions": 9,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "kärlek",
+  "target": "ledare",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 12,
+   "openings": 5,
+   "closings": 4,
+   "disjoint_routes": 4,
+   "min_cross_links": 3,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "val",
+  "target": "vänlig",
+  "par": 3,
+  "accepted": false,
+  "reason": "vänlig is an adjective endpoint, cross-links only 2",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 5,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 2,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "bad",
+  "target": "show",
+  "par": 4,
+  "accepted": false,
+  "reason": "show pool leans on kram, welds only within its own route",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "fågel",
+  "target": "lunch",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 7,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "tjänst",
+  "target": "doktor",
+  "par": 4,
+  "accepted": false,
+  "reason": "only 5 solutions",
+  "metrics": {
+   "valid_pairs": 22,
+   "solutions": 5,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "strid",
+  "target": "kärlek",
+  "par": 4,
+  "accepted": false,
+  "reason": "kärlek tonally mismatched pair",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "tro",
+  "target": "teori",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 8,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "data",
+  "target": "musik",
+  "par": 4,
+  "accepted": false,
+  "reason": "only 5 solutions",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 5,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 7,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "morgon",
+  "target": "fader",
+  "par": 4,
+  "accepted": false,
+  "reason": "fader is the archaic register of far",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 10,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 8,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "jord",
+  "target": "jävel",
+  "par": 4,
+  "accepted": false,
+  "reason": "jävel is profanity — cut on tone",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 5,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 4,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "båt",
+  "target": "rök",
+  "par": 4,
+  "accepted": false,
+  "reason": "only 3 solutions",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 3,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "gäng",
+  "target": "middag",
+  "par": 4,
+  "accepted": false,
+  "reason": "only 5 solutions",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 5,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 9,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "ljus",
+  "target": "park",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 4,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "polis",
+  "target": "sur",
+  "par": 4,
+  "accepted": false,
+  "reason": "sur is an adjective endpoint",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "affär",
+  "target": "såg",
+  "par": 4,
+  "accepted": false,
+  "reason": "såg doubles as a verb form",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "söndag",
+  "target": "broder",
+  "par": 4,
+  "accepted": false,
+  "reason": "broder is the archaic register of bror, the farbroder complaint again",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 11,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
  }
 ]

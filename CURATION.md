@@ -135,22 +135,37 @@ strid + s + vagn    really is  strid-s-vagn     (neither strids nor svagn)
 
 ## What shipped
 
-Five days, curated from twenty candidates.
+Twelve days, curated from thirty-six candidates. The whole calendar was rebuilt
+when the forbidden-word flags were honoured — four of the five days shipped
+before that welded on a word the dictionary lists only to reject.
 
 | # | date | day | par | sols | indep | cross | open | close | branching |
 |---|------|-----|-----|------|-------|-------|------|-------|-----------|
-| 1 | 2026-08-02 | slag → flaska | 4 | 6 | 2 | 5 | 4 | 2 | 4, 2, 3 |
-| 2 | 2026-08-03 | slut → teori | 3 | 10 | 3 | 6 | 5 | 4 | 5, 2 |
-| 3 | 2026-08-04 | hund → glas | 3 | 8 | 4 | 2 | 4 | 4 | 4, 2 |
-| 4 | 2026-08-05 | musik → sätt | 3 | 7 | 3 | 2 | 5 | 3 | 5, 3 |
-| 5 | 2026-08-06 | jul → skydd | 3 | 10 | 3 | 2 | 5 | 3 | 5, 2 |
+| 1 | 2026-07-30 | hund → resa | 3 | 11 | 4 | 3 | 4 | 4 | 4, 2 |
+| 2 | 2026-07-31 | fin → blind | 3 | 7 | 3 | 5 | 3 | 4 | 3, 4 |
+| 3 | 2026-08-01 | guld → gäst | 3 | 12 | 3 | 4 | 5 | 3 | 5, 2 |
+| 4 | 2026-08-02 | lång → verk | 3 | 11 | 3 | 3 | 5 | 4 | 5, 2 |
+| 5 | 2026-08-03 | fågel → lunch | 4 | 7 | 2 | 7 | 4 | 2 | 4, 2, 3 |
+| 6 | 2026-08-04 | kärlek → ledare | 3 | 12 | 4 | 3 | 5 | 4 | 5, 3 |
+| 7 | 2026-08-05 | barn → skott | 3 | 9 | 4 | 3 | 4 | 4 | 4, 3 |
+| 8 | 2026-08-06 | tro → teori | 4 | 8 | 2 | 8 | 4 | 2 | 4, 2, 2 |
+| 9 | 2026-08-07 | katt → känsla | 3 | 12 | 3 | 5 | 3 | 5 | 3, 2 |
+| 10 | 2026-08-08 | jul → frihet | 3 | 9 | 4 | 3 | 4 | 4 | 4, 3 |
+| 11 | 2026-08-09 | sorg → frid | 3 | 12 | 3 | 3 | 5 | 3 | 5, 4 |
+| 12 | 2026-08-10 | ljus → park | 4 | 9 | 2 | 4 | 4 | 2 | 4, 2, 2 |
 
-No day carries an isolated chip. `slut→teori` replaced `hel→gäst`, and is placed
-away from `musik→sätt` because their pools share kör, sång, låt and val — two
-near-identical pools on consecutive days would read as a repeat.
+Par-4 days sit at 5, 8 and 12 so the harder ones are spread. Order also
+separates pools sharing a semantic centre: `fågel`, `guld` and `barn` are all
+*varelse* days and the generator warned when two landed side by side.
 
-`lint --dic` reports zero errors. Rejections and their reasons are in
-`generator/curation-log.json`.
+Cut for reasons worth recording: `jord→jävel` on profanity; `söndag→broder` and
+`morgon→fader` on archaic register — the `farbroder` complaint again;
+`musik→karl` as dated and gendered; `liv→val` because its ten chips were all
+abstract nouns and read as one closed class; `djur→medlem` because `and` is a
+poor chip and *själand* reads as the place name Själland.
+
+`lint --dic` reports zero errors both with SALDO and without. Rejections and
+their reasons are in `generator/curation-log.json`.
 
 ## Solution count is not route diversity
 

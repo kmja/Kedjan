@@ -251,3 +251,44 @@ def test_allows_a_part_whose_verb_twin_is_rare(lex):
     day = a_day()
     day["pool"] = [*day["pool"][:-1], "ord"]
     assert not any("common verb" in m for m in errors(curate.check_day(day, corpus, saldo)))
+
+
+def test_flags_an_inflected_pool_part():
+    """`bröt` is the preterite of bryta. Parts are lemmas."""
+    day = a_day()
+    day["pool"] = [*day["pool"][:-1], "bröt"]
+    found = errors(curate.check_day(day)) + warnings(curate.check_day(day))
+    assert any("inflected form" in m for m in found)
+
+
+def test_saldo_overrules_the_hand_list_for_a_word_that_is_also_a_lemma():
+    """`band` is a ribbon as well as the preterite of binda, and the hand list
+    only knows the second. Where SALDO can judge, it wins."""
+    from kedjan.saldo import Saldo
+
+    day = a_day()
+    day["pool"] = [*day["pool"][:-1], "band"]
+    saldo = Saldo(pos={"band": frozenset({"nn"})})
+    assert not any("inflected form" in m for m in errors(curate.check_day(day, None, saldo)))
+
+
+def test_a_lemma_check_without_saldo_warns_rather_than_blocks():
+    """CI has no SALDO, so these checks run on hand lists that are known to be
+    wrong in places. They must still report — and must not block, because a red
+    build that is wrong teaches you to stop reading it."""
+    day = a_day()
+    day["pool"] = [*day["pool"][:-1], "band"]
+
+    without = curate.check_day(day)
+    assert not any("inflected form" in m for m in errors(without))
+    assert any("inflected form" in m for m in warnings(without))
+
+
+def test_the_same_check_blocks_once_saldo_can_judge():
+    """The downgrade is about missing evidence, not about the rule going soft."""
+    from kedjan.saldo import Saldo
+
+    day = a_day()
+    day["pool"] = [*day["pool"][:-1], "bröt"]
+    saldo = Saldo(pos={"bryta": frozenset({"vb"})})   # knows bryta, so bröt is no lemma
+    assert any("inflected form" in m for m in errors(curate.check_day(day, None, saldo)))

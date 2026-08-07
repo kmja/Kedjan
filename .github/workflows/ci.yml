@@ -35,7 +35,13 @@ jobs:
         working-directory: generator
       # The shipped calendar has to pass on every push, *with* the dictionary:
       # the weld check is the one that catches a compound that does not exist,
-      # and a green run without it would be worse than no run at all. SALDO is
-      # absent here, so the part-quality checks fall back to the hand lists.
+      # and a green run without it would be worse than no run at all.
+      #
+      # SALDO is not fetched here — it is a separately-licensed upload, not a
+      # URL. The two checks that need its lemma inventory therefore fall back
+      # to hand-built lists, and those lists are wrong in places: they call
+      # `band` an inflection of binda and `lång` the stem of the fish-verb
+      # långa. Those checks warn rather than block when SALDO is missing, so
+      # this step fails on the evidence it actually has.
       - run: python -m kedjan.cli lint ../public/days.json --dic sv_SE.dic
         working-directory: generator
