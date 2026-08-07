@@ -18,20 +18,47 @@ kedjan/cli.py      generate / lint
 
 ## Corpora
 
-Run `./fetch-corpora.sh`. Both files are gitignored — they are multi-megabyte
+Run `./fetch-corpora.sh`. The files are gitignored — they are multi-megabyte
 and separately licensed, so they are fetched rather than vendored.
 
 | file | what | licence |
 |------|------|---------|
 | `sv_SE.dic` | [yeager/hunspell-sv](https://github.com/yeager/hunspell-sv) — hunspell stem list, upstream **SFOL 2.42** (Den stora fria ordlistan, Göran Andersson), which itself folds in Språkbanken SALDO and SAOL 15 | LGPL-3.0, attribution to SFOL required |
+| `sv_SE.aff` | the affix file for the same dictionary — the authority for what its flag letters mean | LGPL-3.0 |
 | `sv_50k.txt` | [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords), Swedish | MIT |
 
-The `.dic` declares 279,120 entries; 249,997 survive the reader's filter
-(letters only, three characters or more). Note that only stems are fetched —
-the `.aff` affix rules are not applied, so inflected surface forms are absent
-by design. That is what we want for a lemma-based part graph, and it is also
-why the concatenation-lookup augmentation still earns its place: it asks "is
-this string a word", never "how does it split".
+`saldo_2.3/` is **not** fetched: Språkbanken serves it behind a landing page
+rather than a stable file URL, so it is placed by hand. Everything degrades to
+the hand-built filters when it is absent, which is what CI runs on.
+
+### Two dictionaries, and they are not independent
+
+There are two *dictionaries* and one frequency list. SFOL and SALDO do
+different jobs — SALDO decides what may be a **part**, SFOL decides whether a
+**compound exists** — but they are not separate witnesses: SFOL folds SALDO in
+upstream. So "SFOL has it, SALDO does not" is never two sources disagreeing.
+It means the word sits in the part of SFOL that SALDO never vouched for, which
+is where `glasbåt` and `finbord` were found.
+
+The frequency list is not a third dictionary. It ranks words by how common
+they are and never says whether something is a word.
+
+### What the reader keeps
+
+The `.dic` declares 279,120 entries. 260,167 lines pass the letters-only,
+three-characters-or-more filter, spelling **249,997 distinct stems** — a word
+recurs when it has several paradigms. Of those, **5,985 are dropped** for
+carrying a flag that means "not a word you may use on its own", leaving
+**244,012**. See CURATION.md for what those flags are and what shipped before
+they were read.
+
+Only stems are fetched — the `.aff` affix *rules* are not applied, so inflected
+surface forms are absent by design. That is what we want for a lemma-based part
+graph.
+
+Note that the concatenation-lookup augmentation is currently inert: `load()`
+takes a supplementary word list, no path is configured, and `union` is
+therefore identical to `words`. The seam is still there; nothing is in it.
 
 **The frequency list is derived from film subtitles.** It ranks spoken Swedish,
 so it is a good prior for "would a player recognise this" and a bad one for
