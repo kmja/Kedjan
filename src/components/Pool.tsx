@@ -8,6 +8,8 @@ interface Props {
   incoming: boolean;
   /** Where the next click will land, so the chip can say so. */
   armedJoint: number | null;
+  /** Chips a hint has ruled out: in no winning route from here. */
+  dimmed: ReadonlySet<string>;
   handlers: (part: string, source: "pool" | "chain") => ChipHandlers;
 }
 
@@ -17,7 +19,15 @@ interface Props {
  * reader with no drag involved. It doubles as the drop zone for a part being
  * taken back out of the chain.
  */
-export function Pool({ parts, marked, liftedPart, incoming, armedJoint, handlers }: Props) {
+export function Pool({
+  parts,
+  marked,
+  liftedPart,
+  incoming,
+  armedJoint,
+  dimmed,
+  handlers,
+}: Props) {
   const destination =
     armedJoint === null ? "sist i kedjan" : `plats ${armedJoint + 1} i kedjan`;
 
@@ -37,10 +47,13 @@ export function Pool({ parts, marked, liftedPart, incoming, armedJoint, handlers
           {...handlers(part, "pool")}
           className={`chip ${marked === part ? "chip--marked" : ""} ${
             liftedPart === part ? "chip--lifted" : ""
-          }`}
+          } ${dimmed.has(part) ? "chip--dimmed" : ""}`}
           aria-label={
             `${part}. Lägg på ${destination}.` +
-            (marked === part ? " Ledtråd: den här passar." : "")
+            (marked === part ? " Ledtråd: den här passar." : "") +
+            // Dimmed chips stay playable: the hint narrows the field, it does
+            // not confiscate a move.
+            (dimmed.has(part) ? " Ledtråd: den här leder inte till målet." : "")
           }
         >
           {marked === part && <span aria-hidden="true">⭐</span>}

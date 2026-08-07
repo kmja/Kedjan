@@ -254,9 +254,7 @@ def select_hubs(
                 return False  # a degree prefix, not a part
             return saldo.is_part_candidate(part)
         return (
-            part not in NUMERALS
-            and part not in PLURAL_BAN
-            and part not in CLOSED_CLASS
+            part not in CLOSED_CLASS
             and not is_inflected_part(part, known)
             and not is_surface_form(part, lex)
         )
@@ -267,10 +265,17 @@ def select_hubs(
         if MIN_DEGREE <= deg <= MAX_DEGREE
         and lex.obscurity(part) < MAX_HUB_OBSCURITY
         and len(part) in HUB_LENGTH
+        # Editorial bans apply on both paths: these are judgements about what
+        # belongs in the game, not facts a lexicon can settle. NUMERALS lived
+        # only in the fallback for a while, and `dubbel` — which SALDO tags as
+        # an adjective, not a numeral — walked straight into a pool.
         and part not in COLORS
+        and part not in NUMERALS
         and part not in TONE_BAN
+        and part not in PLURAL_BAN
         and part not in NON_HEAD_PARTS
         and part not in DEGREE_PREFIXES
+        and not has_common_verb_twin(part, lex, saldo)
         and lexically_ok(part)
     )
 
@@ -298,6 +303,28 @@ def augment_by_lookup(
                     recovered += 1
                     break
     return recovered
+
+
+#: A part whose string doubles as the stem of a *common* verb inherits welds
+#: from a lemma that is not in the game. `kör` is a choir here, but `körsätt`,
+#: `körskola` and `körprov` all come from `köra` — so the chip is credited with
+#: welds a player who knows the choir sense could never predict.
+#:
+#: The cutoff is on the verb's own frequency, because productivity is what does
+#: the damage: `köra` ranks 551 and generates compounds freely, while `orda`,
+#: `jula` and `borda` are rare enough that nobody would build a compound from
+#: them. Without SALDO's morphology layer, which records each lemma's
+#: compound-initial form, this is the closest available approximation.
+VERB_TWIN_OBSCURITY = 2_000
+
+
+def has_common_verb_twin(part: str, lex: Lexicon, saldo: Saldo | None) -> bool:
+    twin = part + "a"
+    if saldo is not None and "vb" not in saldo.pos.get(twin, frozenset()):
+        return False
+    if saldo is None and twin not in lex.words:
+        return False
+    return lex.obscurity(twin) < VERB_TWIN_OBSCURITY
 
 
 def head_pos_consistent(head: str, witness: str, saldo: Saldo) -> bool:
@@ -329,6 +356,11 @@ def build(
     pairs = witnessed_pairs(compounds, lex)
     hubs = select_hubs(pairs, lex, saldo)
     augment_by_lookup(pairs, hubs, lex)
+
+    # A witness that is a verb form is not a compound with a noun head, however
+    # well the letters line up: poängsätt is the stem of poängsätta.
+    for key in [k for k, w in pairs.items() if w in lex.verb_forms]:
+        del pairs[key]
 
     if saldo is not None:
         for key in [

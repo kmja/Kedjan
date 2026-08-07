@@ -116,6 +116,14 @@ body {
   .chip--lifted {
     opacity: 0.28;
   }
+  /* Ruled out by a hint, but still playable — the hint narrows the field, it
+     does not confiscate the move. Struck through as well as faded, so the cue
+     is not colour or opacity alone. */
+  .chip--dimmed {
+    opacity: 0.4;
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
   .chip--ghost {
     position: fixed;
     z-index: 50;

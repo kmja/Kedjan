@@ -202,3 +202,52 @@ def test_flags_a_witness_that_does_not_inherit_its_head_word_class(lex):
     saldo = Saldo(pos={"fin": frozenset({"av"}), "morfin": frozenset({"nn"})})
     day = a_day(pairs={"sten>mur": "stenmur", "mor>fin": "morfin"})
     assert any("does not take its head" in m for m in errors(curate.check_day(day, None, saldo)))
+
+
+def test_flags_a_witness_that_is_a_verb_form(lex):
+    from kedjan.lexicon import Lexicon
+
+    verby = Lexicon(
+        words=lex.words | {"poängsätt"},
+        union=lex.union | {"poängsätt"},
+        rank=lex.rank,
+        common=lex.common,
+        verb_forms=frozenset({"poängsätt"}),
+    )
+    day = a_day(pairs={"sten>mur": "stenmur", "poäng>sätt": "poängsätt"})
+    found = errors(curate.check_day(day, verby))
+    assert any("is a verb form" in m for m in found)
+
+
+def test_flags_a_part_that_doubles_as_a_common_verb_stem(lex):
+    from kedjan.lexicon import Lexicon
+    from kedjan.saldo import Saldo
+
+    # köra is rank 551 — productive enough to generate körsätt, körskola, körprov.
+    corpus = Lexicon(
+        words=lex.words | {"kör", "köra"},
+        union=lex.union | {"kör", "köra"},
+        rank={**lex.rank, "köra": 551},
+        common=lex.common,
+    )
+    saldo = Saldo(pos={"köra": frozenset({"vb"})})
+    day = a_day()
+    day["pool"] = [*day["pool"][:-1], "kör"]
+    assert any("stem of the common verb" in m for m in errors(curate.check_day(day, corpus, saldo)))
+
+
+def test_allows_a_part_whose_verb_twin_is_rare(lex):
+    from kedjan.lexicon import Lexicon
+    from kedjan.saldo import Saldo
+
+    # orda exists but nobody builds compounds from it.
+    corpus = Lexicon(
+        words=lex.words | {"ord", "orda"},
+        union=lex.union | {"ord", "orda"},
+        rank={**lex.rank, "orda": 900_000},
+        common=lex.common,
+    )
+    saldo = Saldo(pos={"orda": frozenset({"vb"})})
+    day = a_day()
+    day["pool"] = [*day["pool"][:-1], "ord"]
+    assert not any("common verb" in m for m in errors(curate.check_day(day, corpus, saldo)))

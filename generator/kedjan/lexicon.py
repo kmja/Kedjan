@@ -40,22 +40,43 @@ class Lexicon:
     rank: dict[str, int] = field(default_factory=dict)
     #: The commonest slice, used to let short but everyday parts through.
     common: frozenset[str] = frozenset()
+    #: Words whose hunspell entry carries a verb-only affix flag. The flags
+    #: encode the paradigm, so they say what a word *is* even when SALDO has
+    #: never heard of it — which is how `poängsätt` is caught: it is the stem
+    #: of the verb poängsätta, not a compound whose head is the noun `sätt`.
+    verb_forms: frozenset[str] = frozenset()
 
     def obscurity(self, word: str) -> int:
         """Frequency rank, or UNRANKED for anything off the list."""
         return self.rank.get(word, UNRANKED)
 
 
-def read_dic(path: Path | str) -> set[str]:
-    """Read a hunspell .dic: a count on line one, then `word/FLAGS` per line."""
+#: Affix flags that only ever appear on verbs. Derived, not guessed: measured
+#: against SALDO's own part-of-speech tags over 6,957 verbs, 56,755 nouns and
+#: 15,759 adjectives, these two are the only flags carried by a fifth or more
+#: of verbs and by no noun and no adjective at all. The obvious wider set —
+#: N, P, M, K, L — leaks into adjectives and would condemn sockersöt.
+VERB_ONLY_FLAGS = frozenset("jm")
+
+
+def read_dic(path: Path | str) -> tuple[set[str], set[str]]:
+    """Read a hunspell .dic into (words, verb forms).
+
+    The line format is `word/FLAGS`, and the flags are worth keeping: they
+    encode the inflection paradigm, which is the only evidence available for a
+    word SALDO has never recorded.
+    """
     words: set[str] = set()
+    verbs: set[str] = set()
     with open(path, encoding="utf-8") as fh:
         next(fh, None)  # the leading entry count
         for line in fh:
-            word = line.strip().split("/")[0]
+            word, _, flags = line.strip().partition("/")
             if WORD_RE.fullmatch(word) and len(word) >= 3:
                 words.add(word)
-    return words
+                if VERB_ONLY_FLAGS & set(flags):
+                    verbs.add(word)
+    return words, verbs
 
 
 def read_plain(path: Path | str) -> set[str]:
@@ -82,7 +103,7 @@ def load(
 ) -> Lexicon:
     """Load the corpora. The supplementary word list is optional — the union
     simply collapses to the hunspell set when it is absent."""
-    words = read_dic(dic_path)
+    words, verb_forms = read_dic(dic_path)
     union = set(words)
     if wordlist_path and Path(wordlist_path).exists():
         union |= read_plain(wordlist_path)
@@ -92,4 +113,5 @@ def load(
         union=frozenset(union),
         rank=rank,
         common=frozenset(common),
+        verb_forms=frozenset(verb_forms),
     )

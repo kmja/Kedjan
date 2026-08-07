@@ -55,7 +55,7 @@ export function Controls({
           {parRevealed && (
             <>
               <span aria-hidden="true"> · </span>
-              <span>par {day.par}</span>
+              <span aria-label={`par ${day.par}`}>{`par ${day.par}`}</span>
             </>
           )}
         </p>
@@ -67,7 +67,7 @@ export function Controls({
             className="btn btn--accent"
             aria-label={
               ["Ledtråd: hur många länkar som rekommenderas",
-               "Ledtråd: hur långt kvar till målet",
+               "Ledtråd: tona ned delar som inte leder till målet",
                "Ledtråd: markera rätt väg vidare"][hints % 3]
             }
           >

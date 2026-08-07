@@ -160,6 +160,32 @@ export function spellChain(day: Day, chain: readonly string[]): string[] {
   return words;
 }
 
+/**
+ * Parts that still appear in some winning route, given what is already placed.
+ *
+ * Solutions are filtered to those that begin with the run the player has built
+ * and that holds; the live set is every part those routes still need. If
+ * nothing extends the current run — the player has built into a corner — every
+ * solution counts, because the useful advice then is about the whole board
+ * rather than about a dead position.
+ */
+export function livingParts(day: Day, chain: readonly string[]): Set<string> {
+  const { length } = validPrefix(day, chain);
+  const prefix = chain.slice(0, length);
+  const all = allSolutions(day);
+
+  const extending = all.filter(
+    (route) => prefix.every((part, i) => route[i] === part),
+  );
+  const routes = extending.length ? extending : all;
+
+  const live = new Set<string>();
+  for (const route of routes) {
+    for (const part of route.slice(prefix.length)) live.add(part);
+  }
+  return live;
+}
+
 /** Two chains are the same route regardless of how the player got there. */
 export function sameChain(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((p, i) => p === b[i]);

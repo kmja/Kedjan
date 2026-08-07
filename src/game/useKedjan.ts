@@ -5,9 +5,9 @@ import {
   availableParts,
   bestNextPart,
   brokenJoints,
-  distanceToTarget,
   fullChain,
   isDeadEnd,
+  livingParts,
   sameChain,
   validPrefix,
   weld,
@@ -30,6 +30,11 @@ export function useKedjan(day: Day | null) {
   const [save, setSave] = useState(loadSave);
   const [status, setStatus] = useState<Status | null>(null);
   const [marked, setMarked] = useState<string | null>(null);
+  /**
+   * Chips the second hint has ruled out — those in no winning route from here.
+   * Empty until that hint is bought.
+   */
+  const [dimmed, setDimmed] = useState<ReadonlySet<string>>(new Set());
   /**
    * The joint a part will land in next, so the keyboard can aim as a drag
    * does. Joints and insertion points are the same thing: joint `i` sits
@@ -131,6 +136,7 @@ export function useKedjan(day: Day | null) {
       patch((p) => ({ ...p, chain: next }));
       setArmedJoint(null);
       setMarked(null);
+      setDimmed(new Set());
 
       const atCeiling = next.length >= maxParts;
       setJointMarks(judge(next, atCeiling));
@@ -176,6 +182,7 @@ export function useKedjan(day: Day | null) {
       const next = chain.filter((p) => p !== part);
       patch((p) => ({ ...p, chain: next }));
       setMarked(null);
+      setDimmed(new Set());
       setJointMarks(judge(next, next.length >= maxParts));
       setVerdictKey((k) => k + 1);
       say({ kind: "info", msg: `${upper(part)} tillbaka i poolen.` });
@@ -244,16 +251,23 @@ export function useKedjan(day: Day | null) {
       say({ kind: "no", msg: "Härifrån når du inte målet — ta bort en del och försök igen." });
       return;
     }
-    const d = distanceToTarget(day, consumed, at)!;
     const where = length === 0 ? "från starten" : `efter ${upper(at)}`;
 
     if (rung === 1) {
-      say({
-        kind: "info",
-        msg: d === 1
-          ? `Målet är ett enda ord bort ${where}.`
-          : `Målet är ${d} ord bort ${where}.`,
-      });
+      // Distance is redundant once par is known, so this rung takes options off
+      // the table instead: every chip that appears in no winning route from
+      // where the player stands is greyed out.
+      const live = livingParts(day, chain);
+      const dead = pool.filter((p) => !live.has(p));
+      if (!dead.length) {
+        say({ kind: "info", msg: "Alla delar som är kvar kan leda till målet." });
+      } else {
+        setDimmed(new Set(dead));
+        say({
+          kind: "info",
+          msg: `${plural(dead.length, "del", "delar")} kan inte leda till målet — de är nedtonade.`,
+        });
+      }
     } else {
       const next = bestNextPart(day, consumed, at);
       if (!next) {
@@ -269,7 +283,7 @@ export function useKedjan(day: Day | null) {
       });
     }
     patch((p) => ({ ...p, hints: p.hints + 1 }));
-  }, [day, solved, chain, hints, say, patch]);
+  }, [day, solved, chain, pool, hints, say, patch]);
 
   /** Alternative routes, revealed only once the day is won. */
   const otherSolutions = useMemo(() => {
@@ -304,6 +318,7 @@ export function useKedjan(day: Day | null) {
     links,
     pool,
     marked,
+    dimmed,
     armedJoint,
     maxParts,
     jointMarks,

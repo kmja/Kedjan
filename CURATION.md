@@ -117,6 +117,8 @@ Each entry was a defect found in play or in review, and is now a rule.
 | `ögat`, `mans`, `gör` | definite, genitive and finite forms are not lemmas |
 | `snöande`, `bärande` | `ande` barred as a part — finally it spells a participle |
 | `hund`/`ben`/`böj` welding to nothing else | routes must cross-link; isolated chips capped at one |
+| `poängsätt` | hunspell affix flags: a witness carrying a verb-only flag is a verb form |
+| `körsätt`, `körskola` from the choir chip | a part whose string is also a *common* verb stem is barred |
 | `benbrott`, `skallbrott`, `hundbett` | an injury pool in a cosy daily — cut on tone |
 | `helfin`, `helkul`, `heltokig` | degree prefixes, caught by adjective-head share |
 | `morfin`, `bankett`, `tonsur`, `minnesvärd` | a compound must inherit its head's word class |
@@ -250,6 +252,49 @@ The rule can only judge welds where SALDO records both the head and the
 witness — about 2,300 of the graph's 5,500 hub welds — and stays silent
 otherwise. Within what it can see it removes 109, or 4.7%.
 
+## The affix flags say what a word is
+
+The hunspell `.dic` writes `word/FLAGS`, and the flags encode the inflection
+paradigm. The reader used to throw them away. They are the only evidence
+available for a word SALDO has never recorded — which is exactly the case that
+matters, since SALDO covers about 40% of compounds:
+
+```
+sätt/ABDY          levnadssätt/ABDY     noun paradigm
+poängsätt/AjOR     köra/HKLmMNO         verb paradigm
+```
+
+Which flags mean "verb" was measured, not guessed: against SALDO's own tags
+over 6,957 verbs, 56,755 nouns and 15,759 adjectives, only **j** and **m** are
+carried by a fifth or more of verbs and by no noun and no adjective at all. The
+obvious wider set — N, P, M, K, L — leaks into adjectives and would have
+condemned `sockersöt` and `tänkvärd`. The narrow rule drops 47 hub welds
+(0.9%), every one a verb: *ondgöra*, *handhälsa*, *soltorka*, *kallröka*.
+
+## A part must not double as a common verb stem
+
+`kör` is a choir here — SALDO records exactly one sense — but the *string*
+`kör-` is also the compound-initial form of `köra`, a lemma the lemma-only rule
+excludes. So the chip silently inherited `körsätt`, `körskola`, `körprov`:
+welds no player who knows the choir sense could predict.
+
+The narrow fix fails. Requiring SALDO attestation for such welds cannot tell
+`körlåt` (choir song, good) from `körskola` (driving school, bad), and costs
+26% of the graph. What works is barring the part when its verb twin is
+*productive*, measured by frequency:
+
+```
+köra    rank    551   ->  kör barred
+mata    rank  3,720   ->  mat kept
+natta   rank 25,021   ->  natt kept
+orda    absent        ->  ord kept
+```
+
+At a cutoff of 2,000 this bars 55 of 764 parts. It is an approximation:
+SALDO's *morphology* layer records each lemma's compound-initial form and would
+settle it exactly. That is the fourth distinct defect pointing at the same
+missing file.
+
 ## Evidence for a weld
 
 `review` now prints SALDO's sense beside every weld on a solution path, and the
@@ -295,6 +340,24 @@ have been reordered apart.
 comes from the compounds it *builds* (benbrott, skallbrott) and not from what
 its parts individually mean. At depth 5 every pool converges on the same
 primitives (`vem`, `ge`, `till`) and even the coherence signal is gone.
+
+## Hand lists lose to SALDO, and the lint found three places they had not
+
+`INFLECTED_FORMS`, `NUMERALS` and their kin are approximations of questions
+SALDO answers properly. Three inconsistencies surfaced in a single curation
+pass, each caught by the lint refusing to write:
+
+- `dubbel` reached a pool because the `NUMERALS` ban had drifted into the
+  SALDO-absent fallback branch during a refactor, and SALDO tags it as an
+  adjective rather than a numeral. Editorial bans — colours, numerals, tone —
+  now apply on both paths, because they are judgements about what belongs in
+  the game rather than facts a lexicon can settle.
+- `såg` and `band` were blocked as inflected forms. They are, but they are also
+  a saw and a ribbon, and `sågverk` is a perfectly good compound. Where SALDO
+  records a part as a noun or adjective lemma, it now overrides the hand list.
+
+None of these would have been noticed by eye. All three were found because
+`accept` re-lints its own picks and writes nothing when anything blocks.
 
 ## Known gaps
 

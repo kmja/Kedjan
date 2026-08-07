@@ -917,5 +917,389 @@
   "accepted": true,
   "reason": "",
   "metrics": {}
+ },
+ {
+  "start": "jul",
+  "target": "match",
+  "par": 3,
+  "accepted": false,
+  "reason": "dubbel is a numeral — caught after a ban regression",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 5,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 2,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "mat",
+  "target": "karl",
+  "par": 3,
+  "accepted": false,
+  "reason": "karl is a weak target",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 5,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 3,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "grund",
+  "target": "rum",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 10,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 3,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "hund",
+  "target": "samtal",
+  "par": 3,
+  "accepted": false,
+  "reason": "spare",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 5,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 3,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "sorg",
+  "target": "fråga",
+  "par": 3,
+  "accepted": false,
+  "reason": "sorgefest a weak opener",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 11,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 4,
+   "min_cross_links": 2,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "fin",
+  "target": "vakt",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 8,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "slag",
+  "target": "teori",
+  "par": 3,
+  "accepted": false,
+  "reason": "spare",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "natt",
+  "target": "klass",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "musik",
+  "target": "kontor",
+  "par": 3,
+  "accepted": false,
+  "reason": "spare",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 3,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "djur",
+  "target": "färdig",
+  "par": 3,
+  "accepted": false,
+  "reason": "spare",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 5,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 2,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "guld",
+  "target": "vin",
+  "par": 3,
+  "accepted": false,
+  "reason": "spare",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 2,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "val",
+  "target": "själ",
+  "par": 3,
+  "accepted": false,
+  "reason": "djursjäl marginal",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "katt",
+  "target": "verk",
+  "par": 3,
+  "accepted": false,
+  "reason": "kattkött off-tone",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 8,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 3,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "konst",
+  "target": "band",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 5,
+   "openings": 5,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 4,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "hand",
+  "target": "föda",
+  "par": 4,
+  "accepted": false,
+  "reason": "only four solutions",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 4,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "sång",
+  "target": "mage",
+  "par": 4,
+  "accepted": false,
+  "reason": "mage is a weak target",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 5,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 4,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "häst",
+  "target": "lärare",
+  "par": 4,
+  "accepted": false,
+  "reason": "hästgrund a weak opener",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "strid",
+  "target": "glädje",
+  "par": 4,
+  "accepted": false,
+  "reason": "spare",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "bad",
+  "target": "plikt",
+  "par": 4,
+  "accepted": false,
+  "reason": "spare",
+  "metrics": {
+   "valid_pairs": 22,
+   "solutions": 5,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "data",
+  "target": "kula",
+  "par": 4,
+  "accepted": false,
+  "reason": "three solutions",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 3,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "polis",
+  "target": "egen",
+  "par": 4,
+  "accepted": false,
+  "reason": "egen is an adjective target",
+  "metrics": {
+   "valid_pairs": 23,
+   "solutions": 11,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "kärlek",
+  "target": "person",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "affär",
+  "target": "park",
+  "par": 4,
+  "accepted": false,
+  "reason": "four solutions",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 4,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 1
+  }
+ },
+ {
+  "start": "fågel",
+  "target": "hälsa",
+  "par": 4,
+  "accepted": false,
+  "reason": "spare",
+  "metrics": {
+   "valid_pairs": 22,
+   "solutions": 7,
+   "openings": 4,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 1
+  }
  }
 ]

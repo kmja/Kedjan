@@ -22,6 +22,7 @@ from .graph import (
     NUMERALS,
     TONE_BAN,
     doublet_partner,
+    has_common_verb_twin,
     head_pos_consistent,
 )
 from .analysis import report as analyse
@@ -208,12 +209,19 @@ def check_day(
             err(f"{role} {endpoint!r} is a numeral — a universal combiner")
         if endpoint in TONE_BAN:
             err(f"{role} {endpoint!r} is off-tone for a general-audience daily")
-        if endpoint in INFLECTED_FORMS:
+        if endpoint in INFLECTED_FORMS and not (saldo and saldo.is_part_candidate(endpoint)):
             err(f"{role} {endpoint!r} is an inflected form, not a lemma")
         if endpoint in SUFFIX_STOP:
             warn(f"{role} {endpoint!r} is a derivational suffix")
 
     # ── pool sanity ──────────────────────────────────────────────
+    for part in [*pool, start, target]:
+        if lex is not None and has_common_verb_twin(part, lex, saldo):
+            err(
+                f"{part!r} is also the stem of the common verb {part}a — it "
+                "inherits welds from a lemma that is not in the game"
+            )
+
     for part in pool:
         if part in COLORS:
             err(f"pool part {part!r} is a colour — ambiguity without structure")
@@ -221,7 +229,10 @@ def check_day(
             err(f"pool part {part!r} is a numeral — numerals combine without limit")
         if part in TONE_BAN:
             err(f"pool part {part!r} is off-tone for a general-audience daily")
-        if part in INFLECTED_FORMS:
+        # INFLECTED_FORMS is a hand-built approximation of "is this an
+        # inflection". SALDO answers it properly, and knows that `såg` is a saw
+        # as well as the past tense of se — so where SALDO can judge, it wins.
+        if part in INFLECTED_FORMS and not (saldo and saldo.is_part_candidate(part)):
             err(f"pool part {part!r} is an inflected form; parts are lemmas only")
         if part in DEGREE_PREFIXES:
             err(f"pool part {part!r} is a degree prefix — it modifies any adjective")
@@ -252,6 +263,11 @@ def check_day(
             err(
                 f"{witness!r} is not a {b!r} — it does not take its head's word "
                 "class, so it is a different word the parts happen to spell"
+            )
+        if lex is not None and witness in lex.verb_forms:
+            err(
+                f"{witness!r} is a verb form, not a compound — the base form is "
+                f"{witness}a, so this is not {a}+{b}"
             )
         if lex is not None and witness not in lex.union:
             err(f"{witness!r} is not in the lexicon — a false acceptance")

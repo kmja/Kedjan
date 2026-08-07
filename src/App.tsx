@@ -174,6 +174,7 @@ export default function App() {
                   liftedPart={drag?.part ?? null}
                   incoming={drag?.over === "pool"}
                   armedJoint={game.armedJoint}
+                  dimmed={game.dimmed}
                   handlers={handlers}
                 />
 

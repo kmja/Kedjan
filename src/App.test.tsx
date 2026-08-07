@@ -66,10 +66,8 @@ describe("the day board", () => {
     // One place to add a part, and no row of gaps announcing the answer's shape.
     expect(screen.getAllByRole("button", { name: /lägg en del efter/i })).toHaveLength(1);
     expect(screen.getByText("1 länk")).toBeInTheDocument();
-    // Par is part of the puzzle until a hint is spent on it. (The dev panel
-    // is on under import.meta.env.DEV, so scope to the controls.)
-    const controls = screen.getByRole("button", { name: /^ledtråd/i }).closest("div")!;
-    expect(within(controls).queryByText(/par/i)).not.toBeInTheDocument();
+    // Par is part of the puzzle until a hint is spent on it.
+    expect(screen.queryByLabelText("par 3")).not.toBeInTheDocument();
   });
 });
 
@@ -403,5 +401,77 @@ describe("when the calendar cannot be fetched", () => {
     );
     render(<App />);
     expect(await screen.findByRole("alert")).toHaveTextContent(/Kunde inte hämta/);
+  });
+});
+
+describe("the hint ladder", () => {
+  const chip = (part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+  const hintButton = () => screen.getByRole("button", { name: /^ledtråd/i });
+
+  it("sells par first, because the board no longer gives it away", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(hintButton());
+    await expectStatus("Rekommenderat: 3 länkar. Du får använda 4.");
+
+    expect(screen.getByLabelText("par 3")).toBeInTheDocument();
+  });
+
+  it("then rules out the chips that lead nowhere", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(hintButton());
+    await u.click(hintButton());
+    await expectStatus(/kan inte leda till målet/);
+
+    // tak and glas are a cul-de-sac; bro, mur and vägg all sit on a solution.
+    expect(chip("tak")).toHaveClass("chip--dimmed");
+    expect(chip("glas")).toHaveClass("chip--dimmed");
+    expect(chip("bro")).not.toHaveClass("chip--dimmed");
+    expect(chip("mur")).not.toHaveClass("chip--dimmed");
+  });
+
+  it("narrows the field as the chain grows", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));      // commits to the mur -> vägg route
+    await u.click(hintButton());
+    await u.click(hintButton());
+    // Only vägg finishes from here, so bro is ruled out too.
+    expect(chip("bro")).toHaveClass("chip--dimmed");
+    expect(chip("vägg")).not.toHaveClass("chip--dimmed");
+  });
+
+  it("keeps a ruled-out chip playable", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(hintButton());
+    await u.click(hintButton());
+    await u.click(chip("tak"));
+    expect(screen.getByRole("button", { name: /^länk 1, tak\./i })).toBeInTheDocument();
+  });
+
+  it("clears the dimming as soon as the chain changes", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(hintButton());
+    await u.click(hintButton());
+    expect(chip("tak")).toHaveClass("chip--dimmed");
+    await u.click(chip("mur"));
+    expect(chip("tak")).not.toHaveClass("chip--dimmed");
+  });
+
+  it("marks the chip on the third rung", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    for (let i = 0; i < 3; i++) await u.click(hintButton());
+    await expectStatus(/⭐/);
   });
 });
