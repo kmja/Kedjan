@@ -4,46 +4,64 @@ export interface DragState {
   part: string;
   x: number;
   y: number;
-  /** The zone currently under the pointer, so the board can show the target. */
+  /** Where this chip came from, so the board can offer the right targets. */
+  source: "pool" | "chain";
+  /** The zone the chip would land in, so the board can show which. */
   over: string | null;
 }
 
 /** Movement past this many pixels turns a press into a drag rather than a tap. */
 const DRAG_THRESHOLD = 8;
-/** Generous slop around a zone, since slots are small targets on a phone. */
-const SLOP = { x: 14, y: 24 };
+/**
+ * How far outside every zone a drop may still land. Without this a chip
+ * released over a *part* — the most natural place to aim — hits nothing and
+ * silently goes home. Snapping to the nearest gap is what a player means.
+ */
+const SNAP_RADIUS = 140;
+
+/** Distance from a point to a rectangle: zero anywhere inside it. */
+function edgeDistance(r: DOMRect, x: number, y: number): number {
+  const dx = Math.max(r.left - x, 0, x - r.right);
+  const dy = Math.max(r.top - y, 0, y - r.bottom);
+  return Math.hypot(dx, dy);
+}
 
 /**
  * Drop zones declare themselves in the DOM with `data-drop-zone="<id>"`, so a
- * board with a variable number of slots does not have to register refs for
- * each one. Ids are `slot:<n>` and `pool`.
+ * board with a variable number of joints needs no ref plumbing. Ids are
+ * `at:<n>` for the joint before position n, and `pool`.
+ *
+ * Resolution is by distance to the zone's *edge*, not its centre. Centre
+ * distance is not monotonic down the chain: a taller joint has a further
+ * centre, so a chip released on a part could land in the joint above it while
+ * the same gesture one part further down landed in the joint below. Edge
+ * distance splits each gap at its midpoint, which gives the one rule a player
+ * can actually hold: a chip goes into the gap it is nearest to.
  */
 function zoneAt(x: number, y: number): string | null {
-  const zones = Array.from(document.querySelectorAll<HTMLElement>("[data-drop-zone]"));
-  let best: { id: string; distance: number } | null = null;
+  let nearest: { id: string; distance: number } | null = null;
 
-  for (const el of zones) {
-    const r = el.getBoundingClientRect();
-    const inside =
-      x >= r.left - SLOP.x &&
-      x <= r.right + SLOP.x &&
-      y >= r.top - SLOP.y &&
-      y <= r.bottom + SLOP.y;
-    if (!inside) continue;
-
-    // Overlapping slop regions are resolved by centre distance, so a drop
-    // between two slots lands in the nearer one rather than the first found.
-    const distance = Math.hypot(x - (r.left + r.right) / 2, y - (r.top + r.bottom) / 2);
-    if (!best || distance < best.distance) {
-      best = { id: el.dataset.dropZone!, distance };
+  for (const el of document.querySelectorAll<HTMLElement>("[data-drop-zone]")) {
+    const distance = edgeDistance(el.getBoundingClientRect(), x, y);
+    if (!nearest || distance < nearest.distance) {
+      nearest = { id: el.dataset.dropZone!, distance };
     }
   }
-  return best?.id ?? null;
+
+  return nearest && nearest.distance <= SNAP_RADIUS ? nearest.id : null;
 }
 
+/**
+ * Zone ids. Shared constants rather than string literals, because they were
+ * once renamed in the markup and not here, and drag-to-joint silently stopped
+ * working — clicks kept passing, so nothing failed.
+ */
+export const POOL_ZONE = "pool";
+export const JOINT_ZONE = "at:";
+
 export interface DragActions {
-  /** A pool chip landed on slot `index`. */
-  onDropInSlot: (part: string, index: number) => void;
+  /** A chip landed on the joint at `index`. */
+  onDropInJoint: (part: string, index: number) => void;
   /** A chip landed back in the pool. */
   onReturnToPool: (part: string) => void;
   /** Activated without a drag — click, tap, Enter, or a screen reader. */
@@ -85,7 +103,13 @@ export function useChipDrag(actions: DragActions) {
       if (!p) return;
       if (!p.moved && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < DRAG_THRESHOLD) return;
       p.moved = true;
-      setDrag({ part: p.part, x: e.clientX, y: e.clientY, over: zoneAt(e.clientX, e.clientY) });
+      setDrag({
+        part: p.part,
+        source: p.source,
+        x: e.clientX,
+        y: e.clientY,
+        over: zoneAt(e.clientX, e.clientY),
+      });
     },
 
     onPointerUp(e: PointerEvent<HTMLElement>) {
@@ -96,10 +120,10 @@ export function useChipDrag(actions: DragActions) {
 
       swallowClick.current = true;
       const zone = zoneAt(e.clientX, e.clientY);
-      if (zone === "pool") {
+      if (zone === POOL_ZONE) {
         if (p.source === "chain") actions.onReturnToPool(p.part);
-      } else if (zone?.startsWith("slot:")) {
-        actions.onDropInSlot(p.part, Number(zone.slice(5)));
+      } else if (zone?.startsWith(JOINT_ZONE)) {
+        actions.onDropInJoint(p.part, Number(zone.slice(JOINT_ZONE.length)));
       }
     },
 

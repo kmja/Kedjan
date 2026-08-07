@@ -149,8 +149,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 2.4rem;
+    height: 2.2rem;
     width: 100%;
+    transition: height 0.16s ease;
+  }
+  /* Open joints grow to hold a chip-shaped target: a drop zone should look
+     like the thing that will land in it. */
+  .joint--open {
+    height: 3.4rem;
   }
   .joint-line {
     width: 3px;
@@ -165,11 +171,11 @@ body {
   .joint-line--broken {
     background: var(--falu);
   }
-  /* The whole joint is the hit area, so a judged link is still a place to
-     insert a part. */
+  /* The whole joint is the hit area — comfortably past the 44px touch
+     minimum — so a judged link is still somewhere a part can be dropped. */
   .joint-hit {
     position: absolute;
-    inset: 0;
+    inset: -0.4rem 0;
     display: grid;
     place-items: center;
     border: 0;
@@ -179,42 +185,35 @@ body {
   }
   .joint-hit .joint-line {
     position: absolute;
+    height: 100%;
   }
-  /* A judged joint shows its verdict; hovering swaps in the insertion cue. */
-  .joint--judged .joint-hit:hover .verdict,
-  .joint--judged .joint-hit:focus-visible .verdict {
-    outline: 3px dashed var(--falu);
-    outline-offset: 2px;
-  }
-  .joint-add {
+  .joint-slot {
     position: absolute;
     display: grid;
     place-items: center;
-    width: 1.7rem;
-    height: 1.7rem;
-    border-radius: 999px;
+    min-width: 9rem;
+    height: 2.6rem;
+    border-radius: 0.45rem;
     border: 2px dashed var(--edge);
     background: var(--paper);
     color: var(--ink-soft);
-    font-family: inherit;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 700;
     line-height: 1;
-    cursor: pointer;
-    transition: transform 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+    transition: border-color 0.14s ease, background 0.14s ease, transform 0.14s ease;
   }
-  .joint-add:hover {
+  .joint-hit:hover .joint-slot,
+  .joint-hit:focus-visible .joint-slot {
     border-color: var(--falu);
     color: var(--falu-ink);
-    transform: scale(1.12);
   }
-  .joint-add--armed,
-  .joint-add--over {
+  .joint-slot--armed,
+  .joint-slot--over {
     border-style: solid;
     border-color: var(--falu);
-    background: var(--falu);
-    color: var(--on-falu);
-    transform: scale(1.12);
+    background: color-mix(in srgb, var(--falu) 14%, var(--paper));
+    color: var(--falu-ink);
+    transform: scale(1.03);
   }
   .verdict {
     position: absolute;

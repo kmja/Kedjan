@@ -125,11 +125,13 @@ export function useKedjan(day: Day | null) {
   const placeAt = useCallback(
     (part: string, index?: number) => {
       if (!day || solved) return;
-      if (chain.length >= maxParts) {
+      // Measured after the part is lifted out, so moving a part already in the
+      // chain is never refused for making it longer — it does not.
+      const withoutPart = chain.filter((p) => p !== part);
+      if (withoutPart.length >= maxParts) {
         say({ kind: "no", msg: "Kedjan kan inte bli längre — ta bort en del först." });
         return;
       }
-      const withoutPart = chain.filter((p) => p !== part);
       const at = Math.min(index ?? armedJoint ?? withoutPart.length, withoutPart.length);
       const next = [...withoutPart.slice(0, at), part, ...withoutPart.slice(at)];
 

@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import type { Day } from "../types";
+import { JOINT_ZONE } from "../game/useChipDrag";
 
 type ChipHandlers = Record<string, unknown>;
 
@@ -20,6 +21,10 @@ interface Props {
   /** Bumped on every judgement so the marks re-animate rather than sit still. */
   verdictKey: number;
   dragOver: string | null;
+  /** True while any chip is in flight, so every target can show itself. */
+  dragging: boolean;
+  /** Where the chip in flight came from, or null when nothing is in flight. */
+  dragSource: "pool" | "chain" | null;
   liftedPart: string | null;
   handlers: (part: string, source: "pool" | "chain") => ChipHandlers;
   onJoint: (index: number) => void;
@@ -47,12 +52,17 @@ export function Chain({
   jointMarks,
   verdictKey,
   dragOver,
+  dragging,
+  dragSource,
   liftedPart,
   handlers,
   onJoint,
 }: Props) {
   const full = [day.start, ...chain, day.target];
-  const canGrow = !solved && chain.length < maxParts;
+  // A full chain still takes drops from its own parts: moving one around does
+  // not lengthen it, and hiding every joint at the ceiling would force a
+  // player to take a part out before they could reorder the rest.
+  const canGrow = !solved && (chain.length < maxParts || dragSource === "chain");
 
   const spoken = [
     `Start ${day.start}`,
@@ -64,63 +74,72 @@ export function Chain({
     .join(", ");
 
   /**
-   * A joint does both jobs at once. It carries the link's verdict once judged,
-   * and it stays the place a part can be inserted — losing the second role the
-   * moment the first appears would make the chain unbuildable after the very
+   * A joint does both jobs at once: it carries the link's verdict once judged,
+   * and it stays the place a part can be inserted. Losing the second role the
+   * moment the first appeared would make the chain unbuildable after the very
    * first placement.
+   *
+   * It is shaped like a chip, because a target should look like what will land
+   * in it. The outline shows whenever the joint is empty of a verdict, and
+   * during a drag every joint shows one — a player should be able to see where
+   * a chip may go without having to hunt for it.
    */
   const Joint = ({ index }: { index: number }) => {
     const mark = jointMarks[index] ?? null;
     const armed = armedJoint === index;
-    const over = dragOver === `at:${index}`;
+    const over = dragOver === `${JOINT_ZONE}${index}`;
+    const open = canGrow && (dragging || armed || !mark);
 
-    const face = (
+    const body = (
       <>
         <span className={`joint-line ${mark ? `joint-line--${mark}` : ""}`} />
-        <span
-          key={mark ? `${verdictKey}-${index}` : `open-${index}`}
-          className={
-            mark
-              ? `verdict verdict--${mark}`
-              : `joint-add ${armed ? "joint-add--armed" : ""} ${over ? "joint-add--over" : ""}`
-          }
-        >
-          <span aria-hidden="true">{mark === "ok" ? "✓" : mark === "broken" ? "✗" : "+"}</span>
-          {mark && (
+        {open && (
+          <span
+            className={`joint-slot ${armed ? "joint-slot--armed" : ""} ${
+              over ? "joint-slot--over" : ""
+            }`}
+            aria-hidden="true"
+          >
+            {mark ? "" : "+"}
+          </span>
+        )}
+        {mark && (
+          <span key={`${verdictKey}-${index}`} className={`verdict verdict--${mark}`}>
+            <span aria-hidden="true">{mark === "ok" ? "✓" : "✗"}</span>
             <span className="sr-only">
               {mark === "ok" ? "länken håller" : "bruten länk"}
             </span>
-          )}
-        </span>
+          </span>
+        )}
       </>
     );
 
     if (!canGrow) {
       return (
         <li className="joint" aria-hidden={mark === null}>
-          {face}
+          {body}
         </li>
       );
     }
 
-    const verdictWords = mark
+    const verdict = mark
       ? `${full[index]} plus ${full[index + 1]} ${mark === "ok" ? "håller" : "håller inte"}. `
       : "";
     return (
-      <li className={`joint ${mark ? "joint--judged" : ""}`}>
+      <li className={`joint ${open ? "joint--open" : ""}`}>
         <button
           type="button"
-          data-drop-zone={`at:${index}`}
+          data-drop-zone={`${JOINT_ZONE}${index}`}
           onClick={() => onJoint(index)}
           className="joint-hit"
           aria-label={
-            verdictWords +
+            verdict +
             (armed
               ? `Vald plats i kedjan, efter ${full[index]}.`
               : `Lägg en del efter ${full[index]}.`)
           }
         >
-          {face}
+          {body}
         </button>
       </li>
     );
@@ -141,7 +160,6 @@ export function Chain({
             ) : (
               <button
                 type="button"
-                data-drop-zone={`at:${i}`}
                 {...handlers(part, "chain")}
                 className={`node node--removable ${
                   liftedPart === part ? "chip--lifted" : ""

@@ -1,3 +1,5 @@
+import { POOL_ZONE } from "../game/useChipDrag";
+
 type ChipHandlers = Record<string, unknown>;
 
 interface Props {
@@ -33,7 +35,7 @@ export function Pool({
 
   return (
     <div
-      data-drop-zone="pool"
+      data-drop-zone={POOL_ZONE}
       className={`dropzone flex min-h-14 flex-wrap content-start justify-center gap-2 p-1 ${
         incoming ? "dropzone--armed" : ""
       }`}

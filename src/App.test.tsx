@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
 import { testDay } from "./game/testDay";
+import { JOINT_ZONE, POOL_ZONE } from "./game/useChipDrag";
 import type { Day } from "./types";
 
 const YESTERDAY: Day = {
@@ -473,5 +474,123 @@ describe("the hint ladder", () => {
     await board();
     for (let i = 0; i < 3; i++) await u.click(hintButton());
     await expectStatus(/⭐/);
+  });
+});
+
+describe("drag and drop", () => {
+  const chip = (part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+  const link = (n: number, part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^länk ${n}, ${part}\\.`, "i") });
+
+  /** jsdom reports every rect as zero, so zones need real geometry to hit. */
+  function placeZones(heightOf: (index: number) => number = () => 40) {
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      const zone = (this as HTMLElement).dataset?.dropZone;
+      if (zone === undefined) return new DOMRect(0, 0, 0, 0);
+      if (zone === POOL_ZONE) return new DOMRect(0, 900, 200, 40);
+      // Joints stack down the page in index order, as they do on the board —
+      // derived from the id, so a joint appearing mid-drag still lands in the
+      // right place rather than wherever it was first queried.
+      const i = Number(zone.slice(JOINT_ZONE.length));
+      return new DOMRect(0, i * 100, 200, heightOf(i));
+    };
+  }
+
+  /**
+   * Each phase gets its own act, because the board reshapes mid-drag: joints
+   * that only exist once a chip is in flight must render before the drop is
+   * resolved against them.
+   */
+  const dragTo = async (source: HTMLElement, x: number, y: number) => {
+    const opts = { bubbles: true, clientX: x, clientY: y, button: 0, pointerId: 1 };
+    await act(async () => {
+      source.dispatchEvent(
+        new PointerEvent("pointerdown", { ...opts, clientX: 0, clientY: 0 }),
+      );
+    });
+    await act(async () => {
+      source.dispatchEvent(new PointerEvent("pointermove", opts));
+    });
+    await act(async () => {
+      source.dispatchEvent(new PointerEvent("pointerup", opts));
+    });
+  };
+
+  // Wrapped, not passed by reference: beforeEach hands the callback Vitest's
+  // test context, which would arrive as the height function.
+  beforeEach(() => placeZones());
+
+  it("drops a pool chip into the joint it was released over", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    await u.click(chip("glas"));   // vägg, glas — joints 0, 1 and 2 exist
+    // Deliberately joint 1, not joint 0: an index-0 drop cannot tell a working
+    // parser from one that returns zero for everything.
+    await dragTo(chip("tak"), 100, 120);
+    expect(link(1, "vägg")).toBeInTheDocument();
+    expect(link(2, "tak")).toBeInTheDocument();
+    expect(link(3, "glas")).toBeInTheDocument();
+  });
+
+  it("returns a chain part to the pool when dropped there", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    await dragTo(link(1, "vägg"), 100, 900);
+    expect(chip("vägg")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^länk 1, vägg\./i })).not.toBeInTheDocument();
+  });
+
+  it("snaps a drop that lands on no zone to the nearest joint", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    // Released over the gap between joints, hitting neither outright.
+    await dragTo(chip("glas"), 100, 70);
+    expect(screen.getByRole("button", { name: /^länk \d, glas\./i })).toBeInTheDocument();
+  });
+
+  it("drops into the gap it is nearest, not the one whose centre is nearest", async () => {
+    // The board grows whichever joint is open, so joints differ in height, and
+    // centre distance stops being monotonic down the chain: this drop sits
+    // below joint 1 yet nearer joint 1's centre than joint 2's. Resolving by
+    // centre would send the chip backwards, up past a part the player had
+    // already dropped it below.
+    placeZones((i) => (i === 2 ? 80 : 40));
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    await u.click(chip("glas"));
+    await dragTo(chip("tak"), 100, 175);
+    expect(link(3, "tak")).toBeInTheDocument();
+  });
+
+  it("still takes drops from its own parts once the chain is full", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("tak"));
+    await u.click(chip("glas"));
+    await u.click(chip("bro"));   // three parts is the budget — no room left
+    // Moving a part already in the chain does not make it longer, so the
+    // joints have to come back for it rather than demanding a removal first.
+    await dragTo(link(3, "bro"), 100, 0);
+    expect(link(1, "bro")).toBeInTheDocument();
+    expect(link(2, "tak")).toBeInTheDocument();
+    expect(link(3, "glas")).toBeInTheDocument();
+  });
+
+  it("does nothing when a pool chip is dropped back on the pool", async () => {
+    render(<App />);
+    await board();
+    await dragTo(chip("glas"), 100, 900);
+    expect(chip("glas")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^länk 1, glas\./i })).not.toBeInTheDocument();
   });
 });

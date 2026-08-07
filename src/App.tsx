@@ -5,7 +5,7 @@ import { formatSwedishDate, todayISO } from "./game/dates";
 import { plural } from "./game/plural";
 import { useKedjan } from "./game/useKedjan";
 import { clearSave } from "./game/storage";
-import { useChipDrag } from "./game/useChipDrag";
+import { POOL_ZONE, useChipDrag } from "./game/useChipDrag";
 import { Chain } from "./components/Chain";
 import { Pool } from "./components/Pool";
 import { Controls } from "./components/Controls";
@@ -60,7 +60,7 @@ export default function App() {
   // Chips travel both ways and land in a specific slot. Nothing is validated
   // on the way down — the chain is judged only when it is closed.
   const { drag, handlers } = useChipDrag({
-    onDropInSlot: game.placeAt,
+    onDropInJoint: game.placeAt,
     onReturnToPool: game.removeFrom,
     onActivate: (part, source) =>
       source === "pool" ? game.placeAt(part) : game.removeFrom(part),
@@ -156,6 +156,8 @@ export default function App() {
               jointMarks={game.jointMarks}
               verdictKey={game.verdictKey}
               dragOver={drag?.over ?? null}
+              dragging={drag !== null}
+              dragSource={drag?.source ?? null}
               liftedPart={drag?.part ?? null}
               handlers={handlers}
               onJoint={game.toggleJoint}
@@ -172,7 +174,7 @@ export default function App() {
                   parts={game.pool}
                   marked={game.marked}
                   liftedPart={drag?.part ?? null}
-                  incoming={drag?.over === "pool"}
+                  incoming={drag?.over === POOL_ZONE}
                   armedJoint={game.armedJoint}
                   dimmed={game.dimmed}
                   handlers={handlers}

@@ -1,7 +1,7 @@
 # Kedjan
 
 A Swedish daily word puzzle. Each day gives a start part, a target part, and a
-pool of ten part-chips. You drag or tap chips into a fixed row of slots to build
+pool of ten part-chips. You drag or tap chips into the chain to build
 a bridge from start to target, where **every adjacent pair of parts must fuse
 into a real Swedish compound** — grund+val → grundval, val+natt → valnatt. The
 chain has a fixed budget of links (par + 1); winning means reaching the target
@@ -102,6 +102,40 @@ themselves are three visible islands, and a player who spots that `hund`, `ben`
 and `böj` join nothing else has been handed the answer by elimination. So every
 route must **cross-link** into the rest of the pool, and at most one chip may
 weld solely within its own route.
+
+## Dragging
+
+There is one drop target on the board and one rule for hitting it.
+
+**Joints are the only targets.** A joint is the gap between two parts, and it
+is the same thing as an insertion point — joint `i` sits between `full[i]` and
+`full[i + 1]`, so a chip dropped there lands exactly there. Parts themselves
+are drag *sources* only. They used to be targets as well, which meant a part
+and the joint above it both claimed the same drop and neither could be aimed
+at deliberately.
+
+**A target looks like the thing that lands in it.** An open joint grows to hold
+a chip-shaped dashed outline the width of a chip, not a small circle, and while
+a chip is in flight *every* joint shows its outline — a player should be able
+to see where a chip may go without hunting for it.
+
+**A drop resolves to the gap it is nearest**, by distance to the joint's edge,
+with a 140px snap radius so a chip released over a part still lands rather than
+silently going home. Edge distance rather than centre distance, because the
+open joint is taller than the rest and centre distance is therefore not
+monotonic down the chain: the same gesture could send a chip *backwards*, past
+a part it was released below. Edge distance splits each gap at its midpoint, so
+the rule a player forms — "it goes in the gap I aimed at" — is the rule that
+runs.
+
+**A full chain still takes drops from its own parts.** Moving a part already in
+the chain does not lengthen it, so the joints stay available at the link
+ceiling instead of demanding a removal first.
+
+Zone ids live in `src/game/useChipDrag.ts` as `POOL_ZONE` and `JOINT_ZONE`
+rather than string literals in both the markup and the parser. They were once
+renamed in the markup and not the parser, drag-to-joint silently stopped
+working, and nothing failed — the tests exercised clicks.
 
 ## Accessibility
 
