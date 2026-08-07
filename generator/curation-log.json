@@ -2453,5 +2453,197 @@
    "min_cross_links": 3,
    "isolated_chips": 1
   }
+ },
+ {
+  "start": "jakt",
+  "target": "glad",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 30,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "tom",
+  "target": "full",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "hål",
+  "target": "minne",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "kung",
+  "target": "kurs",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "sorg",
+  "target": "drag",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "bad",
+  "target": "show",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "het",
+  "target": "öga",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "grund",
+  "target": "lärare",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "steg",
+  "target": "bit",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "lön",
+  "target": "chef",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "tro",
+  "target": "sida",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "sak",
+  "target": "fågel",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
  }
 ]

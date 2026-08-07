@@ -1,7 +1,7 @@
 [
  {
-  "date": "2026-07-30",
-  "no": 1,
+  "date": "",
+  "no": 0,
   "start": "jakt",
   "target": "glad",
   "par": 3,
@@ -49,11 +49,64 @@
    "jakt>vän": "jaktvän",
    "jakt>hund": "jakthund",
    "jakt>middag": "jaktmiddag"
+  },
+  "_metrics": {
+   "valid_pairs": 30,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "vän": [
+    "fin",
+    "tycka_om"
+   ],
+   "familj": [
+    "art",
+    "släkt"
+   ],
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "hund": [
+    "djur",
+    "usling"
+   ],
+   "middag": [
+    "dag",
+    "måltid"
+   ],
+   "mat": [
+    "mat",
+    "äta"
+   ],
+   "fågel": [
+    "djur",
+    "fågel"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ]
   }
  },
  {
-  "date": "2026-07-31",
-  "no": 2,
+  "date": "",
+  "no": 0,
   "start": "tom",
   "target": "full",
   "par": 3,
@@ -98,11 +151,81 @@
    "tom>gång": "tomgång",
    "tom>slag": "tomslag",
    "tom>glas": "tomglas"
+  },
+  "_metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "gång": [
+    "fungera",
+    "gå",
+    "när"
+   ],
+   "stil": [
+    "form",
+    "sätt",
+    "översättningsprov"
+   ],
+   "slag": [
+    "fartygsskrov",
+    "klockslag",
+    "kämpa",
+    "slaganfall",
+    "slå",
+    "stund",
+    "sådan",
+    "veck"
+   ],
+   "kraft": [
+    "energi",
+    "makt",
+    "stark"
+   ],
+   "glas": [
+    "dricka",
+    "halvtimme",
+    "material"
+   ],
+   "konst": [
+    "bildkonst",
+    "kunna",
+    "naturlig",
+    "skapa"
+   ],
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "bord": [
+    "kortspel",
+    "möbel",
+    "sida"
+   ],
+   "hand": [
+    "kortspel",
+    "kropp"
+   ]
   }
  },
  {
-  "date": "2026-08-01",
-  "no": 3,
+  "date": "",
+  "no": 0,
   "start": "hål",
   "target": "minne",
   "par": 3,
@@ -145,11 +268,73 @@
    "hål>grund": "hålgrund",
    "hål>fot": "hålfot",
    "hål>bok": "hålbok"
+  },
+  "_metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "syn": [
+    "ansikte",
+    "företeelse",
+    "se",
+    "synsätt"
+   ],
+   "fel": [
+    "fel",
+    "rätt",
+    "skuld"
+   ],
+   "pris": [
+    "belöning",
+    "besittning",
+    "kosta",
+    "nypa",
+    "prisa"
+   ],
+   "värd": [
+    "aktningsvärd",
+    "bra",
+    "gäst"
+   ],
+   "fot": [
+    "kroppsdel",
+    "mått",
+    "nere"
+   ],
+   "bad": [
+    "bada",
+    "doppa"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "steg": [
+    "fotsteg",
+    "gå"
+   ]
   }
  },
  {
-  "date": "2026-08-02",
-  "no": 4,
+  "date": "",
+  "no": 0,
   "start": "kung",
   "target": "kurs",
   "par": 3,
@@ -194,11 +379,62 @@
    "kung>gård": "kungsgård",
    "kurs>bok": "kursbok",
    "kurs>gård": "kursgård"
+  },
+  "_metrics": {
+   "valid_pairs": 27,
+   "solutions": 9,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "häst": [
+    "husdjur",
+    "schackpjäs"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "fågel": [
+    "djur",
+    "fågel"
+   ],
+   "hund": [
+    "djur",
+    "usling"
+   ],
+   "val": [
+    "djur",
+    "välja",
+    "åttio"
+   ],
+   "jakt": [
+    "båt",
+    "jaga"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "gård": [
+    "hus",
+    "område"
+   ]
   }
  },
  {
-  "date": "2026-08-03",
-  "no": 5,
+  "date": "",
+  "no": 0,
   "start": "sorg",
   "target": "drag",
   "par": 3,
@@ -242,11 +478,58 @@
    "sorg>barn": "sorgbarn",
    "sorg>syster": "sorgesyster",
    "sorg>bok": "sorgebok"
+  },
+  "_metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "barn": [
+    "förälder",
+    "människa"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "syster": [
+    "familj",
+    "nunna",
+    "sjuksköterska"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "vän": [
+    "fin",
+    "tycka_om"
+   ]
   }
  },
  {
-  "date": "2026-08-04",
-  "no": 6,
+  "date": "",
+  "no": 0,
   "start": "bad",
   "target": "show",
   "par": 4,
@@ -290,11 +573,76 @@
    "bad>tur": "badtur",
    "bad>värd": "badvärd",
    "show>värd": "showvärd"
+  },
+  "_metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  },
+  "_score": 0.9417,
+  "_subscores": {
+   "goldilocks": 0.833,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "drag": [
+    "blåsa",
+    "dra",
+    "egenskap",
+    "fiskedrag",
+    "handla",
+    "livad",
+    "röra",
+    "schackpjäs"
+   ],
+   "tro": [
+    "sann",
+    "säker",
+    "tro"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "polis": [
+    "myndighet",
+    "poliskonstapel"
+   ],
+   "radio": [
+    "lyssna",
+    "radioapparat"
+   ],
+   "tur": [
+    "danssteg",
+    "lyckas",
+    "ordningsföljd",
+    "resa",
+    "tur"
+   ],
+   "värd": [
+    "aktningsvärd",
+    "bra",
+    "gäst"
+   ]
   }
  },
  {
-  "date": "2026-08-05",
-  "no": 7,
+  "date": "",
+  "no": 0,
   "start": "het",
   "target": "öga",
   "par": 3,
@@ -337,11 +685,75 @@
    "het>vin": "hetvin",
    "het>slag": "hetslag",
    "het>luft": "hetluft"
+  },
+  "_metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "vin": [
+    "dryck",
+    "vin",
+    "vina",
+    "växt"
+   ],
+   "glas": [
+    "dricka",
+    "halvtimme",
+    "material"
+   ],
+   "slag": [
+    "fartygsskrov",
+    "klockslag",
+    "kämpa",
+    "slaganfall",
+    "slå",
+    "stund",
+    "sådan",
+    "veck"
+   ],
+   "dörr": [
+    "öppna",
+    "öppning"
+   ],
+   "luft": [
+    "fönsterluft",
+    "ämne"
+   ],
+   "tom": [
+    "bokband",
+    "utan"
+   ],
+   "svärd": [
+    "vapen",
+    "verktyg"
+   ],
+   "fisk": [
+    "Fiskarna",
+    "djur",
+    "mat"
+   ],
+   "ton": [
+    "musik",
+    "mått",
+    "nyans"
+   ]
   }
  },
  {
-  "date": "2026-08-06",
-  "no": 8,
+  "date": "",
+  "no": 0,
   "start": "grund",
   "target": "lärare",
   "par": 3,
@@ -386,11 +798,68 @@
    "grund>val": "grundval",
    "grund>fel": "grundfel",
    "grund>bok": "grundbok"
+  },
+  "_metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 4,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "klass": [
+    "grupp",
+    "kategori",
+    "mängd",
+    "skola",
+    "standard"
+   ],
+   "val": [
+    "djur",
+    "välja",
+    "åttio"
+   ],
+   "sång": [
+    "sjunga",
+    "sjungande"
+   ],
+   "fel": [
+    "fel",
+    "rätt",
+    "skuld"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "film": [
+    "bild",
+    "fotografera",
+    "skikt"
+   ],
+   "konst": [
+    "bildkonst",
+    "kunna",
+    "naturlig",
+    "skapa"
+   ],
+   "vän": [
+    "fin",
+    "tycka_om"
+   ]
   }
  },
  {
-  "date": "2026-08-07",
-  "no": 9,
+  "date": "",
+  "no": 0,
   "start": "steg",
   "target": "bit",
   "par": 3,
@@ -436,11 +905,74 @@
    "steg>båt": "stegbåt",
    "steg>fel": "stegfel",
    "steg>drag": "stegdrag"
+  },
+  "_metrics": {
+   "valid_pairs": 28,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "ben": [
+    "bära",
+    "kropp"
+   ],
+   "fel": [
+    "fel",
+    "rätt",
+    "skuld"
+   ],
+   "val": [
+    "djur",
+    "välja",
+    "åttio"
+   ],
+   "kött": [
+    "kropp",
+    "mat"
+   ],
+   "fisk": [
+    "Fiskarna",
+    "djur",
+    "mat"
+   ],
+   "drag": [
+    "blåsa",
+    "dra",
+    "egenskap",
+    "fiskedrag",
+    "handla",
+    "livad",
+    "röra",
+    "schackpjäs"
+   ],
+   "hund": [
+    "djur",
+    "usling"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "mat": [
+    "mat",
+    "äta"
+   ]
   }
  },
  {
-  "date": "2026-08-08",
-  "no": 10,
+  "date": "",
+  "no": 0,
   "start": "lön",
   "target": "chef",
   "par": 3,
@@ -482,11 +1014,59 @@
    "lön>klass": "löneklass",
    "lön>avtal": "löneavtal",
    "lön>skatt": "löneskatt"
+  },
+  "_metrics": {
+   "valid_pairs": 24,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "klass": [
+    "grupp",
+    "kategori",
+    "mängd",
+    "skola",
+    "standard"
+   ],
+   "plats": [
+    "anställa",
+    "var",
+    "yta"
+   ],
+   "brott": [
+    "avbryta",
+    "bryta"
+   ],
+   "skatt": [
+    "betala",
+    "rikedom"
+   ],
+   "verk": [
+    "myndighet",
+    "skapa",
+    "åstadkomma"
+   ],
+   "affär": [
+    "handla",
+    "kärleksförhållande",
+    "skandal",
+    "sälja"
+   ]
   }
  },
  {
-  "date": "2026-08-09",
-  "no": 11,
+  "date": "",
+  "no": 0,
   "start": "tro",
   "target": "sida",
   "par": 3,
@@ -531,11 +1111,55 @@
    "tro>liv": "trosliv",
    "tro>grund": "trosgrund",
    "tro>sak": "trossak"
+  },
+  "_metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "val": [
+    "djur",
+    "välja",
+    "åttio"
+   ],
+   "sak": [
+    "intresse",
+    "stridsfråga",
+    "vad"
+   ]
   }
  },
  {
-  "date": "2026-08-10",
-  "no": 12,
+  "date": "",
+  "no": 0,
   "start": "sak",
   "target": "fågel",
   "par": 4,
@@ -580,6 +1204,56 @@
    "sak>ord": "sakord",
    "sak>läge": "sakläge",
    "fågel>sång": "fågelsång"
+  },
+  "_metrics": {
+   "valid_pairs": 27,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 2,
+   "disjoint_routes": 2,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  },
+  "_score": 0.9417,
+  "_subscores": {
+   "goldilocks": 0.833,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "fel": [
+    "fel",
+    "rätt",
+    "skuld"
+   ],
+   "val": [
+    "djur",
+    "välja",
+    "åttio"
+   ],
+   "sång": [
+    "sjunga",
+    "sjungande"
+   ],
+   "konst": [
+    "bildkonst",
+    "kunna",
+    "naturlig",
+    "skapa"
+   ],
+   "kamp": [
+    "häst",
+    "kämpa"
+   ],
+   "tryck": [
+    "betoning",
+    "påverkan",
+    "trycka"
+   ],
+   "läge": [
+    "plats",
+    "situation"
+   ]
   }
  }
 ]

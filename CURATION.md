@@ -135,35 +135,32 @@ strid + s + vagn    really is  strid-s-vagn     (neither strids nor svagn)
 
 ## What shipped
 
-Twelve days. The calendar has been rebuilt twice — once when FORBIDDENWORD was
-honoured, and again when NOSUGGEST was, which changed the graph enough that
-four of the twelve won a different target for the same start.
+Twelve days drawn from the full-graph sweep (`kedjan.cli sweep`), which ranked
+all 2,485 days the dictionary can carry. Two were forced in for their related
+endpoints — `tom→full` are opposites, `lön→chef` a workplace pair — and the
+other ten drawn at random (seed 20260807) from the score ceiling, par-4s from
+the par-4 top tier, under the standing taste exclusions: no `and`/`min`/`bett`
+chips, no kinship or archaic-register endpoints, no verb-form targets (`såg`),
+no flat targets (`grund`), and no two pools sharing more than five chips.
 
 | # | date | day | par | sols | indep | cross | open | close |
 |---|------|-----|-----|------|-------|-------|------|-------|
-| 1 | 2026-07-30 | hund → resa | 3 | 11 | 4 | 3 | 4 | 4 |
-| 2 | 2026-07-31 | guld → gäst | 3 | 12 | 3 | 4 | 5 | 3 |
-| 3 | 2026-08-01 | lång → verk | 3 | 11 | 3 | 3 | 5 | 4 |
-| 4 | 2026-08-02 | jakt → läkare | 3 | 9 | 3 | 6 | 4 | 3 |
-| 5 | 2026-08-03 | mat → träd | 3 | 10 | 3 | 5 | 3 | 4 |
-| 6 | 2026-08-04 | häst → papper | 4 | 7 | 2 | 7 | 4 | 2 |
-| 7 | 2026-08-05 | kärlek → ledare | 3 | 12 | 4 | 3 | 5 | 4 |
-| 8 | 2026-08-06 | barn → skott | 3 | 9 | 4 | 3 | 4 | 4 |
-| 9 | 2026-08-07 | jul → frihet | 3 | 9 | 4 | 3 | 4 | 4 |
-| 10 | 2026-08-08 | sång → lust | 3 | 8 | 3 | 3 | 4 | 3 |
-| 11 | 2026-08-09 | sorg → frid | 3 | 12 | 3 | 3 | 5 | 3 |
-| 12 | 2026-08-10 | ljus → park | 4 | 9 | 2 | 4 | 4 | 2 |
+| 1 | 2026-07-30 | jakt → glad | 3 | 6 | 3 | 5 | 3 | 4 |
+| 2 | 2026-07-31 | tom → full | 3 | 7 | 3 | 5 | 3 | 4 |
+| 3 | 2026-08-01 | hål → minne | 3 | 7 | 3 | 5 | 3 | 3 |
+| 4 | 2026-08-02 | kung → kurs | 3 | 9 | 3 | 6 | 4 | 3 |
+| 5 | 2026-08-03 | sorg → drag | 3 | 8 | 3 | 5 | 4 | 3 |
+| 6 | 2026-08-04 | bad → show | 4 | 8 | 2 | 6 | 3 | 2 |
+| 7 | 2026-08-05 | het → öga | 3 | 7 | 3 | 5 | 3 | 3 |
+| 8 | 2026-08-06 | grund → lärare | 3 | 6 | 3 | 5 | 4 | 3 |
+| 9 | 2026-08-07 | steg → bit | 3 | 7 | 3 | 5 | 3 | 4 |
+| 10 | 2026-08-08 | lön → chef | 3 | 9 | 3 | 5 | 3 | 3 |
+| 11 | 2026-08-09 | tro → sida | 3 | 7 | 3 | 5 | 3 | 4 |
+| 12 | 2026-08-10 | sak → fågel | 4 | 6 | 2 | 6 | 3 | 2 |
 
-Order separates days sharing a semantic centre — six of the twelve are
-*varelse* days — and puts the two par-4s at 6 and 12.
-
-Cut for reasons the table cannot see: `jord→jävel` on profanity; `val→värd`
-because `moder` is the archaic register of `mor`, and `morgon→fader` and
-`söndag→broder` for the same reason — the `farbroder` complaint again;
-`katt→energi` because kattkött, björnkött and fiskkött read grim in a daily;
-`liv→val` because its ten chips were all abstract nouns and read as one closed
-class. `djur→domare` was cut for `marketing`, which the dictionary really does
-contain — as an English loan, not as mark + e + ting.
+The two remaining lint warnings are conscious overrules: `full` and `het` sit
+on the derivational-suffix watchlist, and the whole point of `tom→full` is
+that pair of endpoints.
 
 `lint --dic` reports zero errors with SALDO and without.
 
