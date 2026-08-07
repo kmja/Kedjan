@@ -1,5 +1,6 @@
 import type { Day } from "../types";
 import type { Status } from "../game/useKedjan";
+import { plural } from "../game/plural";
 
 interface Props {
   day: Day;
@@ -7,6 +8,7 @@ interface Props {
   announceKey: number;
   placed: number;
   hints: number;
+  parRevealed: boolean;
   onHint: () => void;
   onReset: () => void;
 }
@@ -23,6 +25,7 @@ export function Controls({
   announceKey,
   placed,
   hints,
+  parRevealed,
   onHint,
   onReset,
 }: Props) {
@@ -44,11 +47,17 @@ export function Controls({
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-semibold" style={{ color: "var(--ink-soft)" }}>
-          <span aria-label={`${placed} av ${day.budget - 1} platser fyllda`}>
-            {placed}/{day.budget - 1} placerade
+          <span aria-label={`${plural(placed + 1, "länk", "länkar")} i kedjan`}>
+            {plural(placed + 1, "länk", "länkar")}
           </span>
-          <span aria-hidden="true"> · </span>
-          <span>par {day.par}</span>
+          {/* Par is the shape of the answer, so it stays hidden until a hint
+              is spent on it. */}
+          {parRevealed && (
+            <>
+              <span aria-hidden="true"> · </span>
+              <span>par {day.par}</span>
+            </>
+          )}
         </p>
 
         <div className="flex items-center gap-2">
@@ -57,9 +66,9 @@ export function Controls({
             onClick={onHint}
             className="btn btn--accent"
             aria-label={
-              hints % 2 === 0
-                ? "Ledtråd: hur långt kvar till målet"
-                : "Ledtråd: markera rätt väg vidare"
+              ["Ledtråd: hur många länkar som rekommenderas",
+               "Ledtråd: hur långt kvar till målet",
+               "Ledtråd: markera rätt väg vidare"][hints % 3]
             }
           >
             Ledtråd{hints > 0 ? ` (${hints})` : ""}

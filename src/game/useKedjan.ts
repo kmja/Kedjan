@@ -30,8 +30,13 @@ export function useKedjan(day: Day | null) {
   const [save, setSave] = useState(loadSave);
   const [status, setStatus] = useState<Status | null>(null);
   const [marked, setMarked] = useState<string | null>(null);
-  /** Slot waiting for the next chip, so the keyboard can aim as a drag does. */
-  const [armedSlot, setArmedSlot] = useState<number | null>(null);
+  /**
+   * The joint a part will land in next, so the keyboard can aim as a drag
+   * does. Joints and insertion points are the same thing: joint `i` sits
+   * between `full[i]` and `full[i + 1]`, and inserting at `i` puts a part
+   * exactly there.
+   */
+  const [armedJoint, setArmedJoint] = useState<number | null>(null);
   /**
    * The verdict per joint of [start, ...chain, target], recomputed on every
    * placement. `null` means the joint has not been judged yet.
@@ -52,16 +57,13 @@ export function useKedjan(day: Day | null) {
 
   const key = day?.date ?? "";
   const stored = save.progress[key];
-  const slotCount = day ? day.budget - 1 : 0;
+  /** The most parts a chain may hold. Budget counts links, which is one more. */
+  const maxParts = day ? day.budget - 1 : 0;
 
-  const progress: DayProgress = useMemo(() => {
-    const base = stored ?? emptyProgress();
-    // The budget is the authority on slot count, not whatever was saved.
-    return {
-      ...base,
-      slots: Array.from({ length: slotCount }, (_, i) => base.slots[i] ?? null),
-    };
-  }, [stored, slotCount]);
+  const progress: DayProgress = useMemo(
+    () => stored ?? emptyProgress(),
+    [stored],
+  );
 
   // Switching days clears the transient layer; the arrangement is persisted.
   const lastKey = useRef(key);
@@ -70,7 +72,7 @@ export function useKedjan(day: Day | null) {
       lastKey.current = key;
       setStatus(null);
       setMarked(null);
-      setArmedSlot(null);
+      setArmedJoint(null);
       setJointMarks([]);
     }
   }, [key]);
@@ -85,9 +87,7 @@ export function useKedjan(day: Day | null) {
     [key],
   );
 
-  const { slots, solved, hints, misses } = progress;
-  /** The arrangement as a sequence: empty slots simply drop out. */
-  const chain = useMemo(() => slots.filter((s): s is string => s !== null), [slots]);
+  const { chain, solved, hints, misses } = progress;
   const links = chain.length + 1;
   const pool = day ? availableParts(day, chain) : [];
 
@@ -95,18 +95,18 @@ export function useKedjan(day: Day | null) {
    * Judge the whole bridge.
    *
    * Every joint between placed parts is marked, but the joint *into the target*
-   * is only judged once the chain could plausibly be finished — with slots to
-   * spare, a red cross under a half-built bridge says "wrong" when the honest
-   * answer is "not yet".
+   * is only judged once the chain cannot grow further. While a part could
+   * still be added, a red cross under an unfinished bridge says "wrong" where
+   * the honest answer is "not yet".
    */
   const judge = useCallback(
-    (nextChain: string[], slotsLeft: number): ("ok" | "broken" | null)[] => {
+    (nextChain: string[], atCeiling: boolean): ("ok" | "broken" | null)[] => {
       if (!day || !nextChain.length) return [];
       const full = fullChain(day, nextChain);
       const wins = brokenJoints(day, nextChain).length === 0;
       return full.slice(0, -1).map((part, i) => {
         const isFinalJoint = i === full.length - 2;
-        if (isFinalJoint && slotsLeft > 0 && !wins) return null;
+        if (isFinalJoint && !atCeiling && !wins) return null;
         return weld(day, part, full[i + 1]!) ? "ok" : "broken";
       });
     },
@@ -114,58 +114,45 @@ export function useKedjan(day: Day | null) {
   );
 
   /**
-   * Put a part into a slot. Nothing is validated here — parts go down in any
-   * order, and the chain is judged only when the player closes it. Dropping
-   * onto an occupied slot swaps rather than refuses.
+   * Put a part into the chain at a joint. Nothing is validated on the way
+   * down — parts go in in any order, and the whole chain is judged after.
    */
   const placeAt = useCallback(
     (part: string, index?: number) => {
       if (!day || solved) return;
-      const at = index ?? armedSlot ?? slots.findIndex((s) => s === null);
-      if (at < 0 || at >= slotCount) {
-        say({ kind: "no", msg: "Alla platser är fulla — ta bort en del först." });
+      if (chain.length >= maxParts) {
+        say({ kind: "no", msg: "Kedjan kan inte bli längre — ta bort en del först." });
         return;
       }
-      patch((p) => {
-        const next = Array.from({ length: slotCount }, (_, i) => p.slots[i] ?? null);
-        // A part lives in one slot only, so moving it vacates the old one.
-        const previous = next.indexOf(part);
-        if (previous >= 0) next[previous] = null;
-        next[at] = part;
-        return { ...p, slots: next };
-      });
-      setArmedSlot(null);
+      const withoutPart = chain.filter((p) => p !== part);
+      const at = Math.min(index ?? armedJoint ?? withoutPart.length, withoutPart.length);
+      const next = [...withoutPart.slice(0, at), part, ...withoutPart.slice(at)];
+
+      patch((p) => ({ ...p, chain: next }));
+      setArmedJoint(null);
       setMarked(null);
 
-      // The chain is judged as it is built, so the last chip a player puts down
-      // finishes the day — there is nothing further to press.
-      const nextSlots = Array.from({ length: slotCount }, (_, i) => slots[i] ?? null);
-      const previous = nextSlots.indexOf(part);
-      if (previous >= 0) nextSlots[previous] = null;
-      nextSlots[at] = part;
-      const nextChain = nextSlots.filter((x): x is string => x !== null);
-      const slotsLeft = nextSlots.filter((x) => x === null).length;
-
-      setJointMarks(judge(nextChain, slotsLeft));
+      const atCeiling = next.length >= maxParts;
+      setJointMarks(judge(next, atCeiling));
       setVerdictKey((k) => k + 1);
 
-      const broken = brokenJoints(day, nextChain);
+      const broken = brokenJoints(day, next);
       if (broken.length === 0) {
         const alreadyCounted = Boolean(progress.solvedAt);
         patch(
           (p) => ({ ...p, solved: true, solvedAt: p.solvedAt ?? new Date().toISOString() }),
           alreadyCounted
             ? undefined
-            : (s) => recordSolve(s, day.date, nextChain.length + 1, day.par),
+            : (s) => recordSolve(s, day.date, next.length + 1, day.par),
         );
         say({ kind: "ok", msg: "Kedjan håller — klart!" });
         return;
       }
-      // A full board that still does not hold is the analogue of a failed
-      // submit, and the only thing worth counting as an attempt.
-      if (slotsLeft === 0) {
+      // A chain that has run out of room and still does not hold is the only
+      // arrangement worth counting as a failed attempt.
+      if (atCeiling) {
         patch((p) => ({ ...p, misses: p.misses + 1 }));
-        const full = fullChain(day, nextChain);
+        const full = fullChain(day, next);
         const named = broken.slice(0, 2).map((i) => `${upper(full[i]!)}+${upper(full[i + 1]!)}`);
         const rest = broken.length - named.length;
         say({
@@ -177,35 +164,32 @@ export function useKedjan(day: Day | null) {
         });
         return;
       }
-      say({ kind: "info", msg: `${upper(part)} placerad på plats ${at + 1}.` });
+      say({ kind: "info", msg: `${upper(part)} lagd i kedjan.` });
     },
-    [day, solved, armedSlot, slots, slotCount, progress.solvedAt, patch, say, judge],
+    [day, solved, chain, maxParts, armedJoint, progress.solvedAt, patch, say, judge],
   );
 
-  /** Take a part back out. It leaves a gap; nothing else is disturbed. */
+  /** Take a part back out. The chain closes up behind it. */
   const removeFrom = useCallback(
     (part: string) => {
-      if (!day || solved || !slots.includes(part)) return;
-      const nextSlots = slots.map((s) => (s === part ? null : s));
-      patch((p) => ({ ...p, slots: p.slots.map((s) => (s === part ? null : s)) }));
+      if (!day || solved || !chain.includes(part)) return;
+      const next = chain.filter((p) => p !== part);
+      patch((p) => ({ ...p, chain: next }));
       setMarked(null);
-      const nextChain = nextSlots.filter((x): x is string => x !== null);
-      setJointMarks(judge(nextChain, nextSlots.filter((x) => x === null).length));
+      setJointMarks(judge(next, next.length >= maxParts));
       setVerdictKey((k) => k + 1);
       say({ kind: "info", msg: `${upper(part)} tillbaka i poolen.` });
     },
-    [day, solved, slots, patch, say, judge],
+    [day, solved, chain, maxParts, patch, say, judge],
   );
 
-  /** Clicking a slot empties it, or arms it to receive the next chip. */
-  const toggleSlot = useCallback(
+  /** Arm a joint so the next chip lands there, or disarm it. */
+  const toggleJoint = useCallback(
     (index: number) => {
       if (solved) return;
-      const part = slots[index];
-      if (part) removeFrom(part);
-      else setArmedSlot((a) => (a === index ? null : index));
+      setArmedJoint((a) => (a === index ? null : index));
     },
-    [solved, slots, removeFrom],
+    [solved],
   );
 
   /**
@@ -214,8 +198,8 @@ export function useKedjan(day: Day | null) {
    */
   const replay = useCallback(() => {
     if (!day) return;
-    patch((p) => ({ ...p, slots: p.slots.map(() => null), solved: false }));
-    setArmedSlot(null);
+    patch((p) => ({ ...p, chain: [], solved: false }));
+    setArmedJoint(null);
     setJointMarks([]);
     setMarked(null);
     say({ kind: "info", msg: "Dagen är öppen igen — statistiken står kvar." });
@@ -223,25 +207,39 @@ export function useKedjan(day: Day | null) {
 
   const reset = useCallback(() => {
     if (!day || solved || !chain.length) return;
-    patch((p) => ({ ...p, slots: p.slots.map(() => null) }));
-    setArmedSlot(null);
+    patch((p) => ({ ...p, chain: [] }));
+    setArmedJoint(null);
     setJointMarks([]);
     setMarked(null);
     say({ kind: "info", msg: "Kedjan rensad." });
   }, [day, solved, chain.length, patch, say]);
 
   /**
-   * Two-tier hint, anchored to the longest run that already holds — the only
-   * position that means anything once parts can be arranged out of order.
-   * First press gives the distance from there, second marks the chip. A dead
-   * end costs nothing: charging for a position the game let the player build
-   * would be a swindle.
+   * A three-rung hint ladder, cheapest first.
+   *
+   * The board no longer says how long a chain should be, so the first thing
+   * worth buying is that number — it is the shape of the answer, and asking
+   * for it is a real decision. Only then does pathfinding start: distance from
+   * the end of the run that already holds, then the chip itself.
+   *
+   * A dead end costs nothing. Charging for a position the game let the player
+   * build would be a swindle.
    */
   const hint = useCallback(() => {
     if (!day || solved) return;
+    const rung = hints % 3;
+
+    if (rung === 0) {
+      patch((p) => ({ ...p, hints: p.hints + 1 }));
+      say({
+        kind: "info",
+        msg: `Rekommenderat: ${plural(day.par, "länk", "länkar")}. Du får använda ${day.budget}.`,
+      });
+      return;
+    }
+
     const { length, at } = validPrefix(day, chain);
     const consumed = chain.slice(0, length);
-
     if (isDeadEnd(day, consumed, at)) {
       say({ kind: "no", msg: "Härifrån når du inte målet — ta bort en del och försök igen." });
       return;
@@ -249,7 +247,7 @@ export function useKedjan(day: Day | null) {
     const d = distanceToTarget(day, consumed, at)!;
     const where = length === 0 ? "från starten" : `efter ${upper(at)}`;
 
-    if (hints % 2 === 0) {
+    if (rung === 1) {
       say({
         kind: "info",
         msg: d === 1
@@ -297,15 +295,17 @@ export function useKedjan(day: Day | null) {
 
   return {
     progress,
-    slots,
     chain,
     solved,
     hints,
     misses,
+    /** Par is part of the puzzle until the first hint is spent on it. */
+    parRevealed: hints > 0 || solved,
     links,
     pool,
     marked,
-    armedSlot,
+    armedJoint,
+    maxParts,
     jointMarks,
     verdictKey,
     lastMiss,
@@ -316,7 +316,7 @@ export function useKedjan(day: Day | null) {
     solvedDates,
     placeAt,
     removeFrom,
-    toggleSlot,
+    toggleJoint,
     replay,
     reset,
     hint,

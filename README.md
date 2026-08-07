@@ -7,11 +7,14 @@ into a real Swedish compound** — grund+val → grundval, val+natt → valnatt.
 chain has a fixed budget of links (par + 1); winning means reaching the target
 within budget.
 
-**Parts go down in any order.** The chain runs as a zigzag — parts alternating
-high and low, joined by diagonals — and the whole thing is judged after every
-placement, each joint carrying its own green tick or red cross. Placing the
-chip that completes the chain finishes the day; there is nothing further to
-press.
+**Parts go down in any order, and the chain grows as you build it.** There is
+no row of empty slots: how many links a day needs is part of the puzzle, and a
+board laying out four gaps has already answered it. The whole chain is judged
+after every placement, each joint carrying its own green tick or red cross, and
+the chip that completes it finishes the day — there is nothing further to press.
+
+Par is hidden too. The first hint buys it, which makes asking a real decision
+rather than a formality.
 
 Nothing is ever refused, so a chip you are unsure of costs you a thought rather
 than a slap. The joint *into the target* stays unmarked while slots remain: a
@@ -71,12 +74,12 @@ and `generator/kedjan/curate.py` enforces them as a lint.
   a word the player knows is real (grundkurs, bollplan) spends trust the game
   cannot refund. It is a lexicon-coverage problem, and the in-game report
   button exists to track it as a KPI.
-- **Hints are pathfinding, not content.** Breadth-first search over the day's
-  pool graph, anchored to the end of the longest run that already holds — the
-  only position that means anything once parts can be arranged out of order.
-  The first hint gives distance-from-there, the second marks the optimal next
-  chip, and a position that cannot reach the target yields a free rescue. No
-  AI, no authoring, always adaptive.
+- **Hints are pathfinding, not content.** Three rungs, cheapest first: par (the
+  shape of the answer, which the board no longer gives away), then distance
+  from the end of the run that already holds, then the chip itself. All of it
+  is breadth-first search over the day's pool graph, anchored to the player's
+  real position, and a position that cannot reach the target yields a free
+  rescue. No AI, no authoring, always adaptive.
 - **A day needs at least three opening moves.** A start that welds to only one
   chip means move one is not a choice. Two prototype days died on this.
 - **One lexeme, one form.** `far` and `fader` in the same pool is a guess, not

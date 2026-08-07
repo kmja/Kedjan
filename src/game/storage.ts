@@ -19,30 +19,27 @@ export const emptyStats = (): Stats => ({
 });
 
 export const emptyProgress = (): DayProgress => ({
-  slots: [],
+  chain: [],
   solved: false,
   hints: 0,
   misses: 0,
 });
 
 /**
- * Saves written before parts could be placed out of order stored a compact
- * `chain`. Read it as slots filled from the left so an in-progress day is not
- * thrown away by the upgrade.
+ * Saves written while the board had fixed slots stored a `slots` array with
+ * holes in it. Read those as the sequence they always represented, so an
+ * in-progress day survives the upgrade.
  */
-function migrate(p: Partial<DayProgress> & { chain?: string[] }): DayProgress {
-  return {
-    ...emptyProgress(),
-    ...p,
-    slots: p.slots ?? p.chain ?? [],
-  };
+function migrate(
+  p: Partial<DayProgress> & { slots?: (string | null)[] },
+): DayProgress {
+  const fromSlots = p.slots?.filter((s): s is string => Boolean(s));
+  return { ...emptyProgress(), ...p, chain: p.chain ?? fromSlots ?? [] };
 }
 
 const emptySave = (): Save => ({ progress: {}, stats: emptyStats() });
 
-/** Slots read as a sequence: empty ones simply drop out. */
-export const chainOf = (p: DayProgress): string[] =>
-  p.slots.filter((s): s is string => s !== null);
+export const chainOf = (p: DayProgress): string[] => p.chain;
 
 /**
  * Storage is best-effort: Safari private mode throws on both read and write,

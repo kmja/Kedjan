@@ -7,7 +7,7 @@ interface Props {
   /** True while a chain part is being dragged back here. */
   incoming: boolean;
   /** Where the next click will land, so the chip can say so. */
-  armedSlot: number | null;
+  armedJoint: number | null;
   handlers: (part: string, source: "pool" | "chain") => ChipHandlers;
 }
 
@@ -17,9 +17,9 @@ interface Props {
  * reader with no drag involved. It doubles as the drop zone for a part being
  * taken back out of the chain.
  */
-export function Pool({ parts, marked, liftedPart, incoming, armedSlot, handlers }: Props) {
+export function Pool({ parts, marked, liftedPart, incoming, armedJoint, handlers }: Props) {
   const destination =
-    armedSlot === null ? "nästa lediga plats" : `plats ${armedSlot + 1}`;
+    armedJoint === null ? "sist i kedjan" : `plats ${armedJoint + 1} i kedjan`;
 
   return (
     <div

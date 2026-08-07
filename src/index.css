@@ -125,81 +125,31 @@ body {
     transform: translate(-50%, -130%);
   }
 
-  /* ── the chain, as a zigzag ────────────────────────────────── */
+  /* ── the chain, built downwards ────────────────────────────── */
   .chain {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    row-gap: 1.6rem;
-    margin: 0;
-    padding: 1.5rem 0;
-    list-style: none;
-    /* Scaled to the viewport rather than fixed: a wrapped zigzag puts a joint
-       at the start of a row pointing at nothing, so the run has to stay on one
-       line at any width the game supports. */
-    font-size: clamp(0.56rem, 2.7vw, 0.9rem);
-  }
-  /* A par-4 day is six rungs against par 3's five, and six will not fit a
-     phone at a readable size — that is arithmetic, not tuning. Long chains
-     zigzag downwards instead, keeping the same diagonals and verdicts. */
-  .chain--long {
     flex-direction: column;
-    row-gap: 0;
-    font-size: 0.95rem;
+    align-items: center;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
   }
-  .chain--long .rung--high {
-    transform: translateX(-2.6rem);
-  }
-  .chain--long .rung--low {
-    transform: translateX(2.6rem);
-  }
-  .chain--long .joint {
-    margin-inline: 0;
-    margin-block: -0.5rem;
-  }
-  .chain--long .joint--down .joint-line {
-    transform: rotate(38deg);
-  }
-  .chain--long .joint--up .joint-line {
-    transform: rotate(-38deg);
-  }
-  /* Alternating heights are what buy the space: neighbours at different
-     heights cannot collide, so the horizontal run stays compact. */
-  .rung--high {
-    transform: translateY(-0.85rem);
-  }
-  .rung--low {
-    transform: translateY(0.85rem);
-  }
-  /* A joint spans the step between two rungs, so its line is the hypotenuse of
-     the horizontal gap and the 2.3rem drop. */
-  /* The negative margin is the point: rungs sit at different heights and
-     cannot collide, so they may overlap horizontally and the whole run fits
-     a phone without wrapping. */
+  /* A joint is the run of chain between two parts. It takes a part when the
+     chain can still grow, and carries that link's verdict once judged. */
   .joint {
     position: relative;
-    width: 2.2rem;
-    height: 2.2rem;
-    margin-inline: -0.5rem;
-    display: grid;
-    place-items: center;
-    flex: none;
-    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.4rem;
+    width: 100%;
   }
   .joint-line {
-    position: absolute;
-    width: 2.3rem;
-    height: 3px;
+    width: 3px;
+    height: 100%;
     border-radius: 2px;
     background: var(--edge);
     transition: background 0.2s ease;
-  }
-  .joint--down .joint-line {
-    transform: rotate(52deg);
-  }
-  .joint--up .joint-line {
-    transform: rotate(-52deg);
   }
   .joint-line--ok {
     background: var(--gran-ok);
@@ -207,14 +157,65 @@ body {
   .joint-line--broken {
     background: var(--falu);
   }
+  /* The whole joint is the hit area, so a judged link is still a place to
+     insert a part. */
+  .joint-hit {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .joint-hit .joint-line {
+    position: absolute;
+  }
+  /* A judged joint shows its verdict; hovering swaps in the insertion cue. */
+  .joint--judged .joint-hit:hover .verdict,
+  .joint--judged .joint-hit:focus-visible .verdict {
+    outline: 3px dashed var(--falu);
+    outline-offset: 2px;
+  }
+  .joint-add {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 999px;
+    border: 2px dashed var(--edge);
+    background: var(--paper);
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+  }
+  .joint-add:hover {
+    border-color: var(--falu);
+    color: var(--falu-ink);
+    transform: scale(1.12);
+  }
+  .joint-add--armed,
+  .joint-add--over {
+    border-style: solid;
+    border-color: var(--falu);
+    background: var(--falu);
+    color: var(--on-falu);
+    transform: scale(1.12);
+  }
   .verdict {
     position: absolute;
     display: grid;
     place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2.1rem;
+    height: 2.1rem;
     border-radius: 999px;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 800;
     line-height: 1;
     animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
@@ -232,13 +233,15 @@ body {
   .node {
     display: inline-flex;
     align-items: center;
-    padding: 0.45rem 0.48rem;
+    justify-content: center;
+    min-width: 9rem;
+    padding: 0.6rem 0.9rem;
     border-radius: 0.45rem;
     border: 1px solid var(--edge);
     background: var(--panel);
     color: var(--ink);
     font-weight: 700;
-    font-size: 1em;
+    font-size: 0.95rem;
     letter-spacing: 0.03em;
     text-transform: uppercase;
     white-space: nowrap;

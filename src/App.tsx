@@ -148,23 +148,24 @@ export default function App() {
 
             <Chain
               day={day}
-              slots={game.slots}
+              chain={game.chain}
               solved={game.solved}
               marked={game.marked}
-              armedSlot={game.armedSlot}
+              armedJoint={game.armedJoint}
+              maxParts={game.maxParts}
               jointMarks={game.jointMarks}
               verdictKey={game.verdictKey}
               dragOver={drag?.over ?? null}
               liftedPart={drag?.part ?? null}
               handlers={handlers}
-              onSlot={game.toggleSlot}
+              onJoint={game.toggleJoint}
             />
 
             {!game.solved && (
               <>
                 <p className="-mt-3 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
-                  Lägg delarna i vilken ordning du vill. Kedjan kontrolleras
-                  varje gång du lägger en del.
+                  Lägg till så många delar du behöver. Kedjan kontrolleras varje
+                  gång du lägger en del.
                 </p>
 
                 <Pool
@@ -172,7 +173,7 @@ export default function App() {
                   marked={game.marked}
                   liftedPart={drag?.part ?? null}
                   incoming={drag?.over === "pool"}
-                  armedSlot={game.armedSlot}
+                  armedJoint={game.armedJoint}
                   handlers={handlers}
                 />
 
@@ -182,6 +183,7 @@ export default function App() {
                   announceKey={game.announceKey}
                   placed={game.chain.length}
                   hints={game.hints}
+                  parRevealed={game.parRevealed}
                   onHint={game.hint}
                   onReset={game.reset}
                 />

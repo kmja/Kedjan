@@ -19,12 +19,12 @@ export interface Day {
 /** Per-day progress, persisted so a reload never costs the player their chain. */
 export interface DayProgress {
   /**
-   * The budget's slots, in order, `budget - 1` of them. A slot holds a part or
-   * nothing; parts go in in any order and nothing is checked until the player
-   * closes the chain onto the target. Empty slots simply drop out, so a
-   * two-link answer is one filled slot and the rest left blank.
+   * The parts placed so far, in order, endpoints excluded. The chain grows as
+   * the player builds it — there is no row of empty slots, because the number
+   * of links a day needs is part of the puzzle rather than something the board
+   * announces. The budget is still a ceiling; par is only revealed on request.
    */
-  slots: (string | null)[];
+  chain: string[];
   solved: boolean;
   hints: number;
   /** Chains submitted that did not hold — counted for the share line. */

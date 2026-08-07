@@ -106,6 +106,14 @@ def cmd_review(args: argparse.Namespace) -> int:
         print(f"  opens   {', '.join(r.winning_openings)} lead to a win")
         if r.centre:
             print(f"  about   {', '.join(r.centre)}")
+        if saldo:
+            multi = [
+                f"{part} ({'/'.join(senses)})"
+                for part in r.pool
+                if (senses := saldo.homograph_senses(part))
+            ]
+            if multi:
+                print(f"  senses  {', '.join(multi)}")
         if r.bottlenecks:
             print(f"  funnel  every solution uses {', '.join(r.bottlenecks)}")
         # Glosses are the evidence behind a judgement: SALDO's descriptor pair

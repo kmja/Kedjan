@@ -58,6 +58,10 @@ class Saldo:
     #: with. SALDO is an association lexicon, so following these links upward
     #: says roughly what a word is about: kaffe -> dryck, lunch -> måltid.
     primary: dict[str, str] = field(default_factory=dict)
+    #: baseform -> the distinct senses SALDO records, named by their primary
+    #: descriptor. More than one means a homograph: `val` is a whale, a choice
+    #: and part of "eighty" all at once.
+    senses: dict[str, frozenset[str]] = field(default_factory=dict)
     #: baseform -> its (primary, secondary) descriptor pair. For a compound
     #: these two words are effectively its analysis, and the closest thing to a
     #: definition available under an open licence.
@@ -78,6 +82,18 @@ class Saldo:
             return False
         return bool(tags & PART_POS) and not (tags & BANNED_POS)
 
+
+    def homograph_senses(self, word: str) -> list[str]:
+        """The distinct senses of a word, or an empty list if it has just one.
+
+        Homographs are not a problem for Kedjan — the game asks whether a pair
+        is a word, never what it means, so a chip carrying two senses simply
+        welds in two directions and the player never has to choose. They are
+        worth *seeing*, though: a chip whose senses pull into unrelated fields
+        can stop a pool reading as one pool.
+        """
+        found = sorted(self.senses.get(word, frozenset()))
+        return found if len(found) > 1 else []
 
     def gloss(self, word: str) -> str | None:
         """A one-line sense for a compound, from SALDO's descriptor pair.
@@ -134,6 +150,7 @@ def load(path: Path | str = "saldo_2.3/saldo20v03.txt") -> Saldo:
     pos: dict[str, set[str]] = {}
     primary: dict[str, str] = {}
     descriptors: dict[str, tuple[str, str]] = {}
+    senses: dict[str, set[str]] = {}
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             if line.startswith("#") or not line.strip():
@@ -148,10 +165,12 @@ def load(path: Path | str = "saldo_2.3/saldo20v03.txt") -> Saldo:
                 primary[base] = root
             if base not in descriptors:
                 descriptors[base] = (root, cols[_SECONDARY].split("..")[0])
+            senses.setdefault(base, set()).add(root)
     return Saldo(
         pos={w: frozenset(tags) for w, tags in pos.items()},
         primary=primary,
         descriptors=descriptors,
+        senses={w: frozenset(v) for w, v in senses.items()},
     )
 
 

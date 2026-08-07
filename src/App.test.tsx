@@ -58,102 +58,98 @@ describe("the day board", () => {
     expect(within(pool).getAllByRole("button")).toHaveLength(testDay.pool.length);
   });
 
-  it("shows the budget as empty slots, with the target as a plain endpoint", async () => {
+  it("shows an empty chain with one open joint, and never says how long it should be", async () => {
     render(<App />);
     await board();
     // The target is the foot of the bridge, not a control to press.
     expect(screen.queryByRole("button", { name: /^hus$/i })).not.toBeInTheDocument();
-    expect(screen.getByText("0/3 placerade")).toBeInTheDocument();
-    expect(screen.getAllByText("··")).toHaveLength(3);
+    // One place to add a part, and no row of gaps announcing the answer's shape.
+    expect(screen.getAllByRole("button", { name: /lägg en del efter/i })).toHaveLength(1);
+    expect(screen.getByText("1 länk")).toBeInTheDocument();
+    // Par is part of the puzzle until a hint is spent on it. (The dev panel
+    // is on under import.meta.env.DEV, so scope to the controls.)
+    const controls = screen.getByRole("button", { name: /^ledtråd/i }).closest("div")!;
+    expect(within(controls).queryByText(/par/i)).not.toBeInTheDocument();
   });
 });
 
-describe("placing parts freely", () => {
+describe("building the chain", () => {
   const chip = (part: string) =>
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
-  const slot = (n: number) =>
-    screen.getByRole("button", { name: new RegExp(`^plats ${n}, tom`, "i") });
-  const placed = (n: number, part: string) =>
-    screen.getByRole("button", { name: new RegExp(`^plats ${n}, ${part}\\.`, "i") });
+  const link = (n: number, part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^länk ${n}, ${part}\\.`, "i") });
+  // A judged joint leads its label with the verdict, so this is unanchored.
+  const joint = (after: string) =>
+    screen.getByRole("button", { name: new RegExp(`lägg en del efter ${after}`, "i") });
 
   it("accepts a part that does not weld, without complaint", async () => {
     const u = user();
     render(<App />);
     await board();
-    // STEN+VÄGG is not a word, but nothing is checked until the chain closes.
-    await u.click(chip("vägg"));
-    await expectStatus("VÄGG placerad på plats 1.");
-    expect(placed(1, "vägg")).toBeInTheDocument();
+    await u.click(chip("vägg"));  // sten+vägg is not a word
+    expect(link(1, "vägg")).toBeInTheDocument();
   });
 
-  it("fills the first free slot by default", async () => {
+  it("grows the chain a part at a time", async () => {
     const u = user();
     render(<App />);
     await board();
-    // Deliberately not a winning pair — the chain finishes itself the moment
-    // one is completed, which would end the board mid-test.
     await u.click(chip("vägg"));
+    expect(screen.getByText("2 länkar")).toBeInTheDocument();
     await u.click(chip("glas"));
-    expect(placed(1, "vägg")).toBeInTheDocument();
-    expect(placed(2, "glas")).toBeInTheDocument();
+    expect(link(1, "vägg")).toBeInTheDocument();
+    expect(link(2, "glas")).toBeInTheDocument();
+    expect(screen.getByText("3 länkar")).toBeInTheDocument();
   });
 
-  it("lets the keyboard aim at a specific slot", async () => {
+  it("inserts at the joint the player aimed at", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(slot(3));
-    await u.click(chip("tak"));
-    await expectStatus("TAK placerad på plats 3.");
-    expect(placed(3, "tak")).toBeInTheDocument();
-    // Slots 1 and 2 are still empty — order of placement is free.
-    expect(slot(1)).toBeInTheDocument();
+    await u.click(chip("vägg"));
+    // Aim at the joint after the start, so the next part goes in front.
+    await u.click(joint("sten"));
+    await u.click(chip("glas"));
+    expect(link(1, "glas")).toBeInTheDocument();
+    expect(link(2, "vägg")).toBeInTheDocument();
   });
 
   it("moves a part rather than duplicating it", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("mur"));
-    await u.click(placed(1, "mur"));   // back to the pool
-    await u.click(slot(3));            // arm the far slot
-    await u.click(chip("mur"));
-    expect(placed(3, "mur")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^plats 1, mur/i })).not.toBeInTheDocument();
+    await u.click(chip("vägg"));
+    await u.click(chip("glas"));
+    await u.click(joint("sten"));
+    await u.click(link(2, "glas"));   // out of the chain
+    await u.click(chip("glas"));      // back in, at the armed joint
+    expect(link(1, "glas")).toBeInTheDocument();
+    // Exactly one home: in the chain, and no longer in the pool.
+    expect(screen.queryByRole("button", { name: /^glas\./i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^länk 2, glas/i })).not.toBeInTheDocument();
   });
 
-  it("re-aims a placed part into another slot without duplicating it", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("mur"));
-    expect(placed(1, "mur")).toBeInTheDocument();
-    await u.click(slot(2));
-    await u.click(placed(1, "mur"));
-    // Removing it frees slot 1; the part exists in exactly one place at a time.
-    expect(screen.getAllByRole("button", { name: /mur/i })).toHaveLength(1);
-  });
-
-  it("returns a part to the pool when its slot is activated", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("mur"));
-    await u.click(placed(1, "mur"));
-    await expectStatus("MUR tillbaka i poolen.");
-    expect(chip("mur")).toBeInTheDocument();
-  });
-
-  it("leaves a gap rather than shuffling the rest along", async () => {
+  it("closes the chain up when a part is taken out", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("vägg"));
     await u.click(chip("glas"));
-    await u.click(placed(1, "vägg"));
-    // glas stays where it was put.
-    expect(placed(2, "glas")).toBeInTheDocument();
-    expect(slot(1)).toBeInTheDocument();
+    await u.click(link(1, "vägg"));
+    // glas moves up rather than leaving a hole behind.
+    expect(link(1, "glas")).toBeInTheDocument();
+    expect(chip("vägg")).toBeInTheDocument();
+  });
+
+  it("refuses to grow past the budget", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    await u.click(chip("glas"));
+    await u.click(chip("tak"));   // three parts is four links, the budget
+    await u.click(chip("mur"));
+    await expectStatus(/kan inte bli längre/);
   });
 });
 
@@ -205,7 +201,7 @@ describe("judging the chain", () => {
     await u.click(chip("vägg"));
     expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
 
-    await u.click(screen.getByRole("button", { name: /^plats 1, vägg\./i }));
+    await u.click(screen.getByRole("button", { name: /^länk 1, vägg\./i }));
     expect(screen.queryByText("bruten länk")).not.toBeInTheDocument();
   });
 
@@ -333,7 +329,7 @@ describe("test mode", () => {
     await u.click(screen.getByRole("button", { name: "Spela om dagen" }));
     expect(screen.queryByText("stenbro → brohus")).not.toBeInTheDocument();
     expect(chip("bro")).toBeInTheDocument();
-    expect(screen.getByText("0/3 placerade")).toBeInTheDocument();
+    expect(screen.getByText("1 länk")).toBeInTheDocument();
   });
 
   it("does not count a replayed day twice", async () => {
@@ -369,7 +365,7 @@ describe("persistence", () => {
 
     render(<App />);
     await board();
-    expect(screen.getByText("1/3 placerade")).toBeInTheDocument();
+    expect(screen.getByText("2 länkar")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^mur\./i })).not.toBeInTheDocument();
   });
 });
