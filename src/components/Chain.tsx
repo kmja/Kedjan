@@ -1,7 +1,10 @@
+import { Fragment } from "react";
 import type { Day } from "../types";
-import { weld } from "../game/graph";
 
 type ChipHandlers = Record<string, unknown>;
+
+/** A joint's verdict once the chain has been judged. */
+export type JointMark = "ok" | "broken" | null;
 
 interface Props {
   day: Day;
@@ -9,22 +12,26 @@ interface Props {
   solved: boolean;
   marked: string | null;
   armedSlot: number | null;
-  /** Joints that failed the last time the chain was closed. */
-  failedJoints: number[];
-  /** Zone id under the pointer mid-drag, e.g. "slot:1". */
+  /** Verdict per joint of [start, ...filled, target]; null means not yet judged. */
+  jointMarks: JointMark[];
+  /** Bumped on every judgement so the marks re-animate rather than sit still. */
+  verdictKey: number;
   dragOver: string | null;
   liftedPart: string | null;
   handlers: (part: string, source: "pool" | "chain") => ChipHandlers;
   onSlot: (index: number) => void;
-  onSubmit: () => void;
 }
 
 /**
- * The bridge under construction: start, the budget's slots, and the target.
+ * The bridge, built downwards: start at the top, the budget's slots beneath it,
+ * the target at the foot.
  *
- * Parts go into any slot in any order and nothing is checked as they land.
- * The target is the final link — activating it closes the chain and judges
- * every joint at once.
+ * Vertical because a chain reads as a chain that way — and because a par-4 day
+ * laid out in a row wrapped mid-bridge on a phone, which put the target on its
+ * own line looking like a separate thing.
+ *
+ * Parts go into any slot in any order. The chain is judged as a whole after
+ * every placement, and each joint carries its own verdict.
  */
 export function Chain({
   day,
@@ -32,51 +39,59 @@ export function Chain({
   solved,
   marked,
   armedSlot,
-  failedJoints,
+  jointMarks,
+  verdictKey,
   dragOver,
   liftedPart,
   handlers,
   onSlot,
-  onSubmit,
 }: Props) {
-  const filled = slots.filter((s): s is string => s !== null);
-  // Joint indices run over [start, ...filled, target], and a slot's joint is
-  // the one before it — counted among filled slots, since gaps do not exist
-  // once the chain is read.
+  // Joints are numbered over the compacted chain, so a slot's joint is the one
+  // before it, counted among filled slots only.
   const jointBefore = (slotIndex: number) =>
     slots.slice(0, slotIndex).filter(Boolean).length;
+  const filled = slots.filter(Boolean).length;
 
-  const broken = new Set(failedJoints);
   const spoken = [
     `Start ${day.start}`,
     ...slots.map((s, i) => (s ? `plats ${i + 1} ${s}` : `plats ${i + 1} tom`)),
     `mål ${day.target}`,
   ].join(", ");
 
-  const Joint = ({ index, show }: { index: number; show: boolean }) => (
-    <span className={`joint ${show && broken.has(index) ? "joint--broken" : ""}`}>
-      <span aria-hidden="true">{show && broken.has(index) ? "✗" : "+"}</span>
-      {show && broken.has(index) && <span className="sr-only">bruten länk</span>}
-    </span>
-  );
+  const Joint = ({ index, live }: { index: number; live: boolean }) => {
+    const mark = live ? jointMarks[index] ?? null : null;
+    return (
+      <li className="joint-row" aria-hidden={mark === null}>
+        <span className={`joint-line ${mark ? `joint-line--${mark}` : ""}`} />
+        {mark && (
+          <span key={`${verdictKey}-${index}`} className={`verdict verdict--${mark}`}>
+            <span aria-hidden="true">{mark === "ok" ? "✓" : "✗"}</span>
+            <span className="sr-only">
+              {mark === "ok" ? "länken håller" : "bruten länk"}
+            </span>
+          </span>
+        )}
+      </li>
+    );
+  };
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-1 px-1 py-2">
-      <ol className="contents" aria-label={`Kedjan: ${spoken}`}>
-        <li className="flex items-center">
-          <span className="node node--endpoint">{day.start}</span>
-        </li>
+    <ol className="chain" aria-label={`Kedjan: ${spoken}`}>
+      <li>
+        <span className="node node--endpoint node--wide">{day.start}</span>
+      </li>
 
-        {slots.map((part, i) => (
-          <li key={i} className="flex items-center">
-            <Joint index={jointBefore(i)} show={part !== null} />
+      {slots.map((part, i) => (
+        <Fragment key={i}>
+          <Joint index={jointBefore(i)} live={part !== null} />
+          <li>
             {part === null ? (
               <button
                 type="button"
                 data-drop-zone={`slot:${i}`}
                 onClick={() => onSlot(i)}
                 disabled={solved}
-                className={`node node--slot ${
+                className={`node node--wide node--slot ${
                   armedSlot === i ? "node--slot-armed" : ""
                 } ${dragOver === `slot:${i}` ? "node--slot-active" : ""}`}
                 aria-label={
@@ -88,13 +103,13 @@ export function Chain({
                 <span aria-hidden="true">{armedSlot === i ? "▸" : "··"}</span>
               </button>
             ) : solved ? (
-              <span className="node">{part}</span>
+              <span className="node node--wide">{part}</span>
             ) : (
               <button
                 type="button"
                 data-drop-zone={`slot:${i}`}
                 {...handlers(part, "chain")}
-                className={`node node--removable ${
+                className={`node node--wide node--removable ${
                   liftedPart === part ? "chip--lifted" : ""
                 } ${dragOver === `slot:${i}` ? "node--slot-active" : ""}`}
                 aria-label={`Plats ${i + 1}, ${part}. Ta bort den ur kedjan.`}
@@ -103,37 +118,19 @@ export function Chain({
               </button>
             )}
           </li>
-        ))}
+        </Fragment>
+      ))}
 
-        <li className="flex items-center">
-          <Joint index={filled.length} show={filled.length > 0} />
-          {solved ? (
-            <span className="node node--endpoint snap">{day.target}</span>
-          ) : (
-            <button
-              type="button"
-              onClick={onSubmit}
-              className={`node node--goal ${marked === day.target ? "chip--marked" : ""}`}
-              aria-label={
-                `Mål ${day.target}. Slut kedjan här och kontrollera den.` +
-                (marked === day.target ? " Ledtråd: det här är rätt drag." : "")
-              }
-            >
-              {marked === day.target && <span aria-hidden="true">⭐&nbsp;</span>}
-              {day.target}
-            </button>
-          )}
-        </li>
-      </ol>
-
-      {solved && (
-        <p className="sr-only">
-          {[day.start, ...filled, day.target]
-            .map((p, i, a) => (i < a.length - 1 ? weld(day, p, a[i + 1]!) : null))
-            .filter(Boolean)
-            .join(", ")}
-        </p>
-      )}
-    </div>
+      <Joint index={filled} live={filled > 0} />
+      <li>
+        <span
+          className={`node node--endpoint node--wide ${solved ? "snap" : ""} ${
+            marked === day.target ? "chip--marked" : ""
+          }`}
+        >
+          {day.target}
+        </span>
+      </li>
+    </ol>
   );
 }

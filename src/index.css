@@ -19,6 +19,10 @@
   --falu-ink: #7e2d26;
   --honey: #c8921f;
   --honey-ink: #7a5a12;
+  /* Spruce green, for a link that holds. Honey is the hint colour and had to
+     stay distinct from the verdict. 5.9:1 against its own foreground. */
+  --gran-ok: #2e6b45;
+  --on-ok: #faf7f0;
   --on-falu: #faf7f0;
   --on-honey: #22302a;
   --shadow: rgb(34 48 42 / 0.12);
@@ -37,6 +41,8 @@
     --falu-ink: #e0736a;
     --honey: #e8b355;
     --honey-ink: #e8b355;
+    --gran-ok: #6fbf88;
+    --on-ok: #171c19;
     --on-falu: #171c19;
     --on-honey: #171c19;
     --shadow: rgb(0 0 0 / 0.4);
@@ -119,7 +125,64 @@ body {
     transform: translate(-50%, -130%);
   }
 
-  /* ── the chain ─────────────────────────────────────────────── */
+  /* ── the chain, built downwards ────────────────────────────── */
+  .chain {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .node--wide {
+    min-width: 9.5rem;
+    justify-content: center;
+    font-size: 1rem;
+    padding: 0.6rem 0.9rem;
+  }
+  /* A joint is the run of chain between two parts, and carries the verdict. */
+  .joint-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.1rem;
+    width: 100%;
+  }
+  .joint-line {
+    width: 2px;
+    height: 100%;
+    background: var(--edge);
+    transition: background 0.2s ease;
+  }
+  .joint-line--ok {
+    background: var(--gran-ok);
+  }
+  .joint-line--broken {
+    background: var(--falu);
+  }
+  .verdict {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 999px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1;
+    animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
+  }
+  .verdict--ok {
+    background: var(--gran-ok);
+    color: var(--on-ok);
+  }
+  .verdict--broken {
+    background: var(--falu);
+    color: var(--on-falu);
+  }
+
   .node {
     display: inline-flex;
     align-items: center;
@@ -270,6 +333,21 @@ body {
     border: 1px solid var(--edge);
     background: var(--panel);
     padding: 1rem;
+  }
+}
+
+@keyframes verdict-pop {
+  0% {
+    transform: scale(0.2) rotate(-18deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
   }
 }
 

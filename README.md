@@ -7,10 +7,15 @@ into a real Swedish compound** — grund+val → grundval, val+natt → valnatt.
 chain has a fixed budget of links (par + 1); winning means reaching the target
 within budget.
 
-**Parts go down in any order and nothing is checked as they land.** The target
-is the final link: close the chain onto it and every joint is judged at once,
-with each break named and marked. The game is arrangement and deduction, not
-probing — a chip you are unsure of costs you a thought, not a slap.
+**Parts go down in any order.** The bridge is built downwards — start at the
+top, target at the foot — and the whole chain is judged after every placement,
+each joint carrying its own green tick or red cross. Placing the chip that
+completes the chain finishes the day; there is nothing further to press.
+
+Nothing is ever refused, so a chip you are unsure of costs you a thought rather
+than a slap. The joint *into the target* stays unmarked while slots remain: a
+red cross under a half-built bridge would say "wrong" when the honest answer is
+"not yet".
 
 ```
 npm install
@@ -99,8 +104,9 @@ weld solely within its own route.
 Every chip is a real `<button>`, so the game is fully playable from the
 keyboard and by a screen reader with no drag involved — pointer drag and tap
 are shortcuts layered on top, not the only route. Colour is never the only
-signal: hints add a star and a border weight, and status messages carry a ✓ or
-✗ glyph alongside the colour. All text/background pairs clear WCAG AA in both
+signal: hints add a star and a border weight, verdict badges carry a ✓ or ✗
+glyph as well as green or red, and every joint states its verdict in words for
+a screen reader. All text/background pairs clear WCAG AA in both
 light and dark themes (honey is a fill colour only — honey on paper is 2.6:1).
 Motion respects `prefers-reduced-motion`.
 

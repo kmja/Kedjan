@@ -58,14 +58,12 @@ describe("the day board", () => {
     expect(within(pool).getAllByRole("button")).toHaveLength(testDay.pool.length);
   });
 
-  it("shows the budget as empty slots and the target as a goal", async () => {
+  it("shows the budget as empty slots, with the target as a plain endpoint", async () => {
     render(<App />);
     await board();
-    expect(
-      screen.getByRole("button", { name: /mål hus\. slut kedjan/i }),
-    ).toBeInTheDocument();
+    // The target is the foot of the bridge, not a control to press.
+    expect(screen.queryByRole("button", { name: /^hus$/i })).not.toBeInTheDocument();
     expect(screen.getByText("0/3 placerade")).toBeInTheDocument();
-    // Three empty slots plus the goal: budget 4, nothing spent.
     expect(screen.getAllByText("··")).toHaveLength(3);
   });
 });
@@ -92,10 +90,12 @@ describe("placing parts freely", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("mur"));
+    // Deliberately not a winning pair — the chain finishes itself the moment
+    // one is completed, which would end the board mid-test.
     await u.click(chip("vägg"));
-    expect(placed(1, "mur")).toBeInTheDocument();
-    expect(placed(2, "vägg")).toBeInTheDocument();
+    await u.click(chip("glas"));
+    expect(placed(1, "vägg")).toBeInTheDocument();
+    expect(placed(2, "glas")).toBeInTheDocument();
   });
 
   it("lets the keyboard aim at a specific slot", async () => {
@@ -103,9 +103,9 @@ describe("placing parts freely", () => {
     render(<App />);
     await board();
     await u.click(slot(3));
-    await u.click(chip("bro"));
-    await expectStatus("BRO placerad på plats 3.");
-    expect(placed(3, "bro")).toBeInTheDocument();
+    await u.click(chip("tak"));
+    await expectStatus("TAK placerad på plats 3.");
+    expect(placed(3, "tak")).toBeInTheDocument();
     // Slots 1 and 2 are still empty — order of placement is free.
     expect(slot(1)).toBeInTheDocument();
   });
@@ -148,87 +148,87 @@ describe("placing parts freely", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("mur"));
     await u.click(chip("vägg"));
-    await u.click(placed(1, "mur"));
-    // vägg stays where it was put.
-    expect(placed(2, "vägg")).toBeInTheDocument();
+    await u.click(chip("glas"));
+    await u.click(placed(1, "vägg"));
+    // glas stays where it was put.
+    expect(placed(2, "glas")).toBeInTheDocument();
     expect(slot(1)).toBeInTheDocument();
   });
 });
 
-describe("closing the chain", () => {
+describe("judging the chain", () => {
   const chip = (part: string) =>
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
-  const close = () =>
-    screen.getByRole("button", { name: /mål hus\. slut kedjan/i });
 
-  it("validates every joint at once and names what failed", async () => {
+  it("marks a joint that holds as soon as a part lands", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));  // sten+vägg is not a word
-    await u.click(close());
-    await expectStatus("STEN+VÄGG håller inte.");
+    await u.click(chip("mur"));   // sten+mur ✓
+    expect(await screen.findAllByText("länken håller")).toHaveLength(1);
   });
 
-  it("reports more than one break", async () => {
+  it("marks a joint that does not hold", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("glas"));  // sten+glas ✗
-    await u.click(chip("mur"));   // glas+mur ✗, mur+hus ✗
-    await u.click(close());
-    await expectStatus(/STEN\+GLAS och GLAS\+MUR och 1 länk till håller inte/);
-  });
-
-  it("marks the broken joints in the chain", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("vägg"));
-    await u.click(close());
+    await u.click(chip("vägg"));  // sten+vägg ✗
     expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
   });
 
-  it("clears the marks as soon as the chain is edited", async () => {
+  it("withholds a verdict on the final joint while slots remain", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    // sten+mur holds; mur+hus does not, but with two slots free the honest
+    // answer is "not yet", not "wrong".
+    expect(screen.queryByText("bruten länk")).not.toBeInTheDocument();
+  });
+
+  it("judges the final joint once the board is full", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));
+    await u.click(chip("tak"));
+    await u.click(chip("glas"));
+    await expectStatus(/håller inte/);
+    expect(screen.getAllByText("bruten länk").length).toBeGreaterThan(0);
+  });
+
+  it("re-judges after a part is taken back out", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("vägg"));
-    await u.click(close());
     expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
 
     await u.click(screen.getByRole("button", { name: /^plats 1, vägg\./i }));
     expect(screen.queryByText("bruten länk")).not.toBeInTheDocument();
   });
 
-  it("refuses to check an empty chain", async () => {
+  it("finishes the day on the placement that completes the chain", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(close());
-    await expectStatus("Lägg minst en del i kedjan först.");
-  });
-
-  it("solves when every joint holds, using fewer slots than the budget", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("bro"));   // sten+bro ✓, bro+hus ✓ — two links, budget 4
-    await u.click(close());
+    // sten+bro ✓ and bro+hus ✓ — two links, well under the budget of four.
+    await u.click(chip("bro"));
     expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
   });
 
-  it("counts a failed check as a felförsök in the share line", async () => {
+  it("counts a full board that does not hold as a felförsök", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));
-    await u.click(close());
-    await u.click(screen.getByRole("button", { name: /^plats 1, vägg\./i }));
+    await u.click(chip("mur"));
+    await u.click(chip("tak"));
+    await u.click(chip("glas"));
+    await expectStatus(/håller inte/);
+
+    await u.click(screen.getByRole("button", { name: "Rensa" }));
     await u.click(chip("bro"));
-    await u.click(close());
     await screen.findByText("stenbro → brohus");
     await u.click(screen.getByRole("button", { name: "Dela resultat" }));
     expect(await navigator.clipboard.readText()).toContain("1 felförsök");
@@ -240,16 +240,14 @@ describe("closing the chain", () => {
     await board();
     chip("bro").focus();
     await u.keyboard("{Enter}");
-    close().focus();
-    await u.keyboard("{Enter}");
     expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
   });
 });
 
 describe("solving", () => {
   const solveUnderPar = async (u: ReturnType<typeof user>) => {
+    // Placing bro completes the chain, which is what finishes the day.
     await u.click(screen.getByRole("button", { name: /^bro\./i }));
-    await u.click(screen.getByRole("button", { name: /mål hus\. slut kedjan/i }));
   };
 
   it("spells the chain back and calls an under-par result", async () => {
@@ -289,10 +287,8 @@ describe("solving", () => {
 describe("test mode", () => {
   const chip = (part: string) =>
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
-  const close = () => screen.getByRole("button", { name: /mål hus\. slut kedjan/i });
   const solve = async (u: ReturnType<typeof user>) => {
     await u.click(chip("bro"));
-    await u.click(close());
     await screen.findByText("stenbro → brohus");
   };
 

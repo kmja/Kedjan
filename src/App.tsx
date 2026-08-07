@@ -152,20 +152,19 @@ export default function App() {
               solved={game.solved}
               marked={game.marked}
               armedSlot={game.armedSlot}
-              failedJoints={game.failedJoints}
+              jointMarks={game.jointMarks}
+              verdictKey={game.verdictKey}
               dragOver={drag?.over ?? null}
               liftedPart={drag?.part ?? null}
               handlers={handlers}
               onSlot={game.toggleSlot}
-              onSubmit={game.submit}
             />
 
             {!game.solved && (
               <>
                 <p className="-mt-3 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
-                  Lägg delarna i vilken ordning du vill. Tryck på{" "}
-                  {day.target.toUpperCase()} när du är klar — då kontrolleras hela
-                  kedjan.
+                  Lägg delarna i vilken ordning du vill. Kedjan kontrolleras
+                  varje gång du lägger en del.
                 </p>
 
                 <Pool
