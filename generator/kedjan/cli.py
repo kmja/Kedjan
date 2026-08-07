@@ -70,6 +70,45 @@ def cmd_generate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sweep(args: argparse.Namespace) -> int:
+    """Rank every day the whole graph can carry. Slow, thorough, exhaustive."""
+    from . import sweep as sweep_mod
+
+    print("reading lexicons…", file=sys.stderr)
+    lex = lex_mod.load(args.dic, args.wordlist, args.frequency)
+    saldo = saldo_mod.load_if_present(args.saldo)
+    if saldo is None:
+        print("the sweep scores double meanings, which needs SALDO.", file=sys.stderr)
+        return 2
+
+    print("splitting compounds…", file=sys.stderr)
+    compounds = split.compounds(lex)
+    print("building the part graph…", file=sys.stderr)
+    graph = graph_mod.build(compounds, lex, saldo)
+    print(f"  {len(graph.pairs):,} pairs over {len(graph.hubs):,} hub parts", file=sys.stderr)
+
+    print("sweeping every start…", file=sys.stderr)
+    ranked = sweep_mod.sweep(graph, lex, saldo)
+    Path(args.out).write_text(
+        json.dumps(ranked, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+    )
+    print(f"{len(ranked)} days ranked, written to {args.out}", file=sys.stderr)
+
+    head = f"{'day':22} {'par':>3} {'score':>6}  {'goldi':>5} {'dens':>5} {'dubb':>5}  {'sols':>4} {'ind':>3} {'prs':>3}  double meanings"
+    print(head)
+    print("-" * len(head))
+    for d in ranked[: args.top]:
+        sub = d["_subscores"]
+        homs = ", ".join(d["_homographs"])
+        print(
+            f"{d['start'] + '→' + d['target']:22} {d['par']:>3} {d['_score']:>6.3f}  "
+            f"{sub['goldilocks']:>5.2f} {sub['density']:>5.2f} {sub['doubleness']:>5.2f}  "
+            f"{d['_metrics']['solutions']:>4} {d['_metrics']['disjoint_routes']:>3} "
+            f"{d['_metrics']['valid_pairs']:>3}  {homs}"
+        )
+    return 0
+
+
 def cmd_review(args: argparse.Namespace) -> int:
     """Print what a curator has to judge, and nothing else.
 
@@ -302,6 +341,11 @@ def main(argv: list[str] | None = None) -> int:
     gen.add_argument("--par3", type=int, default=4, help="how many par-3 days")
     gen.add_argument("--par4", type=int, default=4, help="how many par-4 days")
     gen.set_defaults(func=cmd_generate)
+
+    sw = sub.add_parser("sweep", parents=[corpus], help="rank every day the graph can carry")
+    sw.add_argument("--out", default="sweep.json")
+    sw.add_argument("--top", type=int, default=30, help="rows to print")
+    sw.set_defaults(func=cmd_sweep)
 
     review = sub.add_parser("review", help="print what a curator has to judge")
     review.add_argument("days", help="path to candidates.json or days.json")
