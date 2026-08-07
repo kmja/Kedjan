@@ -89,6 +89,9 @@ class DayReport:
     #: Solution chips that weld to nothing outside their own route — the tell
     #: that gives a group away.
     isolated_chips: list[str] = field(default_factory=list)
+    #: What the pool is about: association roots two or more chips share.
+    #: Coherence, not tone — see `Saldo.centre`.
+    centre: list[str] = field(default_factory=list)
     #: Welds on solution paths whose witness SALDO does not record. SALDO is a
     #: curated lexicon, so absence is a decent proxy for "marginal compound".
     weak_welds: list[str] = field(default_factory=list)
@@ -177,6 +180,7 @@ def report(day: DayLike, saldo: Saldo | None = None) -> DayReport:
         disjoint_routes=len(independent),
         route_cross_links=crossings,
         isolated_chips=isolated,
+        centre=saldo.centre(_pool(day))[:3] if saldo else [],
         weak_welds=sorted(set(weak)),
         total_welds=len(pairs),
         saldo_welds=saldo_welds,

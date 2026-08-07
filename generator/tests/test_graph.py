@@ -169,3 +169,18 @@ def test_hub_selection_drops_named_degree_prefixes_without_saldo():
     others = [f"del{i}" for i in range(10)]
     pairs = {("hel", o): "x" for o in others}
     assert "hel" not in graph_mod.select_hubs(pairs, _lex_with(["hel", *others]))
+
+
+def test_head_pos_consistency_rejects_a_coincidental_concatenation():
+    # morfin is morphine, not mor + fin.
+    saldo = _saldo({"fin": ["av"], "morfin": ["nn"], "mat": ["nn"], "hundmat": ["nn"]})
+    assert graph_mod.head_pos_consistent("fin", "morfin", saldo) is False
+    assert graph_mod.head_pos_consistent("mat", "hundmat", saldo) is True
+
+
+def test_head_pos_consistency_stays_silent_when_saldo_cannot_judge():
+    saldo = _saldo({"mat": ["nn"]})
+    # Witness unknown to SALDO — no opinion rather than a false accusation.
+    assert graph_mod.head_pos_consistent("mat", "slutmat", saldo) is True
+    # Head unknown — likewise.
+    assert graph_mod.head_pos_consistent("xyz", "slutmat", saldo) is True

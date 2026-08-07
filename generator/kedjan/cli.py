@@ -104,6 +104,8 @@ def cmd_review(args: argparse.Namespace) -> int:
             f", cross-links {r.route_cross_links}"
         )
         print(f"  opens   {', '.join(r.winning_openings)} lead to a win")
+        if r.centre:
+            print(f"  about   {', '.join(r.centre)}")
         if r.bottlenecks:
             print(f"  funnel  every solution uses {', '.join(r.bottlenecks)}")
         if r.weak_welds:

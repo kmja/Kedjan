@@ -194,3 +194,11 @@ def test_recurring_rejections_surface_repeat_offenders():
     repeats = _recurring_rejections(ledger)
     assert set(repeats) == {"tok"}          # rejected twice
     assert len(repeats["tok"]) == 2         # both distinct reasons kept
+
+
+def test_flags_a_witness_that_does_not_inherit_its_head_word_class(lex):
+    from kedjan.saldo import Saldo
+
+    saldo = Saldo(pos={"fin": frozenset({"av"}), "morfin": frozenset({"nn"})})
+    day = a_day(pairs={"sten>mur": "stenmur", "mor>fin": "morfin"})
+    assert any("does not take its head" in m for m in errors(curate.check_day(day, None, saldo)))

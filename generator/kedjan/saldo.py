@@ -21,8 +21,10 @@ Attribution — attribution is required wherever the data reaches a user.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Sequence
 
 #: Parts of speech a compound part may have. Nouns carry most of the weight;
 #: adjectives are common first elements (finfolk, godnatt, starkvin) and
@@ -38,14 +40,24 @@ BANNED_POS = frozenset(
 )
 
 #: Column layout of saldo20v03.txt, which is tab-separated and commented with #.
-_BASEFORM, _POS = 4, 5
+_PRIMARY, _BASEFORM, _POS = 1, 4, 5
+
+#: How far to walk the association links when asking what a pool is about.
+#: Measured: at depth 5 every pool converges on the same handful of primitives
+#: (vem, ge, till) and the signal is gone; at 2 the music pools come back as
+#: `sjunga` and the food pools as `äta`/`dricka`.
+CENTRE_DEPTH = 2
 
 
 @dataclass(frozen=True)
 class Saldo:
-    """baseform -> the set of parts of speech SALDO records for it."""
+    """baseform -> parts of speech, plus the association links between senses."""
 
     pos: dict[str, frozenset[str]]
+    #: baseform -> the semantically "primary" neighbour SALDO associates it
+    #: with. SALDO is an association lexicon, so following these links upward
+    #: says roughly what a word is about: kaffe -> dryck, lunch -> måltid.
+    primary: dict[str, str] = field(default_factory=dict)
 
     def __contains__(self, word: str) -> bool:
         return word in self.pos
@@ -63,8 +75,37 @@ class Saldo:
         return bool(tags & PART_POS) and not (tags & BANNED_POS)
 
 
+    def ancestors(self, word: str, depth: int = CENTRE_DEPTH) -> list[str]:
+        """The association links above a word, nearest first."""
+        out: list[str] = []
+        seen = {word}
+        current = word
+        for _ in range(depth):
+            nxt = self.primary.get(current)
+            if not nxt or nxt in seen:
+                break
+            out.append(nxt)
+            seen.add(nxt)
+            current = nxt
+        return out
+
+    def centre(self, words: Sequence[str], depth: int = CENTRE_DEPTH) -> list[str]:
+        """What a pool is about: association roots two or more chips share.
+
+        This measures *coherence* — the "reads as a pool" quality — and not
+        tone. A pool that produces benbrott and skallbrott has no shared centre
+        at all, because its tone comes from the compounds it builds rather than
+        from what the parts individually mean.
+        """
+        hits: Counter[str] = Counter()
+        for word in words:
+            hits.update(set(self.ancestors(word, depth)))
+        return [root for root, n in hits.most_common() if n >= 2]
+
+
 def load(path: Path | str = "saldo_2.3/saldo20v03.txt") -> Saldo:
     pos: dict[str, set[str]] = {}
+    primary: dict[str, str] = {}
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             if line.startswith("#") or not line.strip():
@@ -72,8 +113,15 @@ def load(path: Path | str = "saldo_2.3/saldo20v03.txt") -> Saldo:
             cols = line.rstrip("\n").split("\t")
             if len(cols) <= _POS:
                 continue
-            pos.setdefault(cols[_BASEFORM], set()).add(cols[_POS])
-    return Saldo(pos={w: frozenset(tags) for w, tags in pos.items()})
+            base = cols[_BASEFORM]
+            pos.setdefault(base, set()).add(cols[_POS])
+            root = cols[_PRIMARY].split("..")[0]
+            if base not in primary and root not in ("PRIM", base):
+                primary[base] = root
+    return Saldo(
+        pos={w: frozenset(tags) for w, tags in pos.items()},
+        primary=primary,
+    )
 
 
 def load_if_present(path: Path | str = "saldo_2.3/saldo20v03.txt") -> Saldo | None:

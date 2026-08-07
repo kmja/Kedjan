@@ -300,12 +300,41 @@ def augment_by_lookup(
     return recovered
 
 
+def head_pos_consistent(head: str, witness: str, saldo: Saldo) -> bool:
+    """Does the witness inherit its head's part of speech?
+
+    A Swedish compound takes the word class of its final element: noun + noun
+    makes a noun. When it does not, the string is usually not that compound at
+    all but an unrelated word the two parts happen to spell:
+
+        mor + fin    = morfin       (morphine)
+        bank + ett   = bankett      (a banquet)
+        ton + sur    = tonsur       (a tonsure)
+        minne + svärd = minnesvärd  (minnes+värd, memorable)
+        skydd + svärd = skyddsvärd  (skydds+värd, worth protecting)
+
+    Conservative by construction: it can only judge welds where SALDO records
+    both the head and the witness, and stays silent otherwise.
+    """
+    head_pos = saldo.pos.get(head)
+    witness_pos = saldo.pos.get(witness)
+    if not head_pos or not witness_pos:
+        return True
+    return bool(head_pos & witness_pos)
+
+
 def build(
     compounds: dict[str, list[str]], lex: Lexicon, saldo: Saldo | None = None
 ) -> PartGraph:
     pairs = witnessed_pairs(compounds, lex)
     hubs = select_hubs(pairs, lex, saldo)
     augment_by_lookup(pairs, hubs, lex)
+
+    if saldo is not None:
+        for key in [
+            k for k, w in pairs.items() if not head_pos_consistent(k[1], w, saldo)
+        ]:
+            del pairs[key]
 
     adjacency: dict[str, set[str]] = defaultdict(set)
     for a, b in pairs:

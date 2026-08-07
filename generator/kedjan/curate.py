@@ -22,6 +22,7 @@ from .graph import (
     NUMERALS,
     TONE_BAN,
     doublet_partner,
+    head_pos_consistent,
 )
 from .analysis import report as analyse
 from .lexicon import Lexicon
@@ -247,6 +248,11 @@ def check_day(
             warn(f"{witness!r} ends in {b!r}, which is rarely a compound head")
         elif b == AGENT_TAIL and a.endswith("a"):
             warn(f"{witness!r} looks like an agent noun ({a} + -aren), not a compound")
+        if saldo is not None and not head_pos_consistent(b, witness, saldo):
+            err(
+                f"{witness!r} is not a {b!r} — it does not take its head's word "
+                "class, so it is a different word the parts happen to spell"
+            )
         if lex is not None and witness not in lex.union:
             err(f"{witness!r} is not in the lexicon — a false acceptance")
         if link and len(a) < 3:
@@ -273,6 +279,19 @@ def check_calendar(
         out.append(Finding(Level.ERROR, start, "start is reused across the calendar"))
     for target in sorted(duplicates(str(d["target"]) for d in days)):
         out.append(Finding(Level.ERROR, target, "target is reused across the calendar"))
+
+    if saldo is not None:
+        centres = [(str(d["start"]), saldo.centre(list(d.get("pool", [])))[:2]) for d in days]
+        for (a, ca), (b, cb) in zip(centres, centres[1:]):
+            shared = set(ca) & set(cb)
+            if shared:
+                out.append(
+                    Finding(
+                        Level.WARN,
+                        f"{a}/{b}",
+                        f"consecutive days both about {', '.join(sorted(shared))}",
+                    )
+                )
 
     dates = [str(d.get("date", "")) for d in days if d.get("date")]
     for dupe in sorted(duplicates(dates)):

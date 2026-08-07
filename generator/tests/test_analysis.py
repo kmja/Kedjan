@@ -170,3 +170,24 @@ def test_every_shipped_route_reaches_outside_itself():
         r = analysis.report(day)
         assert len(r.isolated_chips) <= 1, f"{r.label}: {r.isolated_chips}"
         assert r.min_cross_links >= 2, f"{r.label}: {r.route_cross_links}"
+
+
+def _saldo_with(primary):
+    from kedjan.saldo import Saldo
+    return Saldo(pos={}, primary=primary)
+
+
+def test_centre_names_what_a_pool_is_about():
+    saldo = _saldo_with({"kaffe": "dryck", "mjölk": "dryck", "bord": "möbel"})
+    assert saldo.centre(["kaffe", "mjölk", "bord"]) == ["dryck"]
+
+
+def test_centre_is_silent_when_a_pool_shares_nothing():
+    saldo = _saldo_with({"kaffe": "dryck", "bord": "möbel"})
+    assert saldo.centre(["kaffe", "bord"]) == []
+
+
+def test_ancestors_stop_at_the_requested_depth_and_never_loop():
+    saldo = _saldo_with({"a": "b", "b": "c", "c": "a"})
+    assert saldo.ancestors("a", depth=2) == ["b", "c"]
+    assert saldo.ancestors("a", depth=9) == ["b", "c"]   # the cycle terminates

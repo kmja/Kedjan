@@ -76,10 +76,12 @@ day that fails one can neither be generated nor accepted.
 | no register doublet in one pool | `far` and `fader` together is a guess, not a choice |
 | no verb conjugation posing as a compound | risk+e+ras is *riskeras* |
 | sound linking morpheme in both directions | see below |
+| the witness inherits its head's word class | mor+fin does not spell a "fin" — *morfin* is morphine |
 
 **Warnings** — for you to overrule knowingly: pair count outside 20–30, a part
-every solution funnels through, and welds on solution paths that SALDO does not
-record.
+every solution funnels through, welds on solution paths that SALDO does not
+record, one chip welding only inside its own route, and two consecutive days
+about the same thing.
 
 ## What only a human can see
 
@@ -117,6 +119,7 @@ Each entry was a defect found in play or in review, and is now a rule.
 | `hund`/`ben`/`böj` welding to nothing else | routes must cross-link; isolated chips capped at one |
 | `benbrott`, `skallbrott`, `hundbett` | an injury pool in a cosy daily — cut on tone |
 | `helfin`, `helkul`, `heltokig` | degree prefixes, caught by adjective-head share |
+| `morfin`, `bankett`, `tonsur`, `minnesvärd` | a compound must inherit its head's word class |
 
 The two linking-morpheme rules are worth reading together. The letter between
 two parts can belong to either neighbour, and if it belongs to one, the
@@ -136,9 +139,9 @@ Five days, curated from twenty candidates.
 |---|------|-----|-----|------|-------|-------|------|-------|-----------|
 | 1 | 2026-08-02 | slag → flaska | 4 | 6 | 2 | 5 | 4 | 2 | 4, 2, 3 |
 | 2 | 2026-08-03 | slut → teori | 3 | 10 | 3 | 6 | 5 | 4 | 5, 2 |
-| 3 | 2026-08-04 | hund → glas | 3 | 9 | 4 | 2 | 4 | 4 | 4, 2 |
-| 4 | 2026-08-05 | jul → skydd | 3 | 10 | 3 | 2 | 5 | 3 | 5, 2 |
-| 5 | 2026-08-06 | musik → sätt | 3 | 7 | 3 | 2 | 5 | 3 | 5, 3 |
+| 3 | 2026-08-04 | hund → glas | 3 | 8 | 4 | 2 | 4 | 4 | 4, 2 |
+| 4 | 2026-08-05 | musik → sätt | 3 | 7 | 3 | 2 | 5 | 3 | 5, 3 |
+| 5 | 2026-08-06 | jul → skydd | 3 | 10 | 3 | 2 | 5 | 3 | 5, 2 |
 
 No day carries an isolated chip. `slut→teori` replaced `hel→gäst`, and is placed
 away from `musik→sätt` because their pools share kör, sång, låt and val — two
@@ -225,6 +228,51 @@ Degree prefixes sit at 56–82%; real parts, including adjectives that compound
 properly, stay under 30%. The ceiling is 40%, and the named list survives only
 as the fallback for a SALDO-less run.
 
+## A compound inherits its head's word class
+
+`hund→glas` shipped for several rounds with `mor` and `fin` both in the pool,
+so a player could build `mor + fin` and be told **morfin** — morphine — was
+correct. Nobody caught it by eye, including me.
+
+Swedish compounds take the word class of their final element: noun + noun makes
+a noun. When the string does not, it is usually not that compound at all but an
+unrelated word the parts happen to spell.
+
+```
+mor + fin     = morfin        morphine
+bank + ett    = bankett       a banquet
+ton + sur     = tonsur        a tonsure
+minne + svärd = minnesvärd    minnes+värd, memorable
+skydd + svärd = skyddsvärd    skydds+värd, worth protecting
+```
+
+The rule can only judge welds where SALDO records both the head and the
+witness — about 2,300 of the graph's 5,500 hub welds — and stays silent
+otherwise. Within what it can see it removes 109, or 4.7%.
+
+## What a pool is about
+
+SALDO is an association lexicon, so its links say roughly what a word is for:
+`kaffe → dryck → dricka`. Following them two steps and keeping the roots two or
+more chips share gives a readable summary of a pool, printed by `review`:
+
+```
+slut→teori    about  sjunga, låta
+jul→skydd     about  äta, leva, dryck
+```
+
+That measures the "reads as a pool" quality this document has been asking a
+human to judge by eye, and it makes one thing checkable that was previously
+invisible: **two consecutive days about the same thing read as a repeat.** It
+caught `hund→glas` and `jul→skydd` sitting adjacent, both about food, and they
+have been reordered apart.
+
+**It does not detect tone**, which was the hope. The recurring injury pool —
+`bett`, `ben`, `brott`, `skall` — has no shared centre at all, because its tone
+comes from the compounds it *builds* (benbrott, skallbrott) and not from what
+its parts individually mean. At depth 5 every pool converges on the same
+primitives (`vem`, `ge`, `till`) and even the coherence signal is gone.
+
 ## Known gaps
 
 - **SALDO absence is not a quality score.** Only about 35% of any day's welds
@@ -236,10 +284,9 @@ as the fallback for a SALDO-less run.
   layer has this; the semantic lexicon shipped here does not.
 - **Tone bans are a denylist**, so they only ever catch what has already been
   found once. `flyg→ställe` has now been rejected twice for the same injury
-  pool — `bett`, `ben`, `brott`, `skall` — and passes every metric both times.
-  The problem is the *cluster*, not any single word: `brott` is ordinary in
-  `brottsplats`. SALDO is a semantic lexicon and its descriptor column could
-  measure that clustering directly, which is the obvious next move.
+  pool and passes every metric both times. SALDO's association links were tried
+  for this and do not work — see above. Tone remains the human's job, and the
+  ledger's repeat-offender report is the only mechanism pushing back.
 - **A concatenation can coincide with an unrelated word.** `skydd` + `svärd`
   spells *skyddsvärd*, which is real but parses as skydds+värd, "worthy of
   protection" — an adjective, not a compound of shield and sword. SALDO's POS
