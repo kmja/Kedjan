@@ -225,7 +225,9 @@ body {
     border-color: var(--falu);
     background: color-mix(in srgb, var(--falu) 14%, var(--paper));
     color: var(--falu-ink);
-    transform: scale(1.03);
+    /* transform REPLACES, never adds: dropping the translate here once sent
+       the slot sliding out from under the chip being dragged onto it. */
+    transform: translate(-50%, -50%) scale(1.03);
   }
   .verdict {
     position: absolute;
