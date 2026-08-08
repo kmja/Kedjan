@@ -192,8 +192,11 @@ cheaply". Both are in:
 
 - **Failed weld attempts join the share line** as a second stat
   (`· 2 felförsök`), next to the confessed hint count.
-- **Solved days reveal the alternative routes** — "2 andra vägar fanns",
-  expandable to show them.
+- **Solved days reveal the alternative routes** — "8 andra vägar fanns",
+  expandable into one branching prefix tree from start to target. A flat list
+  hides that most routes share a stem (`lön+skatt` carries five of eight on
+  one day); the tree *is* that shape, with the player's own route picked out
+  in green and a ✓ — never colour alone.
 
 ## Status and next steps
 

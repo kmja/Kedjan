@@ -254,14 +254,23 @@ describe("solving", () => {
     expect(screen.getByText(/Under par — briljant!/)).toBeInTheDocument();
   });
 
-  it("reveals how many other routes existed", async () => {
+  it("reveals the other routes as one branching tree", async () => {
     const u = user();
     render(<App />);
     await board();
-    await solveUnderPar(u);
+    await solveUnderPar(u);   // sten → bro → hus
     const reveal = await screen.findByRole("button", { name: /1 annan väg fanns/i });
     await u.click(reveal);
-    expect(screen.getByText("sten + mur + vägg + hus")).toBeInTheDocument();
+
+    // A prefix tree, not a flat list: one shared root, two branches, and the
+    // target as the leaf of each. The played route is marked as the player's.
+    const tree = screen.getByLabelText("Alla vägar till målet, som ett träd");
+    expect(within(tree).getAllByText("sten")).toHaveLength(1);
+    expect(within(tree).getByText("mur")).toBeInTheDocument();
+    expect(within(tree).getByText("vägg")).toBeInTheDocument();
+    expect(within(tree).getAllByText("hus")).toHaveLength(2);
+    expect(within(tree).getByText("bro")).toHaveClass("tree-part--mine");
+    expect(within(tree).getByText("mur")).not.toHaveClass("tree-part--mine");
   });
 
   it("copies the share line to the clipboard", async () => {

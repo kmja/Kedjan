@@ -4,6 +4,7 @@ import { spellChain } from "../game/graph";
 import { shareResult, shareText } from "../game/share";
 import { plural } from "../game/plural";
 import { chainOf } from "../game/storage";
+import { RouteTree } from "./RouteTree";
 
 interface Props {
   day: Day;
@@ -74,18 +75,9 @@ export function ResultCard({
             <span aria-hidden="true">{showRoutes ? "▲" : "▼"}</span>
           </button>
           {showRoutes && (
-            <ul className="mt-3 flex flex-col gap-1.5 text-sm">
-              {otherSolutions.map((route) => (
-                <li key={route.join(">")} className="flex flex-wrap items-baseline gap-1">
-                  <span className="font-semibold">
-                    {[day.start, ...route, day.target].join(" + ")}
-                  </span>
-                  <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
-                    ({route.length + 1} länkar)
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3">
+              <RouteTree day={day} mine={chain} others={otherSolutions} />
+            </div>
           )}
         </div>
       )}

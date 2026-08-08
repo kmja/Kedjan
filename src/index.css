@@ -236,6 +236,70 @@ body {
     color: var(--on-falu);
   }
 
+  /* The route tree: every way the day could be won, as one branching prefix
+     tree. Connectors are drawn with borders so they follow the theme. */
+  .tree,
+  .tree ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .tree ul {
+    padding-left: 0.9rem;
+    margin-left: 0.55rem;
+    border-left: 2px solid var(--edge);
+  }
+  .tree li {
+    position: relative;
+    padding-top: 0.35rem;
+  }
+  .tree ul li::before {
+    content: "";
+    position: absolute;
+    left: -0.9rem;
+    top: 1.15rem;
+    width: 0.7rem;
+    border-top: 2px solid var(--edge);
+  }
+  /* The last branch's rail should stop at its connector, not run past it. */
+  .tree ul li:last-child::after {
+    content: "";
+    position: absolute;
+    left: calc(-0.9rem - 2px);
+    top: 1.15rem;
+    bottom: 0;
+    width: 2px;
+    background: var(--panel);
+  }
+  .tree-part {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.5rem;
+    border: 1.5px solid var(--edge);
+    background: var(--paper);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .tree-part--endpoint {
+    background: var(--falu);
+    border-color: var(--falu-deep);
+    color: var(--on-falu);
+  }
+  /* The player's own route: green, and never green alone — a check as well. */
+  .tree-part--mine {
+    border-color: var(--gran-ok);
+    box-shadow: inset 0 0 0 1px var(--gran-ok);
+  }
+  .tree-part--mine::after {
+    content: " ✓";
+    color: var(--gran-ok);
+  }
+  .tree-part--endpoint.tree-part--mine::after {
+    color: inherit;
+  }
+
 
   .node {
     display: inline-flex;
