@@ -154,10 +154,27 @@ body {
     width: 100%;
     transition: height 0.16s ease;
   }
-  /* An open joint holds its chip-shaped target at the same length as every
-     other joint — the chain's rhythm is even, judged or not. */
+  /* An open joint is a full-length link plus a waiting chip-slot: the line
+     keeps the same 3rem as every judged link, and the slot hangs below it
+     like the chip it is about to become. */
   .joint--open {
+    height: 6rem;
+  }
+  .joint--open .joint-hit .joint-line {
+    top: 0.4rem;
+    bottom: auto;
     height: 3rem;
+  }
+  /* While a joint is open its verdict and word stay with the line. */
+  .joint--open .verdict {
+    inset: auto;
+    top: 1rem;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+  }
+  .joint--open .weld-word {
+    top: 1.9rem;
   }
   /* A link not yet forged is dashed; a judged one is solid and coloured.
      Drawn as a border, not a background, so the dash pattern comes free. */
@@ -197,6 +214,9 @@ body {
   }
   .joint-slot {
     position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0.55rem;
     display: grid;
     place-items: center;
     min-width: 9rem;
