@@ -12,6 +12,8 @@ import { chainOf } from "./storage";
  * welds ride along as the second stat: they're the closest thing the game has
  * to a measure of how hard the day fought back.
  */
+const plural_links = (n: number) => `${n} ${n === 1 ? "länk" : "länkar"}`;
+
 export function shareText(day: Day, progress: DayProgress, url?: string): string {
   const links = chainOf(progress).length + 1;
   const notes = [
@@ -20,7 +22,7 @@ export function shareText(day: Day, progress: DayProgress, url?: string): string
   ].filter((n): n is string => n !== null);
 
   const headline =
-    `Kedjan · ${day.start} → ${day.target} · ${links}/${day.budget} länkar (par ${day.par})` +
+    `Kedjan · ${day.start} → ${day.target} · ${plural_links(links)} (par ${day.par})` +
     (notes.length ? ` · ${notes.join(" · ")}` : "");
 
   const chain = "🔗".repeat(links) + (links <= day.par ? " ⭐" : "");

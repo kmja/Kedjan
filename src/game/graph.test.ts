@@ -62,7 +62,7 @@ describe("distanceToTarget", () => {
 });
 
 describe("isDeadEnd", () => {
-  it("is false while a route fits inside the budget", () => {
+  it("is false while any route to the target remains", () => {
     expect(isDeadEnd(testDay, [], "sten")).toBe(false);
   });
 
@@ -70,11 +70,10 @@ describe("isDeadEnd", () => {
     expect(isDeadEnd(testDay, ["tak", "glas"], "glas")).toBe(true);
   });
 
-  it("is true when a route exists but the budget cannot pay for it", () => {
-    // Two links left to walk, one link left to spend.
+  it("is false when only a long way round exists — there is no budget", () => {
     const chain = ["tak", "glas", "mur"];
     expect(distanceToTarget(testDay, chain, "mur")).toBe(2);
-    expect(isDeadEnd(testDay, chain, "mur")).toBe(true);
+    expect(isDeadEnd(testDay, chain, "mur")).toBe(false);
   });
 });
 
@@ -93,17 +92,13 @@ describe("bestNextPart", () => {
 });
 
 describe("allSolutions", () => {
-  it("finds every route inside the budget, shortest first", () => {
+  it("finds every route, shortest first", () => {
     expect(allSolutions(testDay)).toEqual([["bro"], ["mur", "vägg"]]);
   });
 
-  it("respects the budget", () => {
-    expect(allSolutions(day({ budget: 2 }))).toEqual([["bro"]]);
-  });
-
-  it("stays inside the generator's 3-12 band on the shipped seed day", () => {
-    const solutions = allSolutions(testDay);
-    expect(solutions.every((s) => s.length + 1 <= testDay.budget)).toBe(true);
+  it("ignores the stored budget — a long way round is a real win", () => {
+    // budget 2 would once have hidden mur→vägg; no longer.
+    expect(allSolutions(day({ budget: 2 }))).toEqual([["bro"], ["mur", "vägg"]]);
   });
 });
 

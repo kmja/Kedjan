@@ -49,20 +49,14 @@ export function distanceToTarget(
   return null;
 }
 
-/** Links the player has left before the budget is spent. */
-export function linksRemaining(day: Day, chain: readonly string[]): number {
-  return day.budget - chain.length;
-}
-
 /**
- * A position is dead if the target cannot be reached at all, or cannot be
- * reached inside the remaining budget. Both earn the free rescue — telling a
- * player "the target is 3 words away" when they have one link left would be a
- * hint that costs them the day.
+ * A position is dead only if the target cannot be reached at all. There is
+ * no link budget — a chain may take the long way round — so the only wall
+ * left is the pool running out, and distanceToTarget already searches only
+ * the chips still on the table.
  */
 export function isDeadEnd(day: Day, chain: readonly string[], from: string): boolean {
-  const d = distanceToTarget(day, chain, from);
-  return d === null || d > linksRemaining(day, chain);
+  return distanceToTarget(day, chain, from) === null;
 }
 
 /**
@@ -86,9 +80,11 @@ export function bestNextPart(
 }
 
 /**
- * Every winning chain within budget, as arrays of intermediate parts.
- * Used for the post-solve "andra vägar" reveal. The generator caps a day at
- * 12 solutions, so this is cheap; `cap` is a guard, not a design limit.
+ * Every winning chain, of any length the pool can carry, as arrays of
+ * intermediate parts. Used for the post-solve "andra vägar" reveal. The
+ * curated route structure lives within par + 1 links, but with no budget a
+ * longer way round is a real way to win and belongs on the map; `cap` is a
+ * guard, not a design limit.
  */
 export function allSolutions(day: Day, cap = 64): string[][] {
   const found: string[][] = [];
@@ -96,10 +92,9 @@ export function allSolutions(day: Day, cap = 64): string[][] {
 
   const walk = (from: string, chain: string[]): void => {
     if (found.length >= cap) return;
-    if (chain.length + 1 <= day.budget && weld(day, from, day.target)) {
+    if (weld(day, from, day.target)) {
       found.push([...chain]);
     }
-    if (chain.length + 1 >= day.budget) return;
     for (const x of pool) {
       if (chain.includes(x) || !weld(day, from, x)) continue;
       walk(x, [...chain, x]);

@@ -12,7 +12,7 @@ const solved = (over: Partial<ReturnType<typeof emptyProgress>> = {}) => ({
 describe("shareText", () => {
   it("matches the specified format", () => {
     const text = shareText(testDay, solved({ chain: ["mur", "vägg"] }));
-    expect(text).toBe("Kedjan · sten → hus · 3/4 länkar (par 3)\n🔗🔗🔗 ⭐");
+    expect(text).toBe("Kedjan · sten → hus · 3 länkar (par 3)\n🔗🔗🔗 ⭐");
   });
 
   it("stars a result at or under par, and only there", () => {

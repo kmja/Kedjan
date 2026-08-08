@@ -72,13 +72,14 @@ describe("the shipped calendar", () => {
   });
 
   it.each(days.map((d) => [`#${d.no} ${d.start}→${d.target}`, d] as const))(
-    "%s is solvable inside its budget",
+    "%s keeps the curated route structure",
     (_label, d) => {
-      expect(d.budget).toBe(d.par + 1);
       const solutions = allSolutions(d);
-      // The generator's hard requirement: many welds, few escapes.
-      expect(solutions.length).toBeGreaterThanOrEqual(3);
-      expect(solutions.length).toBeLessThanOrEqual(12);
+      // The curated promise lives within par + 1 links: 3-12 routes there.
+      // Longer ways round are now legal wins on top, not part of the band.
+      const curated = solutions.filter((s) => s.length + 1 <= d.par + 1);
+      expect(curated.length).toBeGreaterThanOrEqual(3);
+      expect(curated.length).toBeLessThanOrEqual(12);
       // A day with a direct start→target compound has no puzzle in it.
       expect(d.pairs[`${d.start}>${d.target}`]).toBeUndefined();
     },

@@ -79,8 +79,8 @@ export function useKedjan(day: Day | null) {
 
   const key = day?.date ?? "";
   const stored = save.progress[key];
-  /** The most parts a chain may hold. Budget counts links, which is one more. */
-  const maxParts = day ? day.budget - 1 : 0;
+  /** The most parts a chain may hold: every chip there is. No link budget. */
+  const maxParts = day ? day.pool.length : 0;
 
   const progress: DayProgress = useMemo(
     () => stored ?? emptyProgress(),
@@ -225,7 +225,6 @@ export function useKedjan(day: Day | null) {
       setMarked(null);
       setDimmed(new Set());
 
-      const atCeiling = next.length >= maxParts;
       applyVerdicts(next);
 
       if (finishIfSolved(next)) return;
@@ -239,11 +238,7 @@ export function useKedjan(day: Day | null) {
       const after = fullNext[at + 2]!;
       if (!weld(day, before, part) && !weld(day, part, after)) {
         const left = MAX_LIVES - livesLost - 1;
-        patch((p) => ({
-          ...p,
-          livesLost: (p.livesLost ?? 0) + 1,
-          misses: atCeiling ? p.misses + 1 : p.misses,
-        }));
+        patch((p) => ({ ...p, livesLost: (p.livesLost ?? 0) + 1 }));
         say({
           kind: "no",
           msg:
@@ -252,9 +247,6 @@ export function useKedjan(day: Day | null) {
               : `${upper(part)} fäster varken vid ${upper(before)} eller ${upper(after)} · ${plural(left, "liv kvar", "liv kvar")}`,
         });
         return;
-      }
-      if (atCeiling && brokenJoints(day, next).length > 0) {
-        patch((p) => ({ ...p, misses: p.misses + 1 }));
       }
       say({ kind: "info", msg: `${upper(part)} lagd i kedjan.` });
     },
@@ -348,7 +340,7 @@ export function useKedjan(day: Day | null) {
       patch((p) => ({ ...p, hints: p.hints + 1 }));
       say({
         kind: "info",
-        msg: `Rekommenderat: ${plural(day.par, "länk", "länkar")}. Du får använda ${day.budget}.`,
+        msg: `Rekommenderat: ${plural(day.par, "länk", "länkar")}.`,
       });
       return;
     }

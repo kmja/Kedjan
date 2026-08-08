@@ -3,9 +3,10 @@
 A Swedish daily word puzzle. Each day gives a start part, a target part, and a
 pool of ten part-chips. You drag or tap chips into the chain to build
 a bridge from start to target, where **every adjacent pair of parts must fuse
-into a real Swedish compound** — grund+val → grundval, val+natt → valnatt. The
-chain has a fixed budget of links (par + 1); winning means reaching the target
-within budget.
+into a real Swedish compound** — grund+val → grundval, val+natt → valnatt.
+There is no cap on length: any chain that holds wins, and par is the measure
+to beat rather than a wall to hit. Three lives guard against brute force — a
+chip that welds with neither neighbour costs one.
 
 **Parts go down in any order, and the chain grows as you build it.** There is
 no row of empty slots: how many links a day needs is part of the puzzle, and a
@@ -75,9 +76,9 @@ and `generator/kedjan/curate.py` enforces them as a lint.
   a word the player knows is real (grundkurs, bollplan) spends trust the game
   cannot refund. It is a lexicon-coverage problem, and the in-game report
   button exists to track it as a KPI.
-- **Hints are pathfinding, not content.** Three rungs, cheapest first: par (the
-  shape of the answer, which the board no longer gives away), then distance
-  from the end of the run that already holds, then the chip itself. All of it
+- **Hints are pathfinding, not content.** Three rungs, cheapest first: par
+  (the shape of the answer, which the board no longer gives away), then the
+  chips that lead nowhere are dimmed, then the chip itself. All of it
   is breadth-first search over the day's pool graph, anchored to the player's
   real position, and a position that cannot reach the target yields a free
   rescue. No AI, no authoring, always adaptive.

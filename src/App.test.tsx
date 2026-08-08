@@ -181,15 +181,19 @@ describe("building the chain", () => {
     expect(chip("vägg")).toBeInTheDocument();
   });
 
-  it("refuses to grow past the budget", async () => {
+  it("lets a chain run past par — the long way round is a real win", async () => {
+    // A route one link over par: sten → tak → glas → bro → hus.
+    mockCalendar([{
+      ...testDay, date: "2026-08-06", no: 1,
+      pairs: { ...testDay.pairs, "glas>bro": "glasbro" },
+    }]);
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("mur"));   // sten+mur ✓
-    await u.click(chip("tak"));   // mur+tak ✗ — one life
-    await u.click(chip("glas"));  // three parts is four links, the budget
-    await u.click(chip("bro"));
-    await expectStatus(/kan inte bli längre/);
+    await u.click(chip("tak"));
+    await u.click(chip("glas"));
+    await u.click(chip("bro"));   // four links, over par 3 — and the day ends
+    expect(await screen.findByText(/4 ord — I mål!/)).toBeInTheDocument();
   });
 });
 
@@ -493,22 +497,6 @@ describe("judging the chain", () => {
     expect(await screen.findByText(/Under par — briljant!/)).toBeInTheDocument();
   });
 
-  it("counts a full board that does not hold as a felförsök", async () => {
-    const u = user();
-    render(<App />);
-    await board();
-    await u.click(chip("mur"));
-    await u.click(chip("tak"));
-    await u.click(chip("glas"));
-    expect((await screen.findAllByText("bruten länk")).length).toBeGreaterThan(0);
-
-    await u.click(screen.getByRole("button", { name: "Rensa" }));
-    await u.click(chip("bro"));
-    await screen.findByText(/Under par — briljant!/);
-    await u.click(screen.getByRole("button", { name: "Dela resultat" }));
-    expect(await navigator.clipboard.readText()).toContain("1 felförsök");
-  });
-
   it("plays entirely from the keyboard", async () => {
     const u = user();
     render(<App />);
@@ -590,7 +578,7 @@ describe("solving", () => {
 
     expect(await screen.findByRole("button", { name: "Kopierat ✓" })).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe(
-      `Kedjan · sten → hus · 2/4 länkar (par 3)\n🔗🔗 ⭐\n${window.location.origin}`,
+      `Kedjan · sten → hus · 2 länkar (par 3)\n🔗🔗 ⭐\n${window.location.origin}`,
     );
   });
 });
@@ -804,7 +792,7 @@ describe("the hint ladder", () => {
     render(<App />);
     await board();
     await u.click(hintButton());
-    await expectStatus("Rekommenderat: 3 länkar. Du får använda 4.");
+    await expectStatus("Rekommenderat: 3 länkar.");
 
     expect(screen.getByLabelText("par 3")).toBeInTheDocument();
   });

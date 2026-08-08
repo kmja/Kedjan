@@ -15,7 +15,7 @@ interface Props {
 }
 
 const parVerdict = (links: number, par: number) =>
-  links < par ? "Under par — briljant!" : links === par ? "På par!" : "Inom budget!";
+  links < par ? "Under par — briljant!" : links === par ? "På par!" : "I mål!";
 
 export function ResultCard({
   day,
