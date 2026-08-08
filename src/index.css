@@ -159,18 +159,21 @@ body {
   .joint--open {
     height: 3.8rem;
   }
+  /* A link not yet forged is dashed; a judged one is solid and coloured.
+     Drawn as a border, not a background, so the dash pattern comes free. */
   .joint-line {
-    width: 3px;
+    width: 0;
     height: 100%;
-    border-radius: 2px;
-    background: var(--edge);
-    transition: background 0.2s ease;
+    border-left: 3px dashed var(--edge);
+    transition: border-color 0.2s ease;
   }
   .joint-line--ok {
-    background: var(--gran-ok);
+    border-left-style: solid;
+    border-left-color: var(--gran-ok);
   }
   .joint-line--broken {
-    background: var(--falu);
+    border-left-style: solid;
+    border-left-color: var(--falu);
   }
   /* The whole joint is the hit area — comfortably past the 44px touch
      minimum — so a judged link is still somewhere a part can be dropped. */
@@ -184,9 +187,13 @@ body {
     padding: 0;
     cursor: pointer;
   }
+  /* The button overflows the joint by 0.4rem so thumbs can hit it — but the
+     line must not follow it into the chips above and below. */
   .joint-hit .joint-line {
     position: absolute;
-    height: 100%;
+    top: 0.4rem;
+    bottom: 0.4rem;
+    height: auto;
   }
   .joint-slot {
     position: absolute;
