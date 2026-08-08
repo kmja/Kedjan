@@ -49,7 +49,7 @@ def test_lookup_answers_both_ways(tmp_path, monkeypatch):
 
 
 def test_probe_settles_on_the_field_that_answers(tmp_path, monkeypatch):
-    """`wf` is the spec's example field, but a lexicon may index another."""
+    """salex declares `ortografi`, but a lexicon may index another field."""
     client = make_karp(tmp_path, monkeypatch, {"baseform": {"hund", "stenmur"}})
     assert client.lookup("stenmur") is True
     assert client._field == "baseform"
@@ -150,6 +150,26 @@ def test_saolpull_writes_the_list_and_prints_the_licence(tmp_path, monkeypatch, 
     assert out.read_text(encoding="utf-8") == "hund\nmur\nsten\nstenmur\n"
     printed = capsys.readouterr().out
     assert 'metadata.license: "CC BY 4.0"' in printed
+
+
+def test_a_failed_dump_names_the_actual_error(tmp_path, monkeypatch, capsys):
+    """A bare None cost a debugging round trip through somebody's terminal."""
+
+    def _get(self, path):
+        if path.startswith("/resources/"):
+            return {"resource_id": "salex"}
+        self.last_error = f"HTTP 422 on {path}: q is required"
+        return None
+
+    monkeypatch.setattr(karp.Karp, "_get", _get)
+    monkeypatch.setattr(karp, "COURTESY_DELAY", 0)
+    code = cli.main(
+        ["saolpull", "--out", str(tmp_path / "w.txt"), "--cache", str(tmp_path / "c.json")]
+    )
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "last error: HTTP 422" in err
+    assert "q is required" in err
 
 
 def test_saolpull_says_when_no_licence_is_declared(tmp_path, monkeypatch, capsys):

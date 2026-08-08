@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -28,7 +29,9 @@ from pathlib import Path
 BASE = "https://spraakbanken4.it.gu.se/karp/v7"
 
 #: Candidate index fields, probed in order with a word every lexicon has.
-CANDIDATE_FIELDS = ("wf", "baseform", "ortografi", "ord")
+#: `ortografi` leads because salex's own config declares it (seen in its
+#: /resources metadata); `wf` is what the spec's query examples use.
+CANDIDATE_FIELDS = ("ortografi", "wf", "baseform", "ord")
 
 #: A word no Swedish lexicon lacks — the field probe's touchstone.
 PROBE_WORD = "hund"
@@ -80,6 +83,9 @@ class Karp:
         if self.cache_path.exists():
             self._cache = json.loads(self.cache_path.read_text(encoding="utf-8"))
         self._field: str | None = None
+        #: What went wrong on the last failed request — a None from this
+        #: client is useless to debug from a terminal without it.
+        self.last_error: str | None = None
 
     # ── plumbing ─────────────────────────────────────────────────
 
@@ -88,11 +94,20 @@ class Karp:
             f"{self.base}{path}", headers={"User-Agent": "kedjan-curation/1.0"}
         )
         try:
-            with urllib.request.urlopen(req, timeout=20) as resp:
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 if resp.status != 200:
+                    self.last_error = f"HTTP {resp.status} on {path}"
                     return None
                 return json.loads(resp.read().decode("utf-8"))
-        except Exception:
+        except urllib.error.HTTPError as e:
+            # Karp's errors carry a JSON `detail` that names the actual
+            # problem — an unknown parameter, a size cap, a protected
+            # resource. Swallowing it once cost a debugging round trip.
+            detail = e.read()[:300].decode("utf-8", "replace")
+            self.last_error = f"HTTP {e.code} on {path}: {detail}"
+            return None
+        except Exception as e:
+            self.last_error = f"{type(e).__name__}: {e} on {path}"
             return None
 
     def _total(self, field: str, word: str) -> int | None:
@@ -142,6 +157,8 @@ class Karp:
         """
         first = self._get(f"/query/{self.resources}?size=1")
         if not isinstance(first, dict) or not isinstance(first.get("total"), int):
+            if isinstance(first, dict):
+                self.last_error = f"no integer `total` in response: {str(first)[:300]}"
             return None
         total = first["total"]
 
@@ -150,6 +167,8 @@ class Karp:
             time.sleep(self.delay)
             payload = self._get(f"/query/{self.resources}?from={start}&size={page}")
             if not isinstance(payload, dict) or not isinstance(payload.get("hits"), list):
+                if isinstance(payload, dict):
+                    self.last_error = f"no `hits` list in response: {str(payload)[:300]}"
                 return None
             for hit in payload["hits"]:
                 words.update(_written_forms(hit))
