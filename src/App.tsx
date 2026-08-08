@@ -329,13 +329,14 @@ export default function App() {
         </span>
       )}
 
-      {/* Attribution tracks the corpus actually in use. When the graph moves to
-          SALDO, the CC-BY credit for Språkbanken belongs here. */}
+      {/* Attribution tracks the corpora actually in use: SFOL supplies the
+          compound inventory, SALDO gates every weld. */}
       <footer
         className="mt-auto pt-10 text-center text-[0.7rem]"
         style={{ color: "var(--ink-soft)" }}
       >
-        Ordmaterial från SFOL — Den stora fria ordlistan (LGPL-3.0).
+        Ordmaterial från SALDO, Språkbanken Text (CC BY 4.0), och SFOL — Den
+        stora fria ordlistan (LGPL-3.0).
       </footer>
     </div>
   );
