@@ -89,7 +89,6 @@ export function useKedjan(day: Day | null) {
       setStatus(null);
       setMarked(null);
       setArmedJoint(null);
-      clearVerdicts();
     }
   }, [key]);
 
@@ -158,6 +157,20 @@ export function useKedjan(day: Day | null) {
     setJointStamps([]);
     stampStore.current.byPair = new Map();
   }, []);
+
+  /**
+   * The verdicts are transient — computed on each placement — but the chain
+   * they judge is persisted. A stored chain arriving without them (a reload,
+   * a day opened from the archive) would show bare links where the player
+   * had earned checks and words, so whenever the day under judgement
+   * changes, the chain it brings is judged as if it had just been laid.
+   */
+  const chainRef = useRef(chain);
+  chainRef.current = chain;
+  useEffect(() => {
+    clearVerdicts();
+    if (day && chainRef.current.length) applyVerdicts(chainRef.current);
+  }, [key, day, applyVerdicts, clearVerdicts]);
 
   /**
    * End the day if this chain holds — however it came to hold. A win by

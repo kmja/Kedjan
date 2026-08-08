@@ -478,6 +478,25 @@ describe("persistence", () => {
     await board();
     expect(screen.getByText("2 länkar")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^mur\./i })).not.toBeInTheDocument();
+    // The verdicts are transient state, but the chain they judge is not: a
+    // reloaded chain comes back judged, with its checks and weld words.
+    expect(await screen.findAllByText("länken håller")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /stenmur.*SAOL/i })).toBeInTheDocument();
+  });
+
+  it("keeps a solved day's checks and weld words across a reload", async () => {
+    const u = user();
+    const { unmount } = render(<App />);
+    await board();
+    await u.click(screen.getByRole("button", { name: /^bro\./i }));
+    await screen.findByText(/Under par — briljant!/);
+    unmount();
+
+    render(<App />);
+    expect(await screen.findByText(/Under par — briljant!/)).toBeInTheDocument();
+    expect(await screen.findAllByText("länken håller")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: /stenbro.*SAOL/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /brohus.*SAOL/i })).toBeInTheDocument();
   });
 });
 
