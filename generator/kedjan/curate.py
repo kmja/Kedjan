@@ -101,10 +101,8 @@ def _split_key(key: str) -> tuple[str, str]:
     return a, b
 
 
-def solutions_within_budget(day: DayLike) -> list[list[str]]:
-    """Every winning chain, recomputed from the shipped pairs rather than trusted."""
+def _solutions(day: DayLike, budget: int) -> list[list[str]]:
     start, target = str(day["start"]), str(day["target"])
-    budget = int(day["budget"])  # type: ignore[arg-type]
     pairs = _pairs(day)
     pool = [p for p in _pool(day) if p not in (start, target)]
     found: list[list[str]] = []
@@ -120,6 +118,16 @@ def solutions_within_budget(day: DayLike) -> list[list[str]]:
 
     walk(start, [])
     return found
+
+
+def solutions_within_budget(day: DayLike) -> list[list[str]]:
+    """Every winning chain, recomputed from the shipped pairs rather than trusted."""
+    return _solutions(day, int(day["budget"]))  # type: ignore[arg-type]
+
+
+def solutions_unlimited(day: DayLike) -> list[list[str]]:
+    """Every winning chain of any length — what the game actually accepts."""
+    return _solutions(day, len(_pool(day)) + 1)
 
 
 def check_day(
@@ -156,6 +164,17 @@ def check_day(
             f"{len(found)} solutions within budget, needs "
             f"{band.start}-{band.stop - 1} at par {par}"
         )
+    # The game accepts any chain that holds, so the hard tier's scarcity must
+    # hold over every winning route: a day with three tight routes and twenty
+    # long ways round is not hard, as the route map cheerfully proved.
+    if par > EASY_PAR:
+        total = len(solutions_unlimited(day))
+        if total not in band:
+            err(
+                f"{total} winning routes in all — the hard chain allows "
+                f"{band.start}-{band.stop - 1}, however long the way round"
+            )
+
     # Par names the shortest route. A day whose best line is longer than par
     # is mislabelled, and no player can ever make par on it.
     if found and min(len(s) for s in found) + 1 != par:

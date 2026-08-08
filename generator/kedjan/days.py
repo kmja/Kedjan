@@ -243,6 +243,16 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
     if len(found) not in solution_band(par):
         return None
 
+    # The game accepts any chain that holds, so the hard tier's scarcity has
+    # to hold over *every* winning route — a day with three tight routes and
+    # twenty long ways round is not hard, as the route map cheerfully proved.
+    # The easy tier is generous by design and long escapes are part of that.
+    total_found = found
+    if par > EASY_PAR:
+        total_found = solutions(graph, pool, start, target, len(pool) + 1)
+        if len(total_found) not in HARD_SOLUTION_BAND:
+            return None
+
     day_view = {
         "start": start,
         "target": target,
@@ -308,6 +318,7 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
         metrics={
             "valid_pairs": count_pairs(graph, all_parts),
             "solutions": len(found),
+            "total_solutions": len(total_found),
             "openings": len(openings),
             "closings": len(closings),
             "disjoint_routes": len(independent),

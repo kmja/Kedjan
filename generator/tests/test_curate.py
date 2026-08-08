@@ -141,6 +141,22 @@ def test_counts_solutions_from_the_shipped_pairs():
     assert all(len(r) + 1 <= 4 for r in routes)
 
 
+def test_unlimited_solutions_include_the_long_way_round():
+    """The game accepts any chain that holds, so the census must too."""
+    routes = curate.solutions_unlimited(a_day())
+    assert ["mur", "vägg"] in routes
+    # Six links, far over budget — but the player may walk it.
+    assert ["mur", "vägg", "torg", "kaj", "bro", "port"] in routes
+    assert len(routes) > len(curate.solutions_within_budget(a_day()))
+
+
+def test_the_hard_tier_counts_every_winning_route_however_long():
+    """A hard day with tight short routes and many long escapes is not hard."""
+    day = a_day(par=4, budget=5)
+    found = errors(curate.check_day(day))
+    assert any("however long the way round" in m for m in found)
+
+
 def test_flags_a_solution_count_outside_the_band():
     day = a_day(pairs={"sten>bro": "stenbro", "bro>hus": "brohus"})
     assert any("solutions within budget" in m for m in errors(curate.check_day(day)))

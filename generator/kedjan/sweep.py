@@ -100,13 +100,16 @@ class Scored:
 
 
 def score_day(day: Day, rep: DayReport, saldo: Saldo) -> Scored:
-    sols = len(rep.solutions)
     cap = INDEP_CAP[day.par]
     easy = day.par <= EASY_PAR
+    # The game accepts any chain that holds, so the hard tier is judged on
+    # every winning route, however long — the within-budget count flattered
+    # days whose escapes were merely longer than par.
+    all_routes = curate.solutions_unlimited(day.to_json())
     sols_band = (
-        _band(sols, 2, SWEET_SOLUTIONS_EASY, 13)
+        _band(len(rep.solutions), 2, SWEET_SOLUTIONS_EASY, 13)
         if easy
-        else _band(sols, 1, SWEET_SOLUTIONS_HARD, 7)
+        else _band(len(all_routes), 1, SWEET_SOLUTIONS_HARD, 7)
     )
     goldilocks = (sols_band + min(rep.disjoint_routes, cap) / cap) / 2
 
@@ -115,11 +118,12 @@ def score_day(day: Day, rep: DayReport, saldo: Saldo) -> Scored:
         _band(day.metrics["valid_pairs"], 17, SWEET_PAIRS, 35) + entangled
     ) / 2 - 0.2 * len(rep.isolated_chips)
 
-    # Welds that lead somewhere, counted once; everything else is fabric that
-    # welds but does not win — which is where the difficulty lives.
+    # Welds that lead somewhere — on any winning route, of any length —
+    # counted once; everything else is fabric that welds but does not win,
+    # which is where the difficulty lives.
     on_route = {
         f"{a}>{b}"
-        for route in rep.solutions
+        for route in all_routes
         for a, b in zip([day.start, *route], [*route, day.target])
     }
     valid = day.metrics["valid_pairs"]

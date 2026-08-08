@@ -75,14 +75,19 @@ describe("the shipped calendar", () => {
     "%s keeps the curated route structure",
     (_label, d) => {
       const solutions = allSolutions(d);
-      // The curated promise lives within par + 1 links. The easy chain
-      // (par 3) keeps the generous launch band; the hard chain (par 4-5)
-      // holds a 2-6 band, because at that length many escapes make a
-      // walkover. Longer ways round are legal wins on top, not the band.
-      const curated = solutions.filter((s) => s.length + 1 <= d.par + 1);
-      const [lo, hi] = d.par <= 3 ? [3, 12] : [2, 6];
-      expect(curated.length).toBeGreaterThanOrEqual(lo);
-      expect(curated.length).toBeLessThanOrEqual(hi);
+      if (d.par <= 3) {
+        // The easy chain keeps the generous launch band, measured within
+        // par + 1 links; longer ways round are legal wins on top.
+        const curated = solutions.filter((s) => s.length + 1 <= d.par + 1);
+        expect(curated.length).toBeGreaterThanOrEqual(3);
+        expect(curated.length).toBeLessThanOrEqual(12);
+      } else {
+        // The hard chain's scarcity holds over every winning route the game
+        // accepts, however long — a day with three tight routes and twenty
+        // long ways round is not hard.
+        expect(solutions.length).toBeGreaterThanOrEqual(2);
+        expect(solutions.length).toBeLessThanOrEqual(6);
+      }
       // A day with a direct start→target compound has no puzzle in it.
       expect(d.pairs[`${d.start}>${d.target}`]).toBeUndefined();
     },
