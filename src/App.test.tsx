@@ -90,13 +90,22 @@ describe("building the chain", () => {
   const joint = (after: string) =>
     screen.getByRole("button", { name: new RegExp(`lägg en del efter ${after}`, "i") });
 
-  it("accepts a part that does not weld — it costs a life, not a refusal", async () => {
+  it("accepts a part that welds on one side only, free of charge", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));  // sten+vägg is not a word
+    await u.click(chip("vägg"));  // sten+vägg is not a word, but vägg+hus is
     expect(link(1, "vägg")).toBeInTheDocument();
-    await expectStatus(/håller inte · 2 liv kvar/);
+    await expectStatus(/VÄGG lagd i kedjan/);
+  });
+
+  it("charges a life for a part that sticks to neither neighbour", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("glas"));  // sten+glas and glas+hus both fail
+    expect(link(1, "glas")).toBeInTheDocument();
+    await expectStatus(/GLAS fäster varken vid STEN eller HUS · 2 liv kvar/);
   });
 
   it("grows the chain a part at a time", async () => {
@@ -192,44 +201,41 @@ describe("lives", () => {
   const chip = (part: string) =>
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
 
-  it("charges a life only for a newly broken weld", async () => {
+  it("judges a chip by its own two neighbours, not the whole board", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("mur"));   // sten+mur ✓ — free
     await expectStatus(/MUR lagd i kedjan/);
-    await u.click(chip("tak"));   // mur+tak ✗ — one life
-    await expectStatus(/håller inte · 2 liv kvar/);
-    // tak+glas holds and mur+tak is already paid for — but filling the last
-    // slot reveals the final cross, and that reveal is this placement's doing.
+    await u.click(chip("tak"));   // sticks to neither mur nor hus — one life
+    await expectStatus(/TAK fäster varken vid MUR eller HUS · 2 liv kvar/);
+    // glas holds backward onto tak, so the red it reveals into hus is free.
     await u.click(chip("glas"));
-    await expectStatus(/GLAS\+HUS håller inte · 1 liv kvar/);
-    expect(screen.getByLabelText("1 liv kvar")).toBeInTheDocument();
+    await expectStatus(/GLAS lagd i kedjan/);
+    expect(screen.getByLabelText("2 liv kvar")).toBeInTheDocument();
   });
 
-  it("removals are free, and rearranging does not re-charge old crosses", async () => {
+  it("removals are free", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("tak"));   // ✓
-    await u.click(chip("vägg"));  // tak+vägg ✗ — one life
+    await u.click(chip("mur"));   // sticks to neither tak nor hus — one life
     await expectStatus(/2 liv kvar/);
-    // Taking the offender out creates sten>... nothing new — free.
-    await u.click(screen.getByRole("button", { name: /^länk 2, vägg\./i }));
+    await u.click(screen.getByRole("button", { name: /^länk 2, mur\./i }));
     await expectStatus(/tillbaka i poolen/);
     expect(screen.getByLabelText("2 liv kvar")).toBeInTheDocument();
   });
 
-  it("three broken placements end the day", async () => {
+  it("three loose placements end the day", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));  // ✗ 1
-    await u.click(screen.getByRole("button", { name: /^länk 1, vägg\./i }));
-    await u.click(chip("glas"));  // sten+glas ✗ 2
-    await u.click(screen.getByRole("button", { name: /^länk 1, glas\./i }));
-    await u.click(chip("tak"));   // sten+tak ✓ — a good move between bad ones
-    await u.click(chip("mur"));   // tak+mur ✗ 3 — the bridge bursts
+    await u.click(chip("glas"));  // sticks to nothing — 1
+    await u.click(chip("mur"));   // after glas: glas+mur ✗, mur+hus ✗ — 2
+    await u.click(chip("vägg"));  // after mur: mur+vägg ✓ — a hold, free
+    await u.click(screen.getByRole("button", { name: /^länk 3, vägg\./i }));
+    await u.click(chip("tak"));   // after mur: mur+tak ✗, tak+hus ✗ — 3
 
     expect(await screen.findByText("Bron brast")).toBeInTheDocument();
     // The board is over: no pool, no more placements.
@@ -243,7 +249,7 @@ describe("lives", () => {
     const u = user();
     const { unmount } = render(<App />);
     await board();
-    await u.click(chip("vägg"));  // one life gone
+    await u.click(chip("glas"));  // sticks to nothing — one life gone
     await expectStatus(/2 liv kvar/);
     unmount();
 
@@ -256,11 +262,11 @@ describe("lives", () => {
     const u = user();
     render(<App />);
     await board();
-    // Place-and-remove the same bad chip three times: each placement puts a
-    // fresh cross on the board, so each one charges — the brute-force loop.
+    // Place-and-remove the same loose chip three times: each placement
+    // sticks to nothing, so each one charges — the brute-force loop.
     for (let i = 0; i < 3; i++) {
-      await u.click(chip("vägg"));
-      if (i < 2) await u.click(screen.getByRole("button", { name: /^länk 1, vägg\./i }));
+      await u.click(chip("glas"));
+      if (i < 2) await u.click(screen.getByRole("button", { name: /^länk 1, glas\./i }));
     }
     expect(await screen.findByText("Bron brast")).toBeInTheDocument();
 
@@ -375,8 +381,9 @@ describe("judging the chain", () => {
     await u.click(chip("mur"));
     await u.click(chip("tak"));
     await u.click(chip("glas"));
-    await expectStatus(/håller inte/);
-    expect(screen.getAllByText("bruten länk").length).toBeGreaterThan(0);
+    // glas itself stuck (tak+glas), so no complaint — but the full board is
+    // judged, crosses and all.
+    expect((await screen.findAllByText("bruten länk")).length).toBeGreaterThan(0);
   });
 
   it("re-judges after a part is taken back out", async () => {
@@ -406,7 +413,7 @@ describe("judging the chain", () => {
     await u.click(chip("mur"));
     await u.click(chip("tak"));
     await u.click(chip("glas"));
-    await expectStatus(/håller inte/);
+    expect((await screen.findAllByText("bruten länk")).length).toBeGreaterThan(0);
 
     await u.click(screen.getByRole("button", { name: "Rensa" }));
     await u.click(chip("bro"));

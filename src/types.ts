@@ -37,8 +37,8 @@ export interface DayProgress {
   /** Chains submitted that did not hold — counted for the share line. */
   misses: number;
   /**
-   * Placements that created a newly broken weld. Three of them and the day
-   * is over — without a ceiling, the pool can simply be enumerated.
+   * Placements where the chip stuck to neither neighbour. Three of them and
+   * the day is over — without a ceiling, the pool can simply be enumerated.
    */
   livesLost: number;
   /**

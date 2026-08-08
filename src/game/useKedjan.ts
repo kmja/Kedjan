@@ -181,19 +181,6 @@ export function useKedjan(day: Day | null) {
     if (day && chainRef.current.length) applyVerdicts(chainRef.current);
   }, [key, day, applyVerdicts, clearVerdicts]);
 
-  /** The welds a chain shows as broken, by pair — the charge unit for lives. */
-  const brokenShown = useCallback(
-    (c: string[]): Set<string> => {
-      if (!day || !c.length) return new Set();
-      const marks = judge(c, c.length >= maxParts);
-      const full = fullChain(day, c);
-      return new Set(
-        marks.flatMap((m, i) => (m === "broken" ? [`${full[i]}>${full[i + 1]}`] : [])),
-      );
-    },
-    [day, judge, maxParts],
-  );
-
   /**
    * End the day if this chain holds — however it came to hold. A win by
    * *removing* a part is a legitimate win: taking a wrong link out of a
@@ -239,33 +226,30 @@ export function useKedjan(day: Day | null) {
       setDimmed(new Set());
 
       const atCeiling = next.length >= maxParts;
-      const before = brokenShown(chain);
       applyVerdicts(next);
 
       if (finishIfSolved(next)) return;
 
-      // A placement that put a new red cross on the board costs a life —
-      // that, and only that, is what brute force looks like. Old crosses
-      // stay paid for, removals are free, and a rearrangement that breaks
-      // nothing new charges nothing.
-      const fresh = [...brokenShown(next)].filter((pair) => !before.has(pair));
-      if (fresh.length > 0) {
+      // A chip must stick to at least one of its neighbours. One that welds
+      // with neither the word before it nor the word after it costs a life —
+      // that is what a brute-force tap looks like. A chip that holds on one
+      // side is a real move whatever the other side says.
+      const fullNext = fullChain(day, next);
+      const before = fullNext[at]!;
+      const after = fullNext[at + 2]!;
+      if (!weld(day, before, part) && !weld(day, part, after)) {
         const left = MAX_LIVES - livesLost - 1;
         patch((p) => ({
           ...p,
           livesLost: (p.livesLost ?? 0) + 1,
           misses: atCeiling ? p.misses + 1 : p.misses,
         }));
-        const named = fresh
-          .slice(0, 2)
-          .map((pr) => pr.split(">").map(upper).join("+"))
-          .join(" och ");
         say({
           kind: "no",
           msg:
             left <= 0
-              ? `${named} håller inte. Bron brast — inga liv kvar.`
-              : `${named} håller inte · ${plural(left, "liv kvar", "liv kvar")}`,
+              ? `${upper(part)} fäster varken vid ${upper(before)} eller ${upper(after)}. Bron brast — inga liv kvar.`
+              : `${upper(part)} fäster varken vid ${upper(before)} eller ${upper(after)} · ${plural(left, "liv kvar", "liv kvar")}`,
         });
         return;
       }
@@ -274,7 +258,7 @@ export function useKedjan(day: Day | null) {
       }
       say({ kind: "info", msg: `${upper(part)} lagd i kedjan.` });
     },
-    [day, solved, failed, chain, maxParts, armedJoint, livesLost, patch, say, applyVerdicts, finishIfSolved, brokenShown],
+    [day, solved, failed, chain, maxParts, armedJoint, livesLost, patch, say, applyVerdicts, finishIfSolved],
   );
 
   /** Take a part back out. The chain closes up behind it. */
