@@ -108,6 +108,15 @@ UNUSABLE_FLAGS = frozenset("%¤Z!")
 #:   tomslag   checked 2026-08-09 against SAOL/SO/SAOB: no hits in any
 GHOST_WORDS = frozenset({"tomslag"})
 
+#: The mirror of GHOST_WORDS, for the lexicalized mode: compounds a player
+#: attested against SAOL that SALDO has simply never recorded. SALDO is a
+#: lemma lexicon with gaps, and each of these is a false rejection caught in
+#: play — the game's stated top quality metric. Every addition names its
+#: evidence.
+#:
+#:   tidslinje   caught in play 2026-08-09; in SFOL and SAOL, absent from SALDO
+LEXICALIZED_SUPPLEMENT = frozenset({"tidslinje"})
+
 
 def read_dic(path: Path | str) -> tuple[set[str], set[str], set[str]]:
     """Read a hunspell .dic into (words, verb forms, unusable entries).

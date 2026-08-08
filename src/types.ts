@@ -37,6 +37,11 @@ export interface DayProgress {
   /** Chains submitted that did not hold — counted for the share line. */
   misses: number;
   /**
+   * Placements that created a newly broken weld. Three of them and the day
+   * is over — without a ceiling, the pool can simply be enumerated.
+   */
+  livesLost: number;
+  /**
    * Set once, when the day is first solved, and never overwritten. Replaying a
    * day must not tell the stats it was solved twice, so this doubles as the
    * record of whether the day has already counted.

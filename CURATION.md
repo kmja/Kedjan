@@ -441,6 +441,18 @@ None of these would have been noticed by eye. All three were found because
   class cannot be purged wholesale. Confirmed fakes go into `GHOST_WORDS` in
   `lexicon.py`, each with its evidence; the in-game report button is the
   channel that finds them.
+- **SALDO's gaps are false rejections in lexicalized mode.** `tidslinje` is
+  in SFOL and SAOL and every Swede's mouth, and SALDO has never recorded it —
+  so the lexicalized mode refused it in play, the exact trust-spending failure
+  the mode was meant to prevent. Worse: the `egen→linje` day was only
+  structurally valid *because* of the gap (with tidslinje real, egen→tid→linje
+  is under par). Hand-attested words go into `LEXICALIZED_SUPPLEMENT`, the
+  mirror of `GHOST_WORDS`; the day was replaced.
+- **Route joins are not scored.** A player read `egen→linje`'s map as "one
+  correct way forward" per link — and a join count over the suffix-merged
+  route DAG confirms it: 2 joins, against 4 for same-scored days. Nodes where
+  routes flow back together should join the sweep's scorer alongside
+  cross-links; until then it is a curation-time check.
 - **A concatenation can coincide with an unrelated word.** `skydd` + `svärd`
   spells *skyddsvärd*, which is real but parses as skydds+värd, "worthy of
   protection" — an adjective, not a compound of shield and sword. SALDO's POS

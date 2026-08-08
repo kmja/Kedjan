@@ -258,6 +258,18 @@ body {
   }
 
   /* The route map: SVG text inherits no typography, so it is set here. */
+  /* Lives: the glyph changes with the state, so colour is never alone. */
+  .lives {
+    letter-spacing: 0.15em;
+  }
+  .life {
+    color: var(--falu-ink);
+    font-size: 0.85rem;
+  }
+  .life--lost {
+    color: var(--ink-soft);
+  }
+
   /* The A/B label while two curation modes are compared in play. */
   .lexicon-tag {
     display: inline-block;

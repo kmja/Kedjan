@@ -2,8 +2,8 @@ import type { Day } from "../types";
 
 interface Props {
   day: Day;
-  /** The chain the player actually built. */
-  mine: string[];
+  /** The chain the player actually built, or null when the day was lost. */
+  mine: string[] | null;
   /** Every other winning route. */
   others: string[][];
 }
@@ -88,14 +88,23 @@ function buildDag(day: Day, routes: string[][]): DagNode[] {
   return nodes;
 }
 
-/** Walk the player's own route through the DAG and mark what it touches. */
-function markMine(nodes: DagNode[], day: Day, mine: string[]): void {
+/**
+ * Walk the player's own route through the DAG and mark what it touches.
+ * Returns the edges of the walk itself: an edge is theirs only if they
+ * travelled it, not merely because both its ends lie on their route — a
+ * shortcut between two visited nodes is somebody else's road.
+ */
+function markMine(nodes: DagNode[], day: Day, mine: string[]): Set<string> {
+  const walked = new Set<string>();
   let node = nodes.find((n) => n.parents.length === 0)!;
   node.mine = true;
   for (const part of [...mine, day.target]) {
-    node = nodes[node.children.find((c) => nodes[c]!.part === part)!]!;
-    node.mine = true;
+    const next = nodes[node.children.find((c) => nodes[c]!.part === part)!]!;
+    walked.add(`${node.id}>${next.id}`);
+    next.mine = true;
+    node = next;
   }
+  return walked;
 }
 
 const ROW = 62;
@@ -151,15 +160,15 @@ function layout(nodes: DagNode[]): { width: number; height: number } {
  * into the target. The route the player took runs through it in green.
  */
 export function RouteTree({ day, mine, others }: Props) {
-  const nodes = buildDag(day, [mine, ...others]);
-  markMine(nodes, day, mine);
+  const nodes = buildDag(day, mine ? [mine, ...others] : others);
+  const walked = mine ? markMine(nodes, day, mine) : new Set<string>();
   const { width, height } = layout(nodes);
 
   const nodeY = (n: DagNode) => n.y * ROW + ROW / 2;
   const edges = nodes.flatMap((from) =>
     from.children.map((c) => {
       const to = nodes[c]!;
-      return { from, to, mine: from.mine && to.mine };
+      return { from, to, mine: walked.has(`${from.id}>${to.id}`) };
     }),
   );
   // Green edges last, so a join the player passed through stays visibly green.
@@ -228,7 +237,7 @@ export function RouteTree({ day, mine, others }: Props) {
       {/* The same routes as plain text, for screen readers — an SVG map is a
           picture, and the picture is not the only way to read it. */}
       <ul className="sr-only">
-        {[mine, ...others].map((route) => (
+        {(mine ? [mine, ...others] : others).map((route) => (
           <li key={route.join(">")}>
             {[day.start, ...route, day.target].join(", ")}
             {route === mine ? " — din väg" : ""}

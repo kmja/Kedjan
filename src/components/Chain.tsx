@@ -101,14 +101,14 @@ export function Chain({
     /** The compound this joint spells, shown the moment the weld holds. */
     const word = mark === "ok" ? day.pairs[`${full[index]}>${full[index + 1]}`] : undefined;
     // Hidden while the joint offers its drop slot — the two would overlap.
-    // The word links to its SAOL entry — the player who doubts a weld is one
-    // tap from the authority, which is also how ghosts like tomslag get
-    // caught. A search URL rather than a page URL, because SAOL has no
-    // stable per-word addresses.
+    // The word links to its dictionary lookup — the player who doubts a weld
+    // is one tap from the authority, which is also how ghosts like tomslag
+    // get caught. svenska.se/?q= is the site's own search form (SAOL, SO and
+    // SAOB at once); the /saol/?sok= deep link looked right and did not work.
     const weld = word && !open && (
       <a
         className="weld-word"
-        href={`https://svenska.se/saol/?sok=${encodeURIComponent(word)}`}
+        href={`https://svenska.se/?q=${encodeURIComponent(word)}`}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`${word} — slå upp i SAOL`}

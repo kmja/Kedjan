@@ -69,7 +69,7 @@ describe("loadSave", () => {
 
   it("round-trips a save", () => {
     persistSave({
-      progress: { "2026-08-06": { chain: ["mur"], solved: false, hints: 1, misses: 2 } },
+      progress: { "2026-08-06": { chain: ["mur"], solved: false, hints: 1, misses: 2, livesLost: 1 } },
       stats: recordSolve(emptyStats(), "2026-08-05", 3, 3),
     });
     const back = loadSave();

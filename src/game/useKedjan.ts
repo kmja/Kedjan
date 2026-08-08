@@ -26,6 +26,12 @@ export type Status = { kind: "ok" | "no" | "info"; msg: string };
 
 const upper = (s: string) => s.toUpperCase();
 
+/**
+ * How many life-costing placements a day tolerates. Without a ceiling the
+ * pool can simply be enumerated — tap, read the cross, remove, next.
+ */
+export const MAX_LIVES = 3;
+
 export function useKedjan(day: Day | null) {
   const [save, setSave] = useState(loadSave);
   const [status, setStatus] = useState<Status | null>(null);
@@ -103,6 +109,9 @@ export function useKedjan(day: Day | null) {
   );
 
   const { chain, solved, hints, misses } = progress;
+  const livesLost = progress.livesLost ?? 0;
+  /** Out of lives and unsolved: the day is over. */
+  const failed = !solved && livesLost >= MAX_LIVES;
   const links = chain.length + 1;
   const pool = day ? availableParts(day, chain) : [];
 
@@ -172,6 +181,19 @@ export function useKedjan(day: Day | null) {
     if (day && chainRef.current.length) applyVerdicts(chainRef.current);
   }, [key, day, applyVerdicts, clearVerdicts]);
 
+  /** The welds a chain shows as broken, by pair — the charge unit for lives. */
+  const brokenShown = useCallback(
+    (c: string[]): Set<string> => {
+      if (!day || !c.length) return new Set();
+      const marks = judge(c, c.length >= maxParts);
+      const full = fullChain(day, c);
+      return new Set(
+        marks.flatMap((m, i) => (m === "broken" ? [`${full[i]}>${full[i + 1]}`] : [])),
+      );
+    },
+    [day, judge, maxParts],
+  );
+
   /**
    * End the day if this chain holds — however it came to hold. A win by
    * *removing* a part is a legitimate win: taking a wrong link out of a
@@ -200,7 +222,7 @@ export function useKedjan(day: Day | null) {
    */
   const placeAt = useCallback(
     (part: string, index?: number) => {
-      if (!day || solved) return;
+      if (!day || solved || failed) return;
       // Measured after the part is lifted out, so moving a part already in the
       // chain is never refused for making it longer — it does not.
       const withoutPart = chain.filter((p) => p !== part);
@@ -217,35 +239,48 @@ export function useKedjan(day: Day | null) {
       setDimmed(new Set());
 
       const atCeiling = next.length >= maxParts;
+      const before = brokenShown(chain);
       applyVerdicts(next);
 
       if (finishIfSolved(next)) return;
-      // A chain that has run out of room and still does not hold is the only
-      // arrangement worth counting as a failed attempt.
-      if (atCeiling) {
-        patch((p) => ({ ...p, misses: p.misses + 1 }));
-        const broken = brokenJoints(day, next);
-        const full = fullChain(day, next);
-        const named = broken.slice(0, 2).map((i) => `${upper(full[i]!)}+${upper(full[i + 1]!)}`);
-        const rest = broken.length - named.length;
+
+      // A placement that put a new red cross on the board costs a life —
+      // that, and only that, is what brute force looks like. Old crosses
+      // stay paid for, removals are free, and a rearrangement that breaks
+      // nothing new charges nothing.
+      const fresh = [...brokenShown(next)].filter((pair) => !before.has(pair));
+      if (fresh.length > 0) {
+        const left = MAX_LIVES - livesLost - 1;
+        patch((p) => ({
+          ...p,
+          livesLost: (p.livesLost ?? 0) + 1,
+          misses: atCeiling ? p.misses + 1 : p.misses,
+        }));
+        const named = fresh
+          .slice(0, 2)
+          .map((pr) => pr.split(">").map(upper).join("+"))
+          .join(" och ");
         say({
           kind: "no",
           msg:
-            named.join(" och ") +
-            (rest > 0 ? ` och ${plural(rest, "länk till", "länkar till")}` : "") +
-            " håller inte.",
+            left <= 0
+              ? `${named} håller inte. Bron brast — inga liv kvar.`
+              : `${named} håller inte · ${plural(left, "liv kvar", "liv kvar")}`,
         });
         return;
       }
+      if (atCeiling && brokenJoints(day, next).length > 0) {
+        patch((p) => ({ ...p, misses: p.misses + 1 }));
+      }
       say({ kind: "info", msg: `${upper(part)} lagd i kedjan.` });
     },
-    [day, solved, chain, maxParts, armedJoint, patch, say, applyVerdicts, finishIfSolved],
+    [day, solved, failed, chain, maxParts, armedJoint, livesLost, patch, say, applyVerdicts, finishIfSolved, brokenShown],
   );
 
   /** Take a part back out. The chain closes up behind it. */
   const removeFrom = useCallback(
     (part: string) => {
-      if (!day || solved || !chain.includes(part)) return;
+      if (!day || solved || failed || !chain.includes(part)) return;
       const next = chain.filter((p) => p !== part);
       patch((p) => ({ ...p, chain: next }));
       setMarked(null);
@@ -254,7 +289,7 @@ export function useKedjan(day: Day | null) {
       if (finishIfSolved(next)) return;
       say({ kind: "info", msg: `${upper(part)} tillbaka i poolen.` });
     },
-    [day, solved, chain, patch, say, applyVerdicts, finishIfSolved],
+    [day, solved, failed, chain, patch, say, applyVerdicts, finishIfSolved],
   );
 
   /** Arm a joint so the next chip lands there, or disarm it. */
@@ -275,7 +310,7 @@ export function useKedjan(day: Day | null) {
    */
   const replay = useCallback(() => {
     if (!day) return;
-    patch((p) => ({ ...p, chain: [], solved: false, hints: 0, misses: 0 }));
+    patch((p) => ({ ...p, chain: [], solved: false, hints: 0, misses: 0, livesLost: 0 }));
     setArmedJoint(null);
     clearVerdicts();
     setMarked(null);
@@ -290,7 +325,7 @@ export function useKedjan(day: Day | null) {
       progress: Object.fromEntries(
         Object.entries(prev.progress).map(([date, p]) => [
           date,
-          { ...p, chain: [], solved: false, hints: 0, misses: 0 },
+          { ...p, chain: [], solved: false, hints: 0, misses: 0, livesLost: 0 },
         ]),
       ),
     }));
@@ -322,7 +357,7 @@ export function useKedjan(day: Day | null) {
    * build would be a swindle.
    */
   const hint = useCallback(() => {
-    if (!day || solved) return;
+    if (!day || solved || failed) return;
     const rung = hints % 3;
 
     if (rung === 0) {
@@ -400,6 +435,8 @@ export function useKedjan(day: Day | null) {
     progress,
     chain,
     solved,
+    failed,
+    livesLeft: Math.max(0, MAX_LIVES - livesLost),
     hints,
     misses,
     /** Par is part of the puzzle until the first hint is spent on it. */

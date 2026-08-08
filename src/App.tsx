@@ -15,6 +15,7 @@ import { StatsPanel } from "./components/StatsPanel";
 import { Archive } from "./components/Archive";
 import { ReportWord } from "./components/ReportWord";
 import { DevPanel } from "./components/DevPanel";
+import { FailCard } from "./components/FailCard";
 import { isDevMode } from "./game/dev";
 
 type View = "spel" | "arkiv" | "statistik";
@@ -166,7 +167,7 @@ export default function App() {
               onJoint={game.toggleJoint}
             />
 
-            {!game.solved && (
+            {!game.solved && !game.failed && (
               <>
                 <p className="-mt-3 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
                   Lägg till så många delar du behöver. Kedjan kontrolleras varje
@@ -189,6 +190,7 @@ export default function App() {
                   announceKey={game.announceKey}
                   placed={game.chain.length}
                   hints={game.hints}
+                  livesLeft={game.livesLeft}
                   parRevealed={game.parRevealed}
                   onHint={game.hint}
                   onReset={game.reset}
@@ -197,6 +199,8 @@ export default function App() {
                 <ReportWord pair={game.lastMiss} day={day.date} />
               </>
             )}
+
+            {game.failed && <FailCard day={day} onReplay={game.replay} />}
 
             {game.solved && (
               <ResultCard

@@ -214,3 +214,22 @@ def test_lexicalized_only_refuses_to_run_blind():
     with pytest.raises(ValueError):
         graph_mod.build({}, Lexicon(words=frozenset(), union=frozenset()), None,
                         lexicalized_only=True)
+
+
+def test_lexicalized_supplement_rescues_a_saldo_gap(lex):
+    from kedjan.saldo import Saldo
+    from kedjan import lexicon as lexicon_mod
+
+    # A compound SALDO never recorded survives if a human attested it — the
+    # supplement is the mirror of the ghost list, and tidslinje its first entry.
+    saldo = Saldo(pos={"sten": frozenset({"nn"}), "bro": frozenset({"nn"})})
+    assert not graph_mod.build(
+        split.compounds(lex), lex, saldo, lexicalized_only=True
+    ).welds("sten", "bro")
+
+    patched = lexicon_mod.LEXICALIZED_SUPPLEMENT | {"stenbro"}
+    import unittest.mock as mock
+    with mock.patch.object(lexicon_mod, "LEXICALIZED_SUPPLEMENT", patched):
+        assert graph_mod.build(
+            split.compounds(lex), lex, saldo, lexicalized_only=True
+        ).welds("sten", "bro")

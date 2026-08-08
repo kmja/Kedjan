@@ -8,6 +8,8 @@ interface Props {
   announceKey: number;
   placed: number;
   hints: number;
+  /** Lives left of three. A placement that breaks a new weld costs one. */
+  livesLeft: number;
   parRevealed: boolean;
   onHint: () => void;
   onReset: () => void;
@@ -25,6 +27,7 @@ export function Controls({
   announceKey,
   placed,
   hints,
+  livesLeft,
   parRevealed,
   onHint,
   onReset,
@@ -58,6 +61,14 @@ export function Controls({
               <span aria-label={`par ${day.par}`}>{`par ${day.par}`}</span>
             </>
           )}
+          <span aria-hidden="true"> · </span>
+          <span className="lives" aria-label={`${plural(livesLeft, "liv", "liv")} kvar`}>
+            {Array.from({ length: 3 }, (_, i) => (
+              <span key={i} aria-hidden="true" className={i < livesLeft ? "life" : "life life--lost"}>
+                {i < livesLeft ? "♥" : "♡"}
+              </span>
+            ))}
+          </span>
         </p>
 
         <div className="flex items-center gap-2">

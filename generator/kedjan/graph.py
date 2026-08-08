@@ -369,7 +369,12 @@ def build(
     if lexicalized_only:
         if saldo is None:
             raise ValueError("lexicalized_only needs SALDO — it defines lexicalized")
-        compounds = {w: p for w, p in compounds.items() if w in saldo.pos}
+        from .lexicon import LEXICALIZED_SUPPLEMENT
+
+        compounds = {
+            w: p for w, p in compounds.items()
+            if w in saldo.pos or w in LEXICALIZED_SUPPLEMENT
+        }
     pairs = witnessed_pairs(compounds, lex)
     hubs = select_hubs(pairs, lex, saldo)
     if not lexicalized_only:

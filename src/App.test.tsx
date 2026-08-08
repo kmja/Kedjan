@@ -90,12 +90,13 @@ describe("building the chain", () => {
   const joint = (after: string) =>
     screen.getByRole("button", { name: new RegExp(`lägg en del efter ${after}`, "i") });
 
-  it("accepts a part that does not weld, without complaint", async () => {
+  it("accepts a part that does not weld — it costs a life, not a refusal", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("vägg"));  // sten+vägg is not a word
     expect(link(1, "vägg")).toBeInTheDocument();
+    await expectStatus(/håller inte · 2 liv kvar/);
   });
 
   it("grows the chain a part at a time", async () => {
@@ -153,11 +154,119 @@ describe("building the chain", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));
-    await u.click(chip("glas"));
-    await u.click(chip("tak"));   // three parts is four links, the budget
-    await u.click(chip("mur"));
+    await u.click(chip("mur"));   // sten+mur ✓
+    await u.click(chip("tak"));   // mur+tak ✗ — one life
+    await u.click(chip("glas"));  // three parts is four links, the budget
+    await u.click(chip("bro"));
     await expectStatus(/kan inte bli längre/);
+  });
+});
+
+describe("the route map", () => {
+  it("marks only the edges the player walked, not every edge between visited nodes", async () => {
+    // A day where sten→mur→hus is a route of its own: playing the longer
+    // sten→mur→vägg→hus lights mur and hus both, and the shortcut edge
+    // mur→hus must NOT light up with them — it is somebody else's road.
+    mockCalendar([{
+      ...testDay, date: "2026-08-06", no: 1,
+      pairs: { ...testDay.pairs, "mur>hus": "murhus" },
+    }]);
+    const u = user();
+    render(<App />);
+    await board();
+    // vägg first (murhus would finish the day instantly), then mur in front.
+    await u.click(screen.getByRole("button", { name: /^vägg\./i }));
+    await u.click(screen.getByRole("button", { name: /lägg en del efter sten/i }));
+    await u.click(screen.getByRole("button", { name: /^mur\./i }));
+    await screen.findByText(/På par!/);
+    await u.click(screen.getByRole("button", { name: /andra vägar fanns/i }));
+
+    const tree = screen.getByLabelText("Alla vägar till målet, som ett träd");
+    const mineEdges = tree.querySelectorAll('path[stroke="var(--falu)"]');
+    // Exactly the three edges of sten→mur→vägg→hus — not mur→hus.
+    expect(mineEdges).toHaveLength(3);
+  });
+});
+
+describe("lives", () => {
+  const chip = (part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+
+  it("charges a life only for a newly broken weld", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));   // sten+mur ✓ — free
+    await expectStatus(/MUR lagd i kedjan/);
+    await u.click(chip("tak"));   // mur+tak ✗ — one life
+    await expectStatus(/håller inte · 2 liv kvar/);
+    // tak+glas holds and mur+tak is already paid for — but filling the last
+    // slot reveals the final cross, and that reveal is this placement's doing.
+    await u.click(chip("glas"));
+    await expectStatus(/GLAS\+HUS håller inte · 1 liv kvar/);
+    expect(screen.getByLabelText("1 liv kvar")).toBeInTheDocument();
+  });
+
+  it("removals are free, and rearranging does not re-charge old crosses", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("tak"));   // ✓
+    await u.click(chip("vägg"));  // tak+vägg ✗ — one life
+    await expectStatus(/2 liv kvar/);
+    // Taking the offender out creates sten>... nothing new — free.
+    await u.click(screen.getByRole("button", { name: /^länk 2, vägg\./i }));
+    await expectStatus(/tillbaka i poolen/);
+    expect(screen.getByLabelText("2 liv kvar")).toBeInTheDocument();
+  });
+
+  it("three broken placements end the day", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));  // ✗ 1
+    await u.click(screen.getByRole("button", { name: /^länk 1, vägg\./i }));
+    await u.click(chip("glas"));  // sten+glas ✗ 2
+    await u.click(screen.getByRole("button", { name: /^länk 1, glas\./i }));
+    await u.click(chip("tak"));   // sten+tak ✓ — a good move between bad ones
+    await u.click(chip("mur"));   // tak+mur ✗ 3 — the bridge bursts
+
+    expect(await screen.findByText("Bron brast")).toBeInTheDocument();
+    // The board is over: no pool, no more placements.
+    expect(screen.queryByRole("group", { name: /delar att välja bland/i })).not.toBeInTheDocument();
+    // The routes that existed are on offer, and a fresh run is one press away.
+    expect(screen.getByRole("button", { name: /vägarna som fanns/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Försök igen" })).toBeInTheDocument();
+  });
+
+  it("keeps lost lives across a reload", async () => {
+    const u = user();
+    const { unmount } = render(<App />);
+    await board();
+    await u.click(chip("vägg"));  // one life gone
+    await expectStatus(/2 liv kvar/);
+    unmount();
+
+    render(<App />);
+    await board();
+    expect(screen.getByLabelText("2 liv kvar")).toBeInTheDocument();
+  });
+
+  it("a fresh try restores the lives", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    // Place-and-remove the same bad chip three times: each placement puts a
+    // fresh cross on the board, so each one charges — the brute-force loop.
+    for (let i = 0; i < 3; i++) {
+      await u.click(chip("vägg"));
+      if (i < 2) await u.click(screen.getByRole("button", { name: /^länk 1, vägg\./i }));
+    }
+    expect(await screen.findByText("Bron brast")).toBeInTheDocument();
+
+    await u.click(screen.getByRole("button", { name: "Försök igen" }));
+    await board();
+    expect(screen.getByLabelText("3 liv kvar")).toBeInTheDocument();
   });
 });
 
@@ -217,7 +326,7 @@ describe("judging the chain", () => {
     // The weld's word is the reward — written out beside the link, and one
     // tap from the authority that can settle a doubt about it.
     const word = screen.getByRole("link", { name: /stenmur.*SAOL/i });
-    expect(word).toHaveAttribute("href", "https://svenska.se/saol/?sok=stenmur");
+    expect(word).toHaveAttribute("href", "https://svenska.se/?q=stenmur");
   });
 
   it("writes no word beside a broken weld", async () => {

@@ -23,6 +23,7 @@ export const emptyProgress = (): DayProgress => ({
   solved: false,
   hints: 0,
   misses: 0,
+  livesLost: 0,
 });
 
 /**
