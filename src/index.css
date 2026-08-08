@@ -154,10 +154,10 @@ body {
     width: 100%;
     transition: height 0.16s ease;
   }
-  /* Open joints grow to hold a chip-shaped target: a drop zone should look
-     like the thing that will land in it. */
+  /* An open joint holds its chip-shaped target at the same length as every
+     other joint — the chain's rhythm is even, judged or not. */
   .joint--open {
-    height: 3.8rem;
+    height: 3rem;
   }
   /* A link not yet forged is dashed; a judged one is solid and coloured.
      Drawn as a border, not a background, so the dash pattern comes free. */

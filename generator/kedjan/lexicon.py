@@ -97,16 +97,21 @@ VERB_ONLY_FLAGS = frozenset("jm")
 #: machine-readable form.
 UNUSABLE_FLAGS = frozenset("%¤Z!")
 
-#: Words SFOL carries as ordinary entries that no other source will vouch for
-#: — not SALDO, not the frequency list, and, checked by hand, not SAOL, SO or
-#: SAOB. A single line in one dictionary is one witness, and each of these was
-#: caught *in play* by a player who went looking. SALDO's only match for the
-#: first is grötomslag — gröt+omslag, a different word that happens to contain
-#: the letters. Each entry is a known SFOL ghost; the list is expected to be
-#: short, and every addition should name its evidence here.
+#: Words our corpora carry that svenska.se — SAOL, SO and SAOB together —
+#: does not. The academy dictionaries are the player-facing authority: every
+#: weld word in the app links straight to them, and a link that lands on
+#: "Inga träffar" spends trust whatever our own files say. Each of these was
+#: caught in play by a player who followed the link, and every addition names
+#: its evidence here.
 #:
-#:   tomslag   checked 2026-08-09 against SAOL/SO/SAOB: no hits in any
-GHOST_WORDS = frozenset({"tomslag"})
+#:   tomslag    an SFOL-only scanno: no SALDO, no frequency, no academy hit
+#:              (checked 2026-08-09). SALDO's only match is grötomslag —
+#:              gröt+omslag, a different word containing the letters.
+#:   tryckord   real but technical — SALDO has it as a prosody term, glossed
+#:              betoning — and absent from all of SAOL/SO/SAOB (checked
+#:              2026-08-09 in play). Two corpora vouch; the authority the
+#:              player is shown does not, so it goes.
+GHOST_WORDS = frozenset({"tomslag", "tryckord"})
 
 #: The mirror of GHOST_WORDS, for the lexicalized mode: compounds a player
 #: attested against SAOL that SALDO has simply never recorded. SALDO is a
