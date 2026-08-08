@@ -214,8 +214,10 @@ describe("judging the chain", () => {
     await board();
     await u.click(chip("mur"));   // sten+mur ✓
     expect(await screen.findAllByText("länken håller")).toHaveLength(1);
-    // The weld's word is the reward — written out beside the link.
-    expect(screen.getByText("stenmur")).toBeInTheDocument();
+    // The weld's word is the reward — written out beside the link, and one
+    // tap from the authority that can settle a doubt about it.
+    const word = screen.getByRole("link", { name: /stenmur.*SAOL/i });
+    expect(word).toHaveAttribute("href", "https://svenska.se/saol/?sok=stenmur");
   });
 
   it("writes no word beside a broken weld", async () => {

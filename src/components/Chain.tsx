@@ -101,10 +101,20 @@ export function Chain({
     /** The compound this joint spells, shown the moment the weld holds. */
     const word = mark === "ok" ? day.pairs[`${full[index]}>${full[index + 1]}`] : undefined;
     // Hidden while the joint offers its drop slot — the two would overlap.
+    // The word links to its SAOL entry — the player who doubts a weld is one
+    // tap from the authority, which is also how ghosts like tomslag get
+    // caught. A search URL rather than a page URL, because SAOL has no
+    // stable per-word addresses.
     const weld = word && !open && (
-      <span className="weld-word" aria-hidden="true">
+      <a
+        className="weld-word"
+        href={`https://svenska.se/saol/?sok=${encodeURIComponent(word)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${word} — slå upp i SAOL`}
+      >
         {word}
-      </span>
+      </a>
     );
     /**
      * The verdict is a sibling of the button, not a child. The joint's inner
