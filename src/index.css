@@ -215,6 +215,9 @@ body {
     color: var(--falu-ink);
     transform: scale(1.03);
   }
+  /* A verdict is a link of chain: a stadium ring the chain line passes
+     through, carrying a small glyph boss. The ring is the shape; the glyph is
+     the signal, so colour is never alone. */
   .verdict {
     position: absolute;
     /* Centred by the box, not by its parent's layout: the verdict floats over
@@ -224,21 +227,48 @@ body {
     pointer-events: none;
     display: grid;
     place-items: center;
-    width: 2.1rem;
-    height: 2.1rem;
+    width: 1.55rem;
+    height: 2.3rem;
     border-radius: 999px;
-    font-size: 1.3rem;
-    font-weight: 800;
-    line-height: 1;
+    border: 4px solid var(--gran-ok);
+    background: transparent;
     animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
   }
+  .verdict-glyph {
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    line-height: 1;
+  }
   .verdict--ok {
+    border-color: var(--gran-ok);
+  }
+  .verdict--ok .verdict-glyph {
     background: var(--gran-ok);
     color: var(--on-ok);
   }
   .verdict--broken {
+    border-color: var(--falu);
+  }
+  .verdict--broken .verdict-glyph {
     background: var(--falu);
     color: var(--on-falu);
+  }
+  /* The word a holding weld spells, written beside its link. */
+  .weld-word {
+    position: absolute;
+    left: calc(50% + 1.35rem);
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--gran-ok);
   }
 
   /* The route map: SVG text inherits no typography, so it is set here. */

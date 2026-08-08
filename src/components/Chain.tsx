@@ -98,6 +98,14 @@ export function Chain({
     const open = canGrow && (dragging || armed || !mark);
 
     const line = <span className={`joint-line ${mark ? `joint-line--${mark}` : ""}`} />;
+    /** The compound this joint spells, shown the moment the weld holds. */
+    const word = mark === "ok" ? day.pairs[`${full[index]}>${full[index + 1]}`] : undefined;
+    // Hidden while the joint offers its drop slot — the two would overlap.
+    const weld = word && !open && (
+      <span className="weld-word" aria-hidden="true">
+        {word}
+      </span>
+    );
     /**
      * The verdict is a sibling of the button, not a child. The joint's inner
      * shape changes with the game — a button while the chain can grow, plain
@@ -107,7 +115,9 @@ export function Chain({
      */
     const verdict = mark && (
       <span key={jointStamps[index]} className={`verdict verdict--${mark}`}>
-        <span aria-hidden="true">{mark === "ok" ? "✓" : "✗"}</span>
+        <span className="verdict-glyph" aria-hidden="true">
+          {mark === "ok" ? "✓" : "✗"}
+        </span>
         <span className="sr-only">
           {mark === "ok" ? "länken håller" : "bruten länk"}
         </span>
@@ -119,12 +129,15 @@ export function Chain({
         <li className="joint" aria-hidden={mark === null}>
           {line}
           {verdict}
+          {weld}
         </li>
       );
     }
 
     const said = mark
-      ? `${full[index]} plus ${full[index + 1]} ${mark === "ok" ? "håller" : "håller inte"}. `
+      ? mark === "ok"
+        ? `${full[index]} plus ${full[index + 1]} bildar ${word}. `
+        : `${full[index]} plus ${full[index + 1]} håller inte. `
       : "";
     return (
       <li className={`joint ${open ? "joint--open" : ""}`}>
@@ -153,6 +166,7 @@ export function Chain({
           )}
         </button>
         {verdict}
+        {weld}
       </li>
     );
   };
