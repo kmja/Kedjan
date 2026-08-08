@@ -107,8 +107,15 @@ function markMine(nodes: DagNode[], day: Day, mine: string[]): Set<string> {
   return walked;
 }
 
-const ROW = 62;
-const GAP = 14;
+/**
+ * The map cannot lose layers — one per link of the longest route — so compact
+ * means a tight pitch: chips of NODE_H with just enough line between rows to
+ * read as a connection. A long day already fills a phone screen; every empty
+ * pixel per row multiplies by the route length.
+ */
+const ROW = 46;
+const NODE_H = 28;
+const GAP = 10;
 const PAD = 6;
 
 /**
@@ -123,8 +130,12 @@ function layout(nodes: DagNode[]): { width: number; height: number } {
   const byRank: DagNode[][] = [];
   for (const n of nodes) (byRank[n.y] ??= []).push(n);
   // Merging pulls nodes down to their deepest occurrence, which can leave a
-  // rank with nothing on it — an empty row of space, but never an empty array.
+  // rank with nothing on it. Close the gap: renumbering ranks consecutively
+  // keeps every child below its parent while dropping the blank rows.
   const layers = byRank.filter((l) => l !== undefined);
+  layers.forEach((layer, rank) => {
+    for (const n of layer) n.y = rank;
+  });
 
   const place = (layer: DagNode[]) => {
     const total = layer.reduce((w, n) => w + n.width, 0) + GAP * (layer.length - 1);
@@ -151,13 +162,13 @@ function layout(nodes: DagNode[]): { width: number; height: number } {
   }
 
   const width = Math.max(...layers.map((l) => place(l)));
-  return { width: width + PAD * 2, height: byRank.length * ROW };
+  return { width: width + PAD * 2, height: layers.length * ROW };
 }
 
 /**
  * Every way the day could be won, drawn as one map: branching out from the
  * start, joining back wherever the rest of the way is shared, and funnelling
- * into the target. The route the player took runs through it in green.
+ * into the target. The route the player took runs through it in the accent.
  */
 export function RouteTree({ day, mine, others }: Props) {
   const nodes = buildDag(day, mine ? [mine, ...others] : others);
@@ -192,9 +203,9 @@ export function RouteTree({ day, mine, others }: Props) {
         }}
       >
         {edges.map(({ from, to, mine: onMine }) => {
-          const y1 = nodeY(from) + 16;
-          const y2 = nodeY(to) - 16;
-          const bend = Math.min(28, (y2 - y1) / 2);
+          const y1 = nodeY(from) + NODE_H / 2 + 1;
+          const y2 = nodeY(to) - NODE_H / 2 - 1;
+          const bend = Math.min(14, (y2 - y1) / 2);
           return (
             <path
               key={`${from.id}>${to.id}`}
@@ -214,10 +225,10 @@ export function RouteTree({ day, mine, others }: Props) {
             <g key={n.id}>
               <rect
                 x={n.x - w / 2}
-                y={nodeY(n) - 15}
+                y={nodeY(n) - NODE_H / 2}
                 width={w}
-                height={30}
-                rx={9}
+                height={NODE_H}
+                rx={8}
                 fill={endpoint ? "var(--falu)" : "var(--panel)"}
                 stroke={n.mine ? "var(--falu)" : endpoint ? "var(--falu-deep)" : "var(--edge)"}
                 strokeWidth={n.mine ? 3 : 1.5}
