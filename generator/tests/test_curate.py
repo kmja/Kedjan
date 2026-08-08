@@ -104,6 +104,17 @@ def test_allows_a_real_noun_that_doubles_as_a_verb_tail():
     assert errors(curate.check_day(day)) == []
 
 
+def test_flags_a_linking_s_riding_on_a_non_noun():
+    # riksdag is rike + dag: rik, an adjective, merely spells riks-.
+    from kedjan.saldo import Saldo
+
+    day = a_day()
+    day["pairs"]["rik>dag"] = "riksdag"
+    saldo = Saldo(pos={"rik": frozenset({"av"})})
+    found = errors(curate.check_day(day, saldo=saldo))
+    assert any("belongs to another lemma" in m for m in found)
+
+
 def test_warns_about_an_agent_noun():
     day = a_day()
     day["pairs"]["rädda>ren"] = "räddaren"

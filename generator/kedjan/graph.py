@@ -390,6 +390,20 @@ def build(
             k for k, w in pairs.items() if not head_pos_consistent(k[1], w, saldo)
         ]:
             del pairs[key]
+        # A linking morpheme joins *noun* first-elements: kärlek-s-gud,
+        # familj-e-far. When the claimed first part is no noun, the letters
+        # belong to another lemma — riksdag is rike + dag, and rik (an
+        # adjective) merely happens to spell the combining form riks-.
+        # A player-reported false decomposition, not a hypothetical.
+        for key in [
+            k
+            for k, w in pairs.items()
+            if w != k[0] + k[1]
+            and any(w == k[0] + c + k[1] for c in CONNECTORS)
+            and k[0] in saldo.pos
+            and "nn" not in saldo.pos[k[0]]
+        ]:
+            del pairs[key]
 
     adjacency: dict[str, set[str]] = defaultdict(set)
     for a, b in pairs:

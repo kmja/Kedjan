@@ -198,6 +198,22 @@ def test_lexicalized_only_keeps_saldo_witnessed_welds(lex):
     assert not graph.welds("sten", "bro")
 
 
+def test_a_linking_s_after_a_non_noun_is_not_a_weld(lex):
+    from kedjan.saldo import Saldo
+
+    # riksdag is rike + dag; rik — an adjective — merely spells the combining
+    # form riks-. kärleksgud really is kärlek + s + gud. Player-reported.
+    compounds = {"riksdag": ["rik", "dag"], "kärleksgud": ["kärlek", "gud"]}
+    saldo = Saldo(pos={
+        "rik": frozenset({"av"}), "kärlek": frozenset({"nn"}),
+        "dag": frozenset({"nn"}), "gud": frozenset({"nn"}),
+        "riksdag": frozenset({"nn"}), "kärleksgud": frozenset({"nn"}),
+    })
+    graph = graph_mod.build(compounds, lex, saldo)
+    assert ("rik", "dag") not in graph.pairs
+    assert ("kärlek", "gud") in graph.pairs
+
+
 def test_lexicalized_only_skips_the_concatenation_augmentation(lex):
     from kedjan.saldo import Saldo
 

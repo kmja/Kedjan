@@ -268,6 +268,20 @@ def check_day(
         link = forms[witness]
         if link == "e" and b in LINKED_VERB_TAILS:
             err(f"{witness!r} conjugates {a!r} — {a}+{b} is not a compound")
+        # A linking morpheme joins noun first-elements. When the claimed
+        # first part is no noun, the letters belong to another lemma:
+        # riksdag is rike + dag, and rik — an adjective — merely happens to
+        # spell the combining form riks-. Player-reported, not hypothetical.
+        if (
+            link
+            and saldo is not None
+            and a in saldo.pos
+            and "nn" not in saldo.pos[a]
+        ):
+            err(
+                f"{witness!r} is not {a} + -{link}- + {b}: {a!r} is not a noun, "
+                f"so the linking -{link}- belongs to another lemma"
+            )
         elif b in NON_HEAD_PARTS:
             warn(f"{witness!r} ends in {b!r}, which is rarely a compound head")
         elif b == AGENT_TAIL and a.endswith("a"):

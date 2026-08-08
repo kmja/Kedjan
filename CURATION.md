@@ -376,6 +376,17 @@ About 40% of welds have an entry. **No entry is not evidence against a weld** �
 it only means SALDO is silent, which is the honest state for `glasbär` and the
 rest of the long tail.
 
+### A linking morpheme belongs to a noun
+
+`riksdag` shipped as `rik + s + dag` — and a player caught it: riks- is the
+combining form of **rike**, and rik, an adjective, merely happens to spell
+it. The general rule has teeth now, in the graph and the lint both: a
+foge-s or foge-e weld whose claimed first part is not a noun in SALDO is
+refused, because linking morphemes join noun first-elements — kärlek-s-gud,
+familj-e-far — and letters that line up otherwise belong to another lemma.
+The gloss was the visible tell all along: SALDO reads riksdag as "besluta,
+folk", nothing to do with either claimed part.
+
 ## What a pool is about
 
 SALDO is an association lexicon, so its links say roughly what a word is for:
