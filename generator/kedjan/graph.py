@@ -351,11 +351,29 @@ def head_pos_consistent(head: str, witness: str, saldo: Saldo) -> bool:
 
 
 def build(
-    compounds: dict[str, list[str]], lex: Lexicon, saldo: Saldo | None = None
+    compounds: dict[str, list[str]],
+    lex: Lexicon,
+    saldo: Saldo | None = None,
+    lexicalized_only: bool = False,
 ) -> PartGraph:
+    """Build the part graph.
+
+    With `lexicalized_only`, a weld's witness must be a SALDO lemma — a
+    compound established enough to carry its own dictionary entry, not merely
+    a string a spellchecker accepts. The graph shrinks to about 28% of its
+    pairs, ghosts like tomslag become structurally impossible, and every weld
+    has a gloss. The concatenation augmentation is skipped for the same
+    reason: it manufactures witnesses out of string lookups, which is the
+    opposite of lexicalized.
+    """
+    if lexicalized_only:
+        if saldo is None:
+            raise ValueError("lexicalized_only needs SALDO — it defines lexicalized")
+        compounds = {w: p for w, p in compounds.items() if w in saldo.pos}
     pairs = witnessed_pairs(compounds, lex)
     hubs = select_hubs(pairs, lex, saldo)
-    augment_by_lookup(pairs, hubs, lex)
+    if not lexicalized_only:
+        augment_by_lookup(pairs, hubs, lex)
 
     # A witness that is a verb form is not a compound with a noun head, however
     # well the letters line up: poängsätt is the stem of poängsätta.

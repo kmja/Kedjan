@@ -184,3 +184,33 @@ def test_head_pos_consistency_stays_silent_when_saldo_cannot_judge():
     assert graph_mod.head_pos_consistent("mat", "slutmat", saldo) is True
     # Head unknown — likewise.
     assert graph_mod.head_pos_consistent("xyz", "slutmat", saldo) is True
+
+
+def test_lexicalized_only_keeps_saldo_witnessed_welds(lex):
+    from kedjan.saldo import Saldo
+
+    # stenmur is lexicalized; stenbro is a string SFOL accepts but SALDO has
+    # never recorded — under the flag it is no longer evidence of anything.
+    saldo = Saldo(pos={"stenmur": frozenset({"nn"}), "sten": frozenset({"nn"}),
+                       "mur": frozenset({"nn"}), "bro": frozenset({"nn"})})
+    graph = graph_mod.build(split.compounds(lex), lex, saldo, lexicalized_only=True)
+    assert graph.welds("sten", "mur")
+    assert not graph.welds("sten", "bro")
+
+
+def test_lexicalized_only_skips_the_concatenation_augmentation(lex):
+    from kedjan.saldo import Saldo
+
+    # gårdshus lives only in the union list, which the augmentation reads —
+    # a string lookup manufactures a witness, the opposite of lexicalized.
+    saldo = Saldo(pos={"gård": frozenset({"nn"}), "hus": frozenset({"nn"})})
+    graph = graph_mod.build(split.compounds(lex), lex, saldo, lexicalized_only=True)
+    assert not graph.welds("gård", "hus")
+
+
+def test_lexicalized_only_refuses_to_run_blind():
+    import pytest
+
+    with pytest.raises(ValueError):
+        graph_mod.build({}, Lexicon(words=frozenset(), union=frozenset()), None,
+                        lexicalized_only=True)

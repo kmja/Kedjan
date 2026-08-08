@@ -40,7 +40,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
     )
 
     print("building the part graph…", file=sys.stderr)
-    graph = graph_mod.build(compounds, lex, saldo)
+    graph = graph_mod.build(compounds, lex, saldo, lexicalized_only=args.lexicalized)
     print(f"  {len(graph.pairs):,} pairs over {len(graph.hubs):,} hub parts", file=sys.stderr)
 
     print("generating days…", file=sys.stderr)
@@ -84,7 +84,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     print("splitting compounds…", file=sys.stderr)
     compounds = split.compounds(lex)
     print("building the part graph…", file=sys.stderr)
-    graph = graph_mod.build(compounds, lex, saldo)
+    graph = graph_mod.build(compounds, lex, saldo, lexicalized_only=args.lexicalized)
     print(f"  {len(graph.pairs):,} pairs over {len(graph.hubs):,} hub parts", file=sys.stderr)
 
     print("sweeping every start…", file=sys.stderr)
@@ -333,6 +333,8 @@ def main(argv: list[str] | None = None) -> int:
     corpus.add_argument("--frequency", default="sv_50k.txt", help="hermitdave FrequencyWords")
     corpus.add_argument("--saldo", default="saldo_2.3/saldo20v03.txt",
                         help="Språkbanken SALDO, the lemma inventory")
+    corpus.add_argument("--lexicalized", action="store_true",
+                        help="welds must be SALDO lemmas, not just spellable strings")
 
     gen = sub.add_parser("generate", parents=[corpus], help="propose candidate days")
     gen.add_argument("--out", default="kedjan-days.json")
