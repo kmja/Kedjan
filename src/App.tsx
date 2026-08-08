@@ -4,7 +4,7 @@ import { dayForDate, fetchCalendar, releasedDays } from "./game/days";
 import { formatSwedishDate, todayISO } from "./game/dates";
 import { plural } from "./game/plural";
 import { useKedjan } from "./game/useKedjan";
-import { clearSave } from "./game/storage";
+import { clearSave, markWelcomed, wasWelcomed } from "./game/storage";
 import { POOL_ZONE, useChipDrag } from "./game/useChipDrag";
 import { Chain } from "./components/Chain";
 import { Pool } from "./components/Pool";
@@ -18,6 +18,7 @@ import { DevPanel } from "./components/DevPanel";
 import { FailCard } from "./components/FailCard";
 import { Lives } from "./components/Lives";
 import { OutcomeDialog } from "./components/OutcomeDialog";
+import { WelcomeDialog } from "./components/WelcomeDialog";
 import { isDevMode } from "./game/dev";
 
 type View = "spel" | "arkiv" | "statistik";
@@ -73,6 +74,7 @@ export default function App() {
   // on a reload that arrives already decided, and only after the chain's own
   // verdict animation has had its beat.
   const [celebration, setCelebration] = useState<"win" | "fail" | null>(null);
+  const [welcoming, setWelcoming] = useState(() => !wasWelcomed());
   const outcomeRef = useRef<{ key: string; solved: boolean; failed: boolean } | null>(null);
   useEffect(() => {
     if (!day) return;
@@ -220,6 +222,15 @@ export default function App() {
             )}
 
             {game.failed && <FailCard day={day} onReplay={game.replay} />}
+
+            {welcoming && (
+              <WelcomeDialog
+                onClose={() => {
+                  markWelcomed();
+                  setWelcoming(false);
+                }}
+              />
+            )}
 
             {celebration && (
               <OutcomeDialog

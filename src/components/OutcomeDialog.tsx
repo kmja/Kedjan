@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import type { Day } from "../types";
 import { RouteTree } from "./RouteTree";
+import { useModal } from "./useModal";
 
 interface Props {
   kind: "win" | "fail";
@@ -22,24 +23,8 @@ interface Props {
  */
 export function OutcomeDialog({ kind, day, chain, others, onClose, onReplay }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog || dialog.open) return;
-    // jsdom (and some very old browsers) lack showModal — fall back to the
-    // open attribute, which loses the backdrop but keeps the dialog.
-    if (dialog.showModal) dialog.showModal();
-    else dialog.setAttribute("open", "");
-  }, []);
-
-  const dismiss = () => {
-    const dialog = ref.current;
-    if (dialog?.close) dialog.close(); // fires onClose
-    else {
-      dialog?.removeAttribute("open");
-      onClose();
-    }
-  };
+  const close = useModal(ref);
+  const dismiss = () => close(onClose);
 
   return (
     <dialog ref={ref} className="outcome" onClose={onClose} aria-label={

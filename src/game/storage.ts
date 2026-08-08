@@ -2,6 +2,7 @@ import type { DayProgress, Stats } from "../types";
 import { daysBetween } from "./dates";
 
 const KEY = "kedjan.v1";
+const WELCOMED_KEY = "kedjan.welcomed";
 
 interface Save {
   progress: Record<string, DayProgress>;
@@ -65,8 +66,26 @@ export function loadSave(): Save {
 export function clearSave(): void {
   try {
     localStorage.removeItem(KEY);
+    localStorage.removeItem(WELCOMED_KEY);
   } catch {
     /* nothing to clear */
+  }
+}
+
+/** Has this player seen the rules dialog? Best-effort, like the save. */
+export function wasWelcomed(): boolean {
+  try {
+    return localStorage.getItem(WELCOMED_KEY) === "1";
+  } catch {
+    return true; // no storage — do not nag on every load
+  }
+}
+
+export function markWelcomed(): void {
+  try {
+    localStorage.setItem(WELCOMED_KEY, "1");
+  } catch {
+    /* the dialog will show again next time; harmless */
   }
 }
 

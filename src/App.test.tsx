@@ -37,6 +37,7 @@ const expectStatus = (text: string | RegExp) =>
 
 beforeEach(() => {
   localStorage.clear();
+  localStorage.setItem("kedjan.welcomed", "1");
   // Fake only the clock. Faking setTimeout too would starve React's scheduler
   // and make these tests flake under parallel load.
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -50,6 +51,27 @@ afterEach(() => {
 });
 
 const user = () => userEvent.setup();
+
+describe("the welcome dialog", () => {
+  it("shows the rules once, on the very first load", async () => {
+    localStorage.removeItem("kedjan.welcomed");
+    const u = user();
+    const { unmount } = render(<App />);
+    await board();
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Så spelar du")).toBeInTheDocument();
+    expect(within(dialog).getByText(/tre liv/i)).toBeInTheDocument();
+
+    await u.click(within(dialog).getByRole("button", { name: "Nu spelar vi" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    unmount();
+
+    // Seen once is seen: the next visit goes straight to the board.
+    render(<App />);
+    await board();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
 
 describe("the day board", () => {
   it("labels a day with the lexicon that witnessed it", async () => {

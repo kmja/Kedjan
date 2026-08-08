@@ -322,6 +322,9 @@ body {
   .outcome-title--fail {
     color: var(--falu-ink);
   }
+  .outcome-title--ink {
+    color: var(--ink);
+  }
   .outcome-sub {
     margin-top: 0.4rem;
     text-align: center;
