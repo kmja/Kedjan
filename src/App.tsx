@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Day } from "./types";
 import { dayForDate, fetchCalendar, releasedDays } from "./game/days";
 import { formatSwedishDate, todayISO } from "./game/dates";
@@ -16,6 +16,8 @@ import { Archive } from "./components/Archive";
 import { ReportWord } from "./components/ReportWord";
 import { DevPanel } from "./components/DevPanel";
 import { FailCard } from "./components/FailCard";
+import { Lives } from "./components/Lives";
+import { OutcomeDialog } from "./components/OutcomeDialog";
 import { isDevMode } from "./game/dev";
 
 type View = "spel" | "arkiv" | "statistik";
@@ -66,6 +68,22 @@ export default function App() {
     onActivate: (part, source) =>
       source === "pool" ? game.placeAt(part) : game.removeFrom(part),
   });
+
+  // The ending dialog opens on the transition into solved or failed — never
+  // on a reload that arrives already decided, and only after the chain's own
+  // verdict animation has had its beat.
+  const [celebration, setCelebration] = useState<"win" | "fail" | null>(null);
+  const outcomeRef = useRef<{ key: string; solved: boolean; failed: boolean } | null>(null);
+  useEffect(() => {
+    if (!day) return;
+    const prev = outcomeRef.current;
+    outcomeRef.current = { key: day.date, solved: game.solved, failed: game.failed };
+    if (!prev || prev.key !== day.date) return;
+    const kind = !prev.solved && game.solved ? "win" : !prev.failed && game.failed ? "fail" : null;
+    if (!kind) return;
+    const t = setTimeout(() => setCelebration(kind), 600);
+    return () => clearTimeout(t);
+  }, [day, game.solved, game.failed]);
 
   const openDay = (date: string) => {
     setPickedDate(date);
@@ -167,6 +185,8 @@ export default function App() {
               onJoint={game.toggleJoint}
             />
 
+            {!game.solved && <Lives left={game.livesLeft} />}
+
             {!game.solved && !game.failed && (
               <>
                 <p className="-mt-3 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
@@ -190,7 +210,6 @@ export default function App() {
                   announceKey={game.announceKey}
                   placed={game.chain.length}
                   hints={game.hints}
-                  livesLeft={game.livesLeft}
                   parRevealed={game.parRevealed}
                   onHint={game.hint}
                   onReset={game.reset}
@@ -201,6 +220,17 @@ export default function App() {
             )}
 
             {game.failed && <FailCard day={day} onReplay={game.replay} />}
+
+            {celebration && (
+              <OutcomeDialog
+                kind={celebration}
+                day={day}
+                chain={game.chain}
+                others={game.otherSolutions}
+                onClose={() => setCelebration(null)}
+                onReplay={game.replay}
+              />
+            )}
 
             {game.solved && (
               <ResultCard

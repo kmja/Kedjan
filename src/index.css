@@ -258,16 +258,81 @@ body {
   }
 
   /* The route map: SVG text inherits no typography, so it is set here. */
-  /* Lives: the glyph changes with the state, so colour is never alone. */
-  .lives {
-    letter-spacing: 0.15em;
+  /* Lives, big and by the chain. The cross that lands on a lost heart is
+     the chain's own broken-weld cross — one grammar for mistakes. */
+  .lives-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.7rem;
+    margin-top: -0.4rem;
   }
-  .life {
+  .life-big {
+    position: relative;
+    display: grid;
+    place-items: center;
+    font-size: 1.6rem;
+    line-height: 1;
     color: var(--falu-ink);
-    font-size: 0.85rem;
+    transition: color 0.25s ease, opacity 0.25s ease;
   }
-  .life--lost {
+  .life-big--lost {
     color: var(--ink-soft);
+    opacity: 0.45;
+  }
+  .life-cross {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--falu);
+    text-shadow: 0 0 3px var(--paper);
+  }
+  .life-cross--pop {
+    animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
+  }
+
+  /* The ending dialog. Native <dialog>, so Esc, focus and the backdrop come
+     from the platform; only the entrance is ours. */
+  .outcome {
+    margin: auto;
+    border: 1px solid var(--edge);
+    border-radius: 1rem;
+    background: var(--panel);
+    color: var(--ink);
+    padding: 1.4rem;
+    width: calc(100vw - 3rem);
+    max-width: 24rem;
+    box-shadow: 0 18px 50px var(--shadow);
+  }
+  .outcome[open] {
+    animation: dialog-pop 0.4s cubic-bezier(0.2, 1.2, 0.35, 1) both;
+  }
+  .outcome::backdrop {
+    background: rgb(0 0 0 / 0.45);
+  }
+  .outcome-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--gran-ok);
+    text-align: center;
+  }
+  .outcome-title--fail {
+    color: var(--falu-ink);
+  }
+  .outcome-sub {
+    margin-top: 0.4rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  /* Routes draw themselves in when a map appears. */
+  .dag-edge {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: dag-draw 0.7s ease 0.15s forwards;
   }
 
   /* The A/B label while two curation modes are compared in play. */
@@ -444,6 +509,19 @@ body {
   }
 }
 
+@keyframes dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+}
+
+@keyframes dag-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 @keyframes verdict-pop {
   0% {
     transform: scale(0.2) rotate(-18deg);
@@ -477,6 +555,15 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .outcome[open],
+  .life-cross--pop {
+    animation: none;
+  }
+  .dag-edge {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
   *,
   *::before,
   *::after {

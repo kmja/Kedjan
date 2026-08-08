@@ -188,12 +188,67 @@ describe("the route map", () => {
     await u.click(screen.getByRole("button", { name: /lägg en del efter sten/i }));
     await u.click(screen.getByRole("button", { name: /^mur\./i }));
     await screen.findByText(/På par!/);
+    await u.click(
+      within(await screen.findByRole("dialog", {}, { timeout: 2000 })).getByRole("button", {
+        name: "Visa resultatet",
+      }),
+    );
     await u.click(screen.getByRole("button", { name: /andra vägar fanns/i }));
 
     const tree = screen.getByLabelText("Alla vägar till målet, som ett träd");
     const mineEdges = tree.querySelectorAll('path[stroke="var(--falu)"]');
     // Exactly the three edges of sten→mur→vägg→hus — not mur→hus.
     expect(mineEdges).toHaveLength(3);
+  });
+});
+
+describe("the ending dialog", () => {
+  const chip = (part: string) =>
+    screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+
+  it("celebrates a win with the route map", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("bro"));
+    const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
+    expect(within(dialog).getByText("Kedjan håller!")).toBeInTheDocument();
+    expect(
+      within(dialog).getByLabelText("Alla vägar till målet, som ett träd"),
+    ).toBeInTheDocument();
+    await u.click(within(dialog).getByRole("button", { name: "Visa resultatet" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("explains a loss and offers a fresh try", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    for (let i = 0; i < 3; i++) {
+      await u.click(chip("glas"));
+      if (i < 2) await u.click(screen.getByRole("button", { name: /^länk 1, glas\./i }));
+    }
+    const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
+    expect(within(dialog).getByText("Bron brast")).toBeInTheDocument();
+    expect(within(dialog).getByText(/fäste varken vid delen före eller efter/)).toBeInTheDocument();
+
+    await u.click(within(dialog).getByRole("button", { name: "Försök igen" }));
+    await board();
+    expect(screen.getByLabelText("3 liv kvar")).toBeInTheDocument();
+  });
+
+  it("does not reopen for a day that loads already solved", async () => {
+    const u = user();
+    const { unmount } = render(<App />);
+    await board();
+    await u.click(chip("bro"));
+    await screen.findByRole("dialog", {}, { timeout: 2000 });
+    unmount();
+
+    render(<App />);
+    await screen.findByText(/Under par — briljant!/);
+    await new Promise((r) => setTimeout(r, 800));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
 
@@ -213,6 +268,16 @@ describe("lives", () => {
     await u.click(chip("glas"));
     await expectStatus(/GLAS lagd i kedjan/);
     expect(screen.getByLabelText("2 liv kvar")).toBeInTheDocument();
+  });
+
+  it("crosses out the freshly lost heart with the chain's own pop", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("glas"));
+    const row = screen.getByLabelText("2 liv kvar");
+    expect(row.querySelectorAll(".life-cross")).toHaveLength(1);
+    expect(row.querySelectorAll(".life-cross--pop")).toHaveLength(1);
   });
 
   it("removals are free", async () => {
@@ -468,6 +533,11 @@ describe("solving", () => {
     render(<App />);
     await board();
     await solveUnderPar(u);   // sten → bro → hus
+    await u.click(
+      within(await screen.findByRole("dialog", {}, { timeout: 2000 })).getByRole("button", {
+        name: "Visa resultatet",
+      }),
+    );
     const reveal = await screen.findByRole("button", { name: /1 annan väg fanns/i });
     await u.click(reveal);
 

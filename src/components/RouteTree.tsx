@@ -198,6 +198,8 @@ export function RouteTree({ day, mine, others }: Props) {
           return (
             <path
               key={`${from.id}>${to.id}`}
+              className="dag-edge"
+              pathLength={1}
               d={`M ${from.x} ${y1} C ${from.x} ${y1 + bend}, ${to.x} ${y2 - bend}, ${to.x} ${y2}`}
               fill="none"
               stroke={onMine ? "var(--falu)" : "var(--edge)"}
