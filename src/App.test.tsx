@@ -52,6 +52,15 @@ afterEach(() => {
 const user = () => userEvent.setup();
 
 describe("the day board", () => {
+  it("labels a day with the lexicon that witnessed it", async () => {
+    mockCalendar([{ ...testDay, date: "2026-08-06", no: 2, lexicon: "saldo" }]);
+    render(<App />);
+    await board();
+    // Once in the day header, once on the archive row — the comparison is
+    // visible when picking a day, not only after opening one.
+    expect(screen.getAllByText("SALDO")).toHaveLength(2);
+  });
+
   it("serves the puzzle dated today", async () => {
     render(<App />);
     const pool = await board();

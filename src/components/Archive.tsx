@@ -48,6 +48,9 @@ export function Archive({ days, selected, solvedDates, onSelect, onReplayAll }: 
                 <span className="flex-1 text-sm font-bold uppercase">
                   {d.start} → {d.target}
                 </span>
+                {d.lexicon && (
+                  <span className="lexicon-tag shrink-0">{d.lexicon.toUpperCase()}</span>
+                )}
                 <span className="shrink-0 text-xs font-semibold opacity-80">
                   par {d.par}
                 </span>

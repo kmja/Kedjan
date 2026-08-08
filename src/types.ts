@@ -14,6 +14,13 @@ export interface Day {
   pool: string[];
   /** "a>b" -> the real compound that witnesses the weld. */
   pairs: Record<string, string>;
+  /**
+   * Which lexicon witnessed this day's welds — a temporary A/B label while
+   * the two curation modes are compared in play. "sfol" accepts any compound
+   * the spellchecker's list carries; "saldo" only compounds established
+   * enough to be SALDO lemmas.
+   */
+  lexicon?: "sfol" | "saldo";
 }
 
 /** Per-day progress, persisted so a reload never costs the player their chain. */

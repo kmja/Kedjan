@@ -144,6 +144,9 @@ export default function App() {
             <p className="text-center text-xs font-semibold" style={{ color: "var(--ink-soft)" }}>
               #{day.no} · {formatSwedishDate(day.date)}
               {day.date !== today && " · arkiv"}
+              {day.lexicon && (
+                <span className="lexicon-tag">{day.lexicon.toUpperCase()}</span>
+              )}
             </p>
 
             <Chain

@@ -136,36 +136,23 @@ strid + s + vagn    really is  strid-s-vagn     (neither strids nor svagn)
 
 ## What shipped
 
-Twelve days from the **lexicalized-only** graph (`sweep --lexicalized`):
-every weld's witness is a SALDO lemma, so the single-witness risk class that
-produced `tomslag` is structurally empty — zero shipped welds rest on SFOL
-alone, and the calendar lints with zero errors and zero warnings.
+**An A/B calendar**: both curation modes side by side, 24 days interleaved so
+every SFOL day has a lexicalized neighbour, each tagged in the app (day
+header and archive rows) with the lexicon that witnessed its welds.
 
-`dröm→blind` is the first day to score a perfect 1.000 across both sweeps.
-It is forced in; the rest are drawn at random (seed 20260809) from the
-20-day par-3 ceiling and the par-4 top tier, under the standing taste
-exclusions plus `broder`/`moder`/`fader` as chips — SALDO happily
-lexicalizes them, and they still read archaic.
+- **SFOL** (odd days): welds may be any compound the spellchecker's list
+  carries. Denser graph, wilder pools, and the single-witness risk class that
+  produced `tomslag` — 117 such welds across these twelve.
+- **SALDO** (even days): welds must be lexicalized — SALDO lemmas. Zero
+  single-witness welds, zero lint warnings, 72% gloss coverage, homelier
+  pools; but the graph keeps only 28% of its pairs, and no related-endpoint
+  day (tom→full) exists in this space. `dröm→blind` (#16) is the first
+  perfect 1.000 either sweep has produced.
 
-| # | date | day | par |
-|---|------|-----|-----|
-| 1 | 2026-07-30 | rök → märke | 3 |
-| 2 | 2026-07-31 | hand → fråga | 3 |
-| 3 | 2026-08-01 | språk → vatten | 4 |
-| 4 | 2026-08-02 | pris → park | 3 |
-| 5 | 2026-08-03 | egen → linje | 3 |
-| 6 | 2026-08-04 | får → kraft | 3 |
-| 7 | 2026-08-05 | bild → nummer | 3 |
-| 8 | 2026-08-06 | dröm → blind | 4 |
-| 9 | 2026-08-07 | musik → namn | 3 |
-| 10 | 2026-08-08 | värd → regel | 3 |
-| 11 | 2026-08-09 | form → brott | 3 |
-| 12 | 2026-08-10 | affär → musik | 4 |
-
-What the mode costs: the graph keeps 28% of its pairs (29,494 over 514
-hubs), the sweep yields 792 acceptable days against 2,485, and **no
-related-endpoint day survives** — `tom→full` is out of reach in this space.
-That trade is the open design question the mode exists to answer in play.
+Days #1–22 are released for comparison play; the last two sit in the queue.
+The decision this calendar exists to inform: whether lexicalized-only
+becomes the standard, SFOL stays, or the middle road — lexicalized welds on
+solution paths, SFOL for decoys — gets built.
 
 ## Solution count is not route diversity
 

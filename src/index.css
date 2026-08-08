@@ -258,6 +258,18 @@ body {
   }
 
   /* The route map: SVG text inherits no typography, so it is set here. */
+  /* The A/B label while two curation modes are compared in play. */
+  .lexicon-tag {
+    display: inline-block;
+    margin-left: 0.45rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.35rem;
+    border: 1px solid currentColor;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+
   .dag-part {
     font-size: 13px;
     font-weight: 700;
