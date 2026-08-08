@@ -1,7 +1,7 @@
 [
  {
-  "date": "2026-07-30",
-  "no": 1,
+  "date": "",
+  "no": 0,
   "start": "rök",
   "target": "märke",
   "par": 3,
@@ -46,11 +46,64 @@
    "rök>gång": "rökgång",
    "rök>gas": "rökgas",
    "rök>verk": "rökverk"
+  },
+  "_metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "gång": [
+    "fungera",
+    "gå",
+    "när"
+   ],
+   "väg": [
+    "leda",
+    "resa"
+   ],
+   "bord": [
+    "kortspel",
+    "möbel",
+    "sida"
+   ],
+   "vatten": [
+    "samling",
+    "ämne"
+   ],
+   "gas": [
+    "tyg",
+    "ämne"
+   ],
+   "verk": [
+    "myndighet",
+    "skapa",
+    "åstadkomma"
+   ],
+   "post": [
+    "befattning",
+    "belopp",
+    "före",
+    "skicka",
+    "stolpe",
+    "vakta",
+    "varuparti"
+   ]
   }
  },
  {
-  "date": "2026-07-31",
-  "no": 2,
+  "date": "",
+  "no": 0,
   "start": "hand",
   "target": "fråga",
   "par": 3,
@@ -95,11 +148,75 @@
    "hand>bok": "handbok",
    "hand>kraft": "handkraft",
    "hand>slag": "handslag"
+  },
+  "_metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "mål": [
+    "dialekt",
+    "rättegång",
+    "slut",
+    "sport",
+    "syfte",
+    "träffa",
+    "äta"
+   ],
+   "kraft": [
+    "energi",
+    "makt",
+    "stark"
+   ],
+   "val": [
+    "djur",
+    "välja",
+    "åttio"
+   ],
+   "slag": [
+    "fartygsskrov",
+    "klockslag",
+    "kämpa",
+    "slaganfall",
+    "slå",
+    "stund",
+    "sådan",
+    "veck"
+   ],
+   "form": [
+    "bilda",
+    "forma",
+    "kondition",
+    "slag"
+   ],
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ]
   }
  },
  {
-  "date": "2026-08-01",
-  "no": 3,
+  "date": "",
+  "no": 0,
   "start": "språk",
   "target": "vatten",
   "par": 4,
@@ -141,11 +258,72 @@
    "språk>familj": "språkfamilj",
    "språk>fel": "språkfel",
    "språk>form": "språkform"
+  },
+  "_metrics": {
+   "valid_pairs": 24,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9417,
+  "_subscores": {
+   "goldilocks": 0.833,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "familj": [
+    "art",
+    "släkt"
+   ],
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "namn": [
+    "PRIM",
+    "kalla",
+    "person"
+   ],
+   "fel": [
+    "fel",
+    "rätt",
+    "skuld"
+   ],
+   "val": [
+    "djur",
+    "välja",
+    "åttio"
+   ],
+   "rum": [
+    "hus",
+    "rymd",
+    "utrymme",
+    "öppen"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "form": [
+    "bilda",
+    "forma",
+    "kondition",
+    "slag"
+   ]
   }
  },
  {
-  "date": "2026-08-02",
-  "no": 4,
+  "date": "",
+  "no": 0,
   "start": "pris",
   "target": "park",
   "par": 3,
@@ -188,11 +366,60 @@
    "pris>värd": "prisvärd",
    "pris>lapp": "prislapp",
    "pris>ras": "prisras"
+  },
+  "_metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "värd": [
+    "aktningsvärd",
+    "bra",
+    "gäst"
+   ],
+   "hus": [
+    "astrologi",
+    "bygga",
+    "kungahus"
+   ],
+   "lapp": [
+    "bit",
+    "papperslapp",
+    "same"
+   ],
+   "hund": [
+    "djur",
+    "usling"
+   ],
+   "nummer": [
+    "framträdande",
+    "samlag",
+    "tal"
+   ],
+   "häst": [
+    "husdjur",
+    "schackpjäs"
+   ],
+   "ras": [
+    "rasa",
+    "slag"
+   ]
   }
  },
  {
-  "date": "2026-08-03",
-  "no": 5,
+  "date": "",
+  "no": 0,
   "start": "egen",
   "target": "linje",
   "par": 3,
@@ -235,11 +462,64 @@
    "egen>tid": "egentid",
    "egen>namn": "egennamn",
    "egen>värde": "egenvärde"
+  },
+  "_metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "vatten": [
+    "samling",
+    "ämne"
+   ],
+   "namn": [
+    "PRIM",
+    "kalla",
+    "person"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "mål": [
+    "dialekt",
+    "rättegång",
+    "slut",
+    "sport",
+    "syfte",
+    "träffa",
+    "äta"
+   ],
+   "tåg": [
+    "rep",
+    "tåga",
+    "åka"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "värde": [
+    "mått",
+    "värd"
+   ]
   }
  },
  {
-  "date": "2026-08-04",
-  "no": 6,
+  "date": "",
+  "no": 0,
   "start": "får",
   "target": "kraft",
   "par": 3,
@@ -283,11 +563,74 @@
    "får>hus": "fårhus",
    "får>huvud": "fårhuvud",
    "kraft>verk": "kraftverk"
+  },
+  "_metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "hund": [
+    "djur",
+    "usling"
+   ],
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "hus": [
+    "astrologi",
+    "bygga",
+    "kungahus"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "vatten": [
+    "samling",
+    "ämne"
+   ],
+   "huvud": [
+    "kropp",
+    "tänka",
+    "upptill"
+   ],
+   "drag": [
+    "blåsa",
+    "dra",
+    "egenskap",
+    "fiskedrag",
+    "handla",
+    "livad",
+    "röra",
+    "schackpjäs"
+   ],
+   "verk": [
+    "myndighet",
+    "skapa",
+    "åstadkomma"
+   ]
   }
  },
  {
-  "date": "2026-08-05",
-  "no": 7,
+  "date": "",
+  "no": 0,
   "start": "bild",
   "target": "nummer",
   "par": 3,
@@ -330,11 +673,65 @@
    "bild>sten": "bildsten",
    "bild>rik": "bildrik",
    "bild>språk": "bildspråk"
+  },
+  "_metrics": {
+   "valid_pairs": 25,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "sten": [
+    "hård",
+    "sten"
+   ],
+   "hus": [
+    "astrologi",
+    "bygga",
+    "kungahus"
+   ],
+   "rik": [
+    "mycken",
+    "äga"
+   ],
+   "råd": [
+    "besluta",
+    "betala",
+    "råda"
+   ],
+   "polis": [
+    "myndighet",
+    "poliskonstapel"
+   ],
+   "slag": [
+    "fartygsskrov",
+    "klockslag",
+    "kämpa",
+    "slaganfall",
+    "slå",
+    "stund",
+    "sådan",
+    "veck"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ]
   }
  },
  {
-  "date": "2026-08-06",
-  "no": 8,
+  "date": "",
+  "no": 0,
   "start": "dröm",
   "target": "blind",
   "par": 4,
@@ -380,11 +777,61 @@
    "dröm>mål": "drömmål",
    "dröm>bild": "drömbild",
    "dröm>bok": "drömbok"
+  },
+  "_metrics": {
+   "valid_pairs": 28,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  },
+  "_score": 1.0,
+  "_subscores": {
+   "goldilocks": 1.0,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "mål": [
+    "dialekt",
+    "rättegång",
+    "slut",
+    "sport",
+    "syfte",
+    "träffa",
+    "äta"
+   ],
+   "kung": [
+    "regera",
+    "schackpjäs",
+    "spelkort"
+   ],
+   "rik": [
+    "mycken",
+    "äga"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "form": [
+    "bilda",
+    "forma",
+    "kondition",
+    "slag"
+   ],
+   "ljus": [
+    "PRIM",
+    "lysa",
+    "optimistisk"
+   ]
   }
  },
  {
-  "date": "2026-08-07",
-  "no": 9,
+  "date": "",
+  "no": 0,
   "start": "musik",
   "target": "namn",
   "par": 3,
@@ -428,11 +875,60 @@
    "musik>liv": "musikliv",
    "musik>form": "musikform",
    "musik>stil": "musikstil"
+  },
+  "_metrics": {
+   "valid_pairs": 26,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "egen": [
+    "egendomlig",
+    "ha"
+   ],
+   "form": [
+    "bilda",
+    "forma",
+    "kondition",
+    "slag"
+   ],
+   "familj": [
+    "art",
+    "släkt"
+   ],
+   "stil": [
+    "form",
+    "sätt",
+    "översättningsprov"
+   ],
+   "ton": [
+    "musik",
+    "mått",
+    "nyans"
+   ]
   }
  },
  {
-  "date": "2026-08-08",
-  "no": 10,
+  "date": "",
+  "no": 0,
   "start": "värd",
   "target": "regel",
   "par": 3,
@@ -478,11 +974,63 @@
    "värd>hus": "värdshus",
    "värd>par": "värdpar",
    "värd>djur": "värddjur"
+  },
+  "_metrics": {
+   "valid_pairs": 28,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "hus": [
+    "astrologi",
+    "bygga",
+    "kungahus"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "par": [
+    "par",
+    "poker",
+    "två"
+   ],
+   "huvud": [
+    "kropp",
+    "tänka",
+    "upptill"
+   ],
+   "häst": [
+    "husdjur",
+    "schackpjäs"
+   ],
+   "kropp": [
+    "lik",
+    "sak",
+    "varelse"
+   ],
+   "form": [
+    "bilda",
+    "forma",
+    "kondition",
+    "slag"
+   ]
   }
  },
  {
-  "date": "2026-08-09",
-  "no": 11,
+  "date": "",
+  "no": 0,
   "start": "form",
   "target": "brott",
   "par": 3,
@@ -529,11 +1077,65 @@
    "form>ord": "formord",
    "form>rik": "formrik",
    "brott>mål": "brottmål"
+  },
+  "_metrics": {
+   "valid_pairs": 29,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  },
+  "_score": 0.9563,
+  "_subscores": {
+   "goldilocks": 0.875,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "fel": [
+    "fel",
+    "rätt",
+    "skuld"
+   ],
+   "val": [
+    "djur",
+    "välja",
+    "åttio"
+   ],
+   "rik": [
+    "mycken",
+    "äga"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "mål": [
+    "dialekt",
+    "rättegång",
+    "slut",
+    "sport",
+    "syfte",
+    "träffa",
+    "äta"
+   ],
+   "grund": [
+    "djup",
+    "grund",
+    "under"
+   ],
+   "tryck": [
+    "betoning",
+    "påverkan",
+    "trycka"
+   ]
   }
  },
  {
-  "date": "2026-08-10",
-  "no": 12,
+  "date": "",
+  "no": 0,
   "start": "affär",
   "target": "musik",
   "par": 4,
@@ -576,6 +1178,60 @@
    "musik>liv": "musikliv",
    "musik>verk": "musikverk",
    "musik>scen": "musikscen"
+  },
+  "_metrics": {
+   "valid_pairs": 25,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 2,
+   "min_cross_links": 7,
+   "isolated_chips": 0
+  },
+  "_score": 0.9417,
+  "_subscores": {
+   "goldilocks": 0.833,
+   "density": 1.0,
+   "doubleness": 1.0
+  },
+  "_homographs": {
+   "liv": [
+    "hända",
+    "klänningsliv",
+    "leva",
+    "midja",
+    "mur",
+    "varelse"
+   ],
+   "film": [
+    "bild",
+    "fotografera",
+    "skikt"
+   ],
+   "bok": [
+    "läsa",
+    "träd"
+   ],
+   "rock": [
+    "kappa",
+    "musik"
+   ],
+   "konst": [
+    "bildkonst",
+    "kunna",
+    "naturlig",
+    "skapa"
+   ],
+   "verk": [
+    "myndighet",
+    "skapa",
+    "åstadkomma"
+   ],
+   "scen": [
+    "försiggå",
+    "krångla",
+    "teater"
+   ]
   }
  }
 ]

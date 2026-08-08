@@ -136,34 +136,36 @@ strid + s + vagn    really is  strid-s-vagn     (neither strids nor svagn)
 
 ## What shipped
 
-Twelve days drawn from the full-graph sweep (`kedjan.cli sweep`), which ranked
-all 2,485 days the dictionary can carry. Two were forced in for their related
-endpoints — `tom→full` are opposites, `lön→chef` a workplace pair — and the
-other ten drawn at random (seed 20260807) from the score ceiling, par-4s from
-the par-4 top tier, under the standing taste exclusions: no `and`/`min`/`bett`
-chips, no kinship or archaic-register endpoints, no verb-form targets (`såg`),
-no flat targets (`grund`), and no two pools sharing more than five chips.
+Twelve days from the **lexicalized-only** graph (`sweep --lexicalized`):
+every weld's witness is a SALDO lemma, so the single-witness risk class that
+produced `tomslag` is structurally empty — zero shipped welds rest on SFOL
+alone, and the calendar lints with zero errors and zero warnings.
 
-| # | date | day | par | sols | indep | cross | open | close |
-|---|------|-----|-----|------|-------|-------|------|-------|
-| 1 | 2026-07-30 | jakt → glad | 3 | 6 | 3 | 5 | 3 | 4 |
-| 2 | 2026-07-31 | tom → full | 3 | 7 | 3 | 5 | 3 | 4 |
-| 3 | 2026-08-01 | hål → minne | 3 | 7 | 3 | 5 | 3 | 3 |
-| 4 | 2026-08-02 | kung → kurs | 3 | 9 | 3 | 6 | 4 | 3 |
-| 5 | 2026-08-03 | sorg → drag | 3 | 8 | 3 | 5 | 4 | 3 |
-| 6 | 2026-08-04 | bad → show | 4 | 8 | 2 | 6 | 3 | 2 |
-| 7 | 2026-08-05 | het → öga | 3 | 7 | 3 | 5 | 3 | 3 |
-| 8 | 2026-08-06 | grund → lärare | 3 | 6 | 3 | 5 | 4 | 3 |
-| 9 | 2026-08-07 | steg → bit | 3 | 7 | 3 | 5 | 3 | 4 |
-| 10 | 2026-08-08 | lön → chef | 3 | 9 | 3 | 5 | 3 | 3 |
-| 11 | 2026-08-09 | tro → sida | 3 | 7 | 3 | 5 | 3 | 4 |
-| 12 | 2026-08-10 | sak → fågel | 4 | 6 | 2 | 6 | 3 | 2 |
+`dröm→blind` is the first day to score a perfect 1.000 across both sweeps.
+It is forced in; the rest are drawn at random (seed 20260809) from the
+20-day par-3 ceiling and the par-4 top tier, under the standing taste
+exclusions plus `broder`/`moder`/`fader` as chips — SALDO happily
+lexicalizes them, and they still read archaic.
 
-The two remaining lint warnings are conscious overrules: `full` and `het` sit
-on the derivational-suffix watchlist, and the whole point of `tom→full` is
-that pair of endpoints.
+| # | date | day | par |
+|---|------|-----|-----|
+| 1 | 2026-07-30 | rök → märke | 3 |
+| 2 | 2026-07-31 | hand → fråga | 3 |
+| 3 | 2026-08-01 | språk → vatten | 4 |
+| 4 | 2026-08-02 | pris → park | 3 |
+| 5 | 2026-08-03 | egen → linje | 3 |
+| 6 | 2026-08-04 | får → kraft | 3 |
+| 7 | 2026-08-05 | bild → nummer | 3 |
+| 8 | 2026-08-06 | dröm → blind | 4 |
+| 9 | 2026-08-07 | musik → namn | 3 |
+| 10 | 2026-08-08 | värd → regel | 3 |
+| 11 | 2026-08-09 | form → brott | 3 |
+| 12 | 2026-08-10 | affär → musik | 4 |
 
-`lint --dic` reports zero errors with SALDO and without.
+What the mode costs: the graph keeps 28% of its pairs (29,494 over 514
+hubs), the sweep yields 792 acceptable days against 2,485, and **no
+related-endpoint day survives** — `tom→full` is out of reach in this space.
+That trade is the open design question the mode exists to answer in play.
 
 ## Solution count is not route diversity
 

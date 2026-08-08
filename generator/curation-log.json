@@ -2645,5 +2645,197 @@
    "min_cross_links": 6,
    "isolated_chips": 0
   }
+ },
+ {
+  "start": "rök",
+  "target": "märke",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "hand",
+  "target": "fråga",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 27,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "språk",
+  "target": "vatten",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 24,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 2,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "pris",
+  "target": "park",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "egen",
+  "target": "linje",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 4,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "får",
+  "target": "kraft",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "bild",
+  "target": "nummer",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "dröm",
+  "target": "blind",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 6,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "musik",
+  "target": "namn",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 26,
+   "solutions": 7,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "värd",
+  "target": "regel",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 28,
+   "solutions": 8,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "form",
+  "target": "brott",
+  "par": 3,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 29,
+   "solutions": 9,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 3,
+   "min_cross_links": 5,
+   "isolated_chips": 0
+  }
+ },
+ {
+  "start": "affär",
+  "target": "musik",
+  "par": 4,
+  "accepted": true,
+  "reason": "",
+  "metrics": {
+   "valid_pairs": 25,
+   "solutions": 6,
+   "openings": 3,
+   "closings": 3,
+   "disjoint_routes": 2,
+   "min_cross_links": 7,
+   "isolated_chips": 0
+  }
  }
 ]
