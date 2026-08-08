@@ -154,7 +154,7 @@ export default function App() {
               armedJoint={game.armedJoint}
               maxParts={game.maxParts}
               jointMarks={game.jointMarks}
-              verdictKey={game.verdictKey}
+              jointStamps={game.jointStamps}
               dragOver={drag?.over ?? null}
               dragging={drag !== null}
               dragSource={drag?.source ?? null}

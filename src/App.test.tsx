@@ -156,6 +156,49 @@ describe("judging the chain", () => {
   const chip = (part: string) =>
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
 
+  it("leaves untouched joints alone when a chip is removed", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("mur"));    // sten+mur ✓
+    await u.click(chip("tak"));    // mur+tak ✗
+    await u.click(chip("glas"));   // tak+glas ✓
+    const before = screen
+      .getAllByText("länken håller")
+      .map((el) => el.closest(".verdict"));
+    expect(before).toHaveLength(2); // sten+mur and tak+glas
+
+    // Removing the FIRST chip shifts every index behind it, but tak+glas is
+    // the same weld with the same verdict — it must keep the *same DOM node*,
+    // or its pop animation replays on a joint the removal never touched.
+    await u.click(screen.getByRole("button", { name: /^länk 1, mur\./i }));
+
+    const after = screen
+      .getAllByText("länken håller")
+      .map((el) => el.closest(".verdict"));
+    expect(after).toContain(before[1]);   // tak+glas untouched
+    expect(after).not.toContain(before[0]); // sten+mur is gone with mur
+  });
+
+  it("re-animates the joint whose weld the removal changed", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("tak"));    // sten+tak ✓
+    await u.click(chip("glas"));   // tak+glas ✓
+    const stenTak = screen
+      .getAllByText("länken håller")[0]!
+      .closest(".verdict");
+
+    // Removing the FIRST chip closes the chain up: the top joint now judges
+    // sten+glas, a different weld with a different verdict. That joint must
+    // come back as a fresh node so its animation plays — position alone must
+    // not carry a stamp across a change of pair.
+    await u.click(screen.getByRole("button", { name: /^länk 1, tak\./i }));
+    const stenGlas = (await screen.findByText("bruten länk")).closest(".verdict");
+    expect(stenGlas).not.toBe(stenTak);
+  });
+
   it("marks a joint that holds as soon as a part lands", async () => {
     const u = user();
     render(<App />);

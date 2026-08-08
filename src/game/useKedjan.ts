@@ -47,8 +47,19 @@ export function useKedjan(day: Day | null) {
    * placement. `null` means the joint has not been judged yet.
    */
   const [jointMarks, setJointMarks] = useState<("ok" | "broken" | null)[]>([]);
-  /** Bumped on each judgement so identical marks still re-animate. */
-  const [verdictKey, setVerdictKey] = useState(0);
+  /**
+   * An animation stamp per joint, keyed by the weld the joint judges. A joint
+   * keeps its stamp — and therefore its DOM node, and therefore its already
+   * played animation — as long as it is judging the same pair to the same
+   * verdict. Removing a chip mid-chain shifts every index after it, so the
+   * stamps follow the *pairs*, not the positions: only the joints the removed
+   * chip actually touched come back with a new stamp and pop again.
+   */
+  const [jointStamps, setJointStamps] = useState<number[]>([]);
+  const stampStore = useRef({
+    counter: 0,
+    byPair: new Map<string, { mark: "ok" | "broken" | null; stamp: number }>(),
+  });
   const today = useMemo(todayISO, []);
 
   // Bump on every status message so an unchanged string still re-announces.
@@ -78,7 +89,7 @@ export function useKedjan(day: Day | null) {
       setStatus(null);
       setMarked(null);
       setArmedJoint(null);
-      setJointMarks([]);
+      clearVerdicts();
     }
   }, [key]);
 
@@ -118,6 +129,34 @@ export function useKedjan(day: Day | null) {
     [day],
   );
 
+  /** Judge a chain and stamp its joints, reusing stamps for unchanged welds. */
+  const applyVerdicts = useCallback(
+    (nextChain: string[]) => {
+      if (!day) return;
+      const marks = judge(nextChain, nextChain.length >= maxParts);
+      const full = fullChain(day, nextChain);
+      const store = stampStore.current;
+      const next = new Map<string, { mark: "ok" | "broken" | null; stamp: number }>();
+      const stamps = marks.map((mark, i) => {
+        const pair = `${full[i]}>${full[i + 1]}`;
+        const prev = store.byPair.get(pair);
+        const stamp = prev && prev.mark === mark ? prev.stamp : ++store.counter;
+        next.set(pair, { mark, stamp });
+        return stamp;
+      });
+      store.byPair = next;
+      setJointMarks(marks);
+      setJointStamps(stamps);
+    },
+    [day, judge, maxParts],
+  );
+
+  const clearVerdicts = useCallback(() => {
+    setJointMarks([]);
+    setJointStamps([]);
+    stampStore.current.byPair = new Map();
+  }, []);
+
   /**
    * Put a part into the chain at a joint. Nothing is validated on the way
    * down — parts go in in any order, and the whole chain is judged after.
@@ -141,8 +180,7 @@ export function useKedjan(day: Day | null) {
       setDimmed(new Set());
 
       const atCeiling = next.length >= maxParts;
-      setJointMarks(judge(next, atCeiling));
-      setVerdictKey((k) => k + 1);
+      applyVerdicts(next);
 
       const broken = brokenJoints(day, next);
       if (broken.length === 0) {
@@ -174,7 +212,7 @@ export function useKedjan(day: Day | null) {
       }
       say({ kind: "info", msg: `${upper(part)} lagd i kedjan.` });
     },
-    [day, solved, chain, maxParts, armedJoint, progress.solvedAt, patch, say, judge],
+    [day, solved, chain, maxParts, armedJoint, progress.solvedAt, patch, say, applyVerdicts],
   );
 
   /** Take a part back out. The chain closes up behind it. */
@@ -185,11 +223,10 @@ export function useKedjan(day: Day | null) {
       patch((p) => ({ ...p, chain: next }));
       setMarked(null);
       setDimmed(new Set());
-      setJointMarks(judge(next, next.length >= maxParts));
-      setVerdictKey((k) => k + 1);
+      applyVerdicts(next);
       say({ kind: "info", msg: `${upper(part)} tillbaka i poolen.` });
     },
-    [day, solved, chain, maxParts, patch, say, judge],
+    [day, solved, chain, patch, say, applyVerdicts],
   );
 
   /** Arm a joint so the next chip lands there, or disarm it. */
@@ -212,7 +249,7 @@ export function useKedjan(day: Day | null) {
     if (!day) return;
     patch((p) => ({ ...p, chain: [], solved: false, hints: 0, misses: 0 }));
     setArmedJoint(null);
-    setJointMarks([]);
+    clearVerdicts();
     setMarked(null);
     setDimmed(new Set());
     say({ kind: "info", msg: "Dagen är öppen igen — statistiken står kvar." });
@@ -230,7 +267,7 @@ export function useKedjan(day: Day | null) {
       ),
     }));
     setArmedJoint(null);
-    setJointMarks([]);
+    clearVerdicts();
     setMarked(null);
     setDimmed(new Set());
     say({ kind: "info", msg: "Alla dagar är öppna igen — statistiken står kvar." });
@@ -240,7 +277,7 @@ export function useKedjan(day: Day | null) {
     if (!day || solved || !chain.length) return;
     patch((p) => ({ ...p, chain: [] }));
     setArmedJoint(null);
-    setJointMarks([]);
+    clearVerdicts();
     setMarked(null);
     say({ kind: "info", msg: "Kedjan rensad." });
   }, [day, solved, chain.length, patch, say]);
@@ -346,7 +383,7 @@ export function useKedjan(day: Day | null) {
     armedJoint,
     maxParts,
     jointMarks,
-    verdictKey,
+    jointStamps,
     lastMiss,
     status,
     announceKey,

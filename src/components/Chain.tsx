@@ -18,8 +18,12 @@ interface Props {
   maxParts: number;
   /** Verdict per joint of [start, ...chain, target]; null means not yet judged. */
   jointMarks: JointMark[];
-  /** Bumped on every judgement so the marks re-animate rather than sit still. */
-  verdictKey: number;
+  /**
+   * Animation stamp per joint. A stamp changes only when the weld the joint
+   * judges (or its verdict) changed, so an untouched mark keeps its DOM node
+   * and does not replay its animation when something elsewhere moves.
+   */
+  jointStamps: number[];
   dragOver: string | null;
   /** True while any chip is in flight, so every target can show itself. */
   dragging: boolean;
@@ -50,7 +54,7 @@ export function Chain({
   armedJoint,
   maxParts,
   jointMarks,
-  verdictKey,
+  jointStamps,
   dragOver,
   dragging,
   dragSource,
@@ -84,45 +88,42 @@ export function Chain({
    * during a drag every joint shows one — a player should be able to see where
    * a chip may go without having to hunt for it.
    */
-  const Joint = ({ index }: { index: number }) => {
+  // A render function, not a nested component: a component declared inside
+  // the render body is a new type every render, and React remounts its whole
+  // subtree each time — which replays every verdict animation on any change.
+  const joint = (index: number) => {
     const mark = jointMarks[index] ?? null;
     const armed = armedJoint === index;
     const over = dragOver === `${JOINT_ZONE}${index}`;
     const open = canGrow && (dragging || armed || !mark);
 
-    const body = (
-      <>
-        <span className={`joint-line ${mark ? `joint-line--${mark}` : ""}`} />
-        {open && (
-          <span
-            className={`joint-slot ${armed ? "joint-slot--armed" : ""} ${
-              over ? "joint-slot--over" : ""
-            }`}
-            aria-hidden="true"
-          >
-            {mark ? "" : "+"}
-          </span>
-        )}
-        {mark && (
-          <span key={`${verdictKey}-${index}`} className={`verdict verdict--${mark}`}>
-            <span aria-hidden="true">{mark === "ok" ? "✓" : "✗"}</span>
-            <span className="sr-only">
-              {mark === "ok" ? "länken håller" : "bruten länk"}
-            </span>
-          </span>
-        )}
-      </>
+    const line = <span className={`joint-line ${mark ? `joint-line--${mark}` : ""}`} />;
+    /**
+     * The verdict is a sibling of the button, not a child. The joint's inner
+     * shape changes with the game — a button while the chain can grow, plain
+     * chain when it cannot — and a verdict nested inside would be remounted
+     * by that flip and replay its animation. As a stable sibling it survives
+     * every shape the joint takes, and only a new stamp re-animates it.
+     */
+    const verdict = mark && (
+      <span key={jointStamps[index]} className={`verdict verdict--${mark}`}>
+        <span aria-hidden="true">{mark === "ok" ? "✓" : "✗"}</span>
+        <span className="sr-only">
+          {mark === "ok" ? "länken håller" : "bruten länk"}
+        </span>
+      </span>
     );
 
     if (!canGrow) {
       return (
         <li className="joint" aria-hidden={mark === null}>
-          {body}
+          {line}
+          {verdict}
         </li>
       );
     }
 
-    const verdict = mark
+    const said = mark
       ? `${full[index]} plus ${full[index + 1]} ${mark === "ok" ? "håller" : "håller inte"}. `
       : "";
     return (
@@ -133,14 +134,25 @@ export function Chain({
           onClick={() => onJoint(index)}
           className="joint-hit"
           aria-label={
-            verdict +
+            said +
             (armed
               ? `Vald plats i kedjan, efter ${full[index]}.`
               : `Lägg en del efter ${full[index]}.`)
           }
         >
-          {body}
+          {line}
+          {open && (
+            <span
+              className={`joint-slot ${armed ? "joint-slot--armed" : ""} ${
+                over ? "joint-slot--over" : ""
+              }`}
+              aria-hidden="true"
+            >
+              {mark ? "" : "+"}
+            </span>
+          )}
         </button>
+        {verdict}
       </li>
     );
   };
@@ -153,7 +165,7 @@ export function Chain({
 
       {chain.map((part, i) => (
         <Fragment key={part}>
-          <Joint index={i} />
+          {joint(i)}
           <li>
             {solved ? (
               <span className="node">{part}</span>
@@ -173,7 +185,7 @@ export function Chain({
         </Fragment>
       ))}
 
-      <Joint index={chain.length} />
+      {joint(chain.length)}
       <li>
         <span
           className={`node node--endpoint ${solved ? "snap" : ""} ${

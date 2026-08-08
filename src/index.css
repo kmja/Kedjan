@@ -217,6 +217,11 @@ body {
   }
   .verdict {
     position: absolute;
+    /* Centred by the box, not by its parent's layout: the verdict floats over
+       whichever form the joint currently takes, and takes no clicks. */
+    inset: 0;
+    margin: auto;
+    pointer-events: none;
     display: grid;
     place-items: center;
     width: 2.1rem;
