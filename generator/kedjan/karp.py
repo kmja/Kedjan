@@ -74,10 +74,15 @@ class Karp:
         resources: str = "salex",
         cache_path: Path | str = "karp-cache.json",
         base: str = BASE,
+        api_key: str | None = None,
     ):
         self.resources = resources
         self.base = base.rstrip("/")
         self.delay = COURTESY_DELAY
+        #: salex — the SAOL/SO material behind svenska.se — is a *protected*
+        #: resource: metadata is public, queries 403 without a key. Keys come
+        #: from Språkbanken, under agreement with the rights holder.
+        self.api_key = api_key
         self.cache_path = Path(cache_path)
         self._cache: dict[str, dict[str, bool]] = {}
         if self.cache_path.exists():
@@ -90,8 +95,13 @@ class Karp:
     # ── plumbing ─────────────────────────────────────────────────
 
     def _get(self, path: str) -> object | None:
+        url = f"{self.base}{path}"
+        if self.api_key:
+            # As the spec's APIKeyQuery scheme. Error messages keep using
+            # `path`, so the key never lands in a terminal or a log.
+            url += ("&" if "?" in path else "?") + "api_key=" + urllib.parse.quote(self.api_key)
         req = urllib.request.Request(
-            f"{self.base}{path}", headers={"User-Agent": "kedjan-curation/1.0"}
+            url, headers={"User-Agent": "kedjan-curation/1.0"}
         )
         try:
             with urllib.request.urlopen(req, timeout=60) as resp:
@@ -146,6 +156,17 @@ class Karp:
         """The resource's own metadata — where its licence terms live."""
         payload = self._get(f"/resources/{resource_id}")
         return payload if isinstance(payload, dict) else None
+
+    def permissions(self) -> dict[str, bool] | None:
+        """resource_id -> protected, for finding the lexicons open to query."""
+        payload = self._get("/resources/permissions")
+        if isinstance(payload, list):
+            return {
+                str(r["resource_id"]): bool(r.get("protected"))
+                for r in payload
+                if isinstance(r, dict) and r.get("resource_id")
+            }
+        return None
 
     def dump(self, page: int = PAGE, progress=None) -> list[str] | None:
         """Every written form in the lexicon, by paging an unfiltered query.

@@ -22,6 +22,11 @@ def fake_get(vocab: dict[str, set[str]]):
 
     def _get(self, path):
         _get.calls.append(path)
+        if path.startswith("/resources/permissions"):
+            return [
+                {"resource_id": "salex", "protected": True},
+                {"resource_id": "saol15", "protected": False},
+            ]
         if path.startswith("/resources/"):
             return [{"resource_id": "salex"}, "saol15"]
         parsed = urllib.parse.urlparse(path)
@@ -251,11 +256,29 @@ def test_saolcheck_reads_a_plain_word_list(tmp_path, monkeypatch, capsys):
     assert "MISSING  hetslag" in out
 
 
-def test_saolcheck_lists_resources(tmp_path, monkeypatch, capsys):
+def test_saolcheck_lists_resources_with_their_protection(tmp_path, monkeypatch, capsys):
+    """Protection decides what a key-less caller can query — salex 403s."""
     monkeypatch.setattr(karp.Karp, "_get", fake_get({"wf": set()}))
     monkeypatch.setattr(karp, "COURTESY_DELAY", 0)
     code = cli.main(
         ["saolcheck", "--list-resources", "--cache", str(tmp_path / "cache.json")]
     )
     assert code == 0
-    assert "salex" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "salex" in out and "protected" in out
+    assert "saol15" in out and "open" in out
+
+
+def test_the_api_key_rides_every_request_but_never_the_errors(tmp_path, monkeypatch):
+    seen = []
+
+    def fake_urlopen(req, timeout=0):
+        seen.append(req.full_url)
+        raise OSError("no network in this test")
+
+    monkeypatch.setattr(karp.urllib.request, "urlopen", fake_urlopen)
+    client = karp.Karp(cache_path=tmp_path / "c.json", api_key="hemligt")
+    client.delay = 0
+    assert client.lookup("stenmur") is None
+    assert all("api_key=hemligt" in url for url in seen)
+    assert "hemligt" not in (client.last_error or "")

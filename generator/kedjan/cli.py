@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -120,14 +121,21 @@ def cmd_saolcheck(args: argparse.Namespace) -> int:
     """
     from . import karp as karp_mod
 
-    client = karp_mod.Karp(resources=args.resources, cache_path=args.cache)
+    client = karp_mod.Karp(
+        resources=args.resources, cache_path=args.cache, api_key=args.api_key
+    )
 
     if args.list_resources:
         ids = client.list_resources()
         if ids is None:
             print("could not reach Karp — is the network open?", file=sys.stderr)
             return 2
-        print("\n".join(ids))
+        # Protection decides what a key-less caller can actually query, so
+        # the listing is only useful with that column on it.
+        perms = client.permissions() or {}
+        for rid in ids:
+            state = "protected" if perms.get(rid) else "open" if rid in perms else "?"
+            print(f"{rid:40} {state}")
         return 0
 
     if args.words:
@@ -206,7 +214,9 @@ def cmd_saolpull(args: argparse.Namespace) -> int:
     """
     from . import karp as karp_mod
 
-    client = karp_mod.Karp(resources=args.resources, cache_path=args.cache)
+    client = karp_mod.Karp(
+        resources=args.resources, cache_path=args.cache, api_key=args.api_key
+    )
 
     for rid in args.resources.split(","):
         info = client.resource_info(rid)
@@ -488,7 +498,10 @@ def main(argv: list[str] | None = None) -> int:
     sc.add_argument("--cache", default="karp-cache.json",
                     help="where answers are remembered between runs")
     sc.add_argument("--list-resources", action="store_true",
-                    help="print the lexicon ids this Karp serves, then stop")
+                    help="print the lexicon ids this Karp serves, open or protected, then stop")
+    sc.add_argument("--api-key", default=os.environ.get("KARP_API_KEY"),
+                    help="Språkbanken API key for protected resources "
+                         "(default: $KARP_API_KEY)")
     sc.set_defaults(func=cmd_saolcheck)
 
     sp = sub.add_parser(
@@ -499,6 +512,9 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--out", default="saol-words.txt", help="where the word list lands")
     sp.add_argument("--page", type=int, default=500, help="entries per request")
     sp.add_argument("--cache", default="karp-cache.json")
+    sp.add_argument("--api-key", default=os.environ.get("KARP_API_KEY"),
+                    help="Språkbanken API key for protected resources "
+                         "(default: $KARP_API_KEY)")
     sp.set_defaults(func=cmd_saolpull)
 
     review = sub.add_parser("review", help="print what a curator has to judge")

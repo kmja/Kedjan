@@ -118,6 +118,14 @@ prints the resource's own licence metadata before pulling, and the manual
 **SAOL pull** workflow uploads the list as a run artifact (committing it to
 the branch only when its `commit` switch is flipped knowingly).
 
+Measured against the live server: `salex` is a **protected** resource — its
+metadata is public and declares no licence, and queries answer
+`403 Not enough permissions`. Querying it needs a Språkbanken API key
+(issued under agreement with the rights holder), passed as `--api-key` or
+`$KARP_API_KEY`. `saolcheck --list-resources` prints every lexicon this Karp
+serves with an open/protected column, which is where to look for material a
+key-less caller can actually use.
+
 ## The heuristics, and what replaces them
 
 Every rule in `split.py` and the `INFLECTED_FORMS` list in `graph.py` are
