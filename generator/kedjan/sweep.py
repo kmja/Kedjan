@@ -5,15 +5,18 @@ the graph is never looked at — it finds *acceptable* days near the top of the
 degree list, not the best days anywhere. The sweep builds every day every
 usable start can carry, at both pars, and ranks them.
 
-The score makes explicit three judgements curation has been applying by hand:
+The score makes explicit four judgements curation has been applying by hand:
 
-  goldilocks   solution count in the sweet middle of the 3-12 band, and routes
-               genuinely independent of each other — enough ways to win that
-               there is deduction, few enough that finding one still means
-               something
+  goldilocks   solution count low — two to four winning routes, still
+               genuinely independent of each other. The first archive proved
+               that generous solution counts make walkover days: a pool with
+               eight escapes hands one over
   density      many welds among the pool chips, entangled across routes, no
                chip stranded inside its own route — the pool should read as one
                fabric, not as islands
+  deception    the share of valid welds that lie on no winning route. This is
+               the difficulty dial the archive was missing: welds must be easy
+               to make and hard to make *count* — many welds, few escapes
   doubleness   pool chips SALDO records under more than one sense — kör the
                choir against kör the drive — which is where the game's best
                misdirection lives, because a player who has priced a chip under
@@ -37,12 +40,12 @@ from .graph import PartGraph
 from .lexicon import Lexicon
 from .saldo import Saldo
 
-#: The solution band is 3-12; its sweet middle. Below this a day is nearly a
-#: single line to find, above it the deduction thins out.
-SWEET_SOLUTIONS = range(6, 10)
-#: Independent routes saturate here — a fourth truly disjoint route adds
-#: little a third did not, and par-4 days rarely have room for more than three.
-INDEP_CAP = {3: 4, 4: 3}
+#: The solution band is 2-6; its sweet bottom. One route is a single line to
+#: find; past four the escapes multiply faster than the deduction does.
+SWEET_SOLUTIONS = range(2, 5)
+#: Independent routes saturate here — routes consume pool, and the longer the
+#: par the fewer truly disjoint routes a pool this size can carry.
+INDEP_CAP = {3: 4, 4: 3, 5: 2}
 #: The healthy valid-pairs band is 20-30; its sweet middle.
 SWEET_PAIRS = range(24, 31)
 #: Route entanglement saturates here.
@@ -50,7 +53,17 @@ CROSS_CAP = 5
 #: A fifth double-reading chip stops adding misdirection the fourth had.
 HOMOGRAPH_CAP = 4
 
-WEIGHTS = {"goldilocks": 0.35, "density": 0.35, "doubleness": 0.30}
+#: Deception is the share of valid welds on no winning route: full marks when
+#: three quarters of the fabric leads nowhere, nothing below two fifths.
+DECEPTION_FLOOR = 0.4
+DECEPTION_CEILING = 0.75
+
+WEIGHTS = {
+    "goldilocks": 0.30,
+    "density": 0.25,
+    "deception": 0.25,
+    "doubleness": 0.20,
+}
 
 
 def _band(x: int, lo: int, sweet: range, hi: int) -> float:
@@ -87,13 +100,26 @@ def score_day(day: Day, rep: DayReport, saldo: Saldo) -> Scored:
     sols = len(rep.solutions)
     cap = INDEP_CAP[day.par]
     goldilocks = (
-        _band(sols, 2, SWEET_SOLUTIONS, 13) + min(rep.disjoint_routes, cap) / cap
+        _band(sols, 1, SWEET_SOLUTIONS, 7) + min(rep.disjoint_routes, cap) / cap
     ) / 2
 
     entangled = min(rep.min_cross_links, CROSS_CAP) / CROSS_CAP
     density = (
         _band(day.metrics["valid_pairs"], 17, SWEET_PAIRS, 35) + entangled
     ) / 2 - 0.2 * len(rep.isolated_chips)
+
+    # Welds that lead somewhere, counted once; everything else is fabric that
+    # welds but does not win — which is where the difficulty lives.
+    on_route = {
+        f"{a}>{b}"
+        for route in rep.solutions
+        for a, b in zip([day.start, *route], [*route, day.target])
+    }
+    valid = day.metrics["valid_pairs"]
+    off_share = 1 - len(on_route) / valid if valid else 0.0
+    deception = min(
+        1.0, max(0.0, (off_share - DECEPTION_FLOOR) / (DECEPTION_CEILING - DECEPTION_FLOOR))
+    )
 
     homographs = {
         p: senses
@@ -108,6 +134,7 @@ def score_day(day: Day, rep: DayReport, saldo: Saldo) -> Scored:
         subscores={
             "goldilocks": goldilocks,
             "density": max(0.0, density),
+            "deception": deception,
             "doubleness": doubleness,
         },
         homographs=homographs,
@@ -130,7 +157,9 @@ def _sweep_start(start: str) -> list[dict[str, object]]:
     assert _G and _LEX and _SALDO
     out = []
     distances = distances_from(_G, start)
-    for par in (3, 4):
+    # Par 3 is retired: even at two escapes a three-link day is over before the
+    # pool gets to lie. Length is the other half of the difficulty.
+    for par in (4, 5):
         for target, distance in distances.items():
             if distance != par or not usable_endpoint(_LEX, _G, target):
                 continue

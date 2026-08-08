@@ -20,14 +20,14 @@ def a_day(**over):
         "pairs": {
             "sten>mur": "stenmur", "sten>bro": "stenbro", "sten>tak": "stentak",
             "mur>vägg": "murvägg", "mur>gård": "murgård", "mur>tak": "murtak",
-            "vägg>hus": "vägghus", "vägg>mur": "väggmur",
+            "vägg>hus": "vägghus", "vägg>mur": "väggmur", "vägg>torg": "väggtorg",
             "bro>port": "broport", "bro>glas": "broglas",
             "port>hus": "porthus", "port>bro": "portbro", "port>glas": "portglas",
-            "tak>glas": "takglas", "tak>port": "takport",
+            "tak>glas": "takglas",
             "glas>hus": "glashus", "glas>tak": "glastak",
             "gård>torg": "gårdstorg", "gård>kaj": "gårdskaj",
-            "torg>hus": "torghus", "torg>kaj": "torgkaj", "torg>gård": "torggård",
-            "kaj>hus": "kajhus", "kaj>bro": "kajbro",
+            "torg>kaj": "torgkaj", "torg>gård": "torggård",
+            "kaj>bro": "kajbro",
         },
     }
     day.update(over)
@@ -126,7 +126,7 @@ def test_flags_a_witness_missing_from_the_lexicon(lex):
 def test_counts_solutions_from_the_shipped_pairs():
     routes = curate.solutions_within_budget(a_day())
     assert ["mur", "vägg"] in routes
-    assert ["mur", "gård", "torg"] in routes
+    assert ["mur", "tak", "glas"] in routes
     assert all(len(r) + 1 <= 4 for r in routes)
 
 

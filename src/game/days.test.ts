@@ -75,11 +75,12 @@ describe("the shipped calendar", () => {
     "%s keeps the curated route structure",
     (_label, d) => {
       const solutions = allSolutions(d);
-      // The curated promise lives within par + 1 links: 3-12 routes there.
-      // Longer ways round are now legal wins on top, not part of the band.
+      // The curated promise lives within par + 1 links: 2-6 routes there.
+      // The first archive allowed up to twelve, and those days solved
+      // themselves. Longer ways round are legal wins on top, not the band.
       const curated = solutions.filter((s) => s.length + 1 <= d.par + 1);
-      expect(curated.length).toBeGreaterThanOrEqual(3);
-      expect(curated.length).toBeLessThanOrEqual(12);
+      expect(curated.length).toBeGreaterThanOrEqual(2);
+      expect(curated.length).toBeLessThanOrEqual(6);
       // A day with a direct start→target compound has no puzzle in it.
       expect(d.pairs[`${d.start}>${d.target}`]).toBeUndefined();
     },

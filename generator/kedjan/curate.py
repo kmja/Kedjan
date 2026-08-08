@@ -31,7 +31,10 @@ from .saldo import Saldo
 from .split import CONNECTORS, PREFIX_SET, SUFFIX_STOP
 
 MIN_POOL = 9
-SOLUTION_BAND = range(3, 13)
+#: Mirrors days.py: 2-6 winning routes. The first archive shipped under a
+#: ceiling of twelve, and days near it were walkovers — with that many escapes
+#: the pool cannot help but hand one over.
+SOLUTION_BAND = range(2, 7)
 #: The healthy density band measured in playtesting, over roughly twelve parts.
 PAIR_BAND = range(20, 31)
 #: Choice at both ends of the chain, and at every step between.

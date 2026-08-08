@@ -1,8 +1,8 @@
 """Day generation.
 
-The three measured dials are par (3 for weekdays, 4 for harder days),
+The three measured dials are par (4 as the standard, 5 for harder days),
 valid-pairs count (a healthy band is roughly 20-30 over twelve parts), and
-solution count (a hard requirement of 3-12 within budget). The single most
+solution count (a hard requirement of 2-6 within budget). The single most
 descriptive number for a day is the pairs-to-solutions ratio: many welds, few
 escapes.
 """
@@ -21,9 +21,11 @@ from .split import PREFIX_SET
 POOL_SIZE = 10
 MIN_POOL_SIZE = 9
 CORE_SIZE = 8
-#: Hard requirement, paid for in playtesting: fewer than three and the day is a
-#: single line to find; more than twelve and the deduction evaporates.
-SOLUTION_BAND = range(3, 13)
+#: Hard requirement. Fewer than two and the day is a single line to find; the
+#: ceiling used to be twelve, and the archive taught us that was far too many —
+#: a day with eight escapes solves itself. The difficulty lives in the ratio:
+#: many welds to try, few of them part of any way out.
+SOLUTION_BAND = range(2, 7)
 #: A good decoy is selective — it opens two to five new welds, no more.
 DECOY_PAIRS = range(2, 6)
 #: No pool part may weld to more than this many others in the pool.

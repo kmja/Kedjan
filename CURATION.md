@@ -58,8 +58,8 @@ day that fails one can neither be generated nor accepted.
 
 | requirement | why |
 |---|---|
-| 3–12 solutions within budget | fewer is a single line to find; more and the deduction evaporates |
-| independent routes: 3 at par 3, 2 at par 4 | raw solution count flatters a day — see below |
+| 2–6 solutions within budget | fewer is a single line to find; more and the day solves itself — see below |
+| independent routes: 3 at par 3, 2 at par 4–5 | raw solution count flatters a day — see below |
 | each route reaches ≥ 2 chips outside itself | otherwise it is an island, found by elimination |
 | ≤ 1 chip welding only inside its own route | two or more and the pool reads as separate groups |
 | ≥ 3 chips weld to the start | move one must be a choice |
@@ -156,9 +156,14 @@ solution paths, SFOL for decoys — gets built.
 
 ## Solution count is not route diversity
 
-The band is 3–12, and the ceiling is deliberate: the design wants *many welds,
-few escapes*, so a day with thirty ways to win has no deduction left in it.
-More is not better past a point.
+The band is 2–6. It used to be 3–12, and the first shipped archive is the
+evidence against that ceiling: days near it were walkovers, because with
+eight or more escapes almost any plausible sequence of welds runs into one.
+The design wants *many welds, few escapes* — the weld fabric stays dense, but
+most of it must lead nowhere. The sweep now scores that ratio directly
+(`deception`: the share of valid welds on no winning route), alongside a par
+that moved from 3–4 to 4–5, because length is the other half of difficulty:
+a three-link day is over before the pool gets to lie.
 
 Worse, the raw count flatters. `fin→tro` has eight solutions and only **two**
 that are genuinely independent — the rest funnel through `gäst`, so a player

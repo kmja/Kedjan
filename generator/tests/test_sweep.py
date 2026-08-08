@@ -1,4 +1,4 @@
-"""The sweep's scorer — the three curation judgements, made explicit."""
+"""The sweep's scorer — the four curation judgements, made explicit."""
 
 from __future__ import annotations
 
@@ -52,3 +52,16 @@ def test_score_is_a_weighted_sum_of_its_subscores():
     scored = score_day(day, report(_payload(day), saldo), saldo)
     assert scored.subscores["doubleness"] == 0.0
     assert 0 <= scored.score <= 1
+
+
+def test_deception_rewards_welds_that_lie_on_no_winning_route():
+    """The tiny day's fabric: 8 welds, 6 on the two routes, 2 decoys.
+
+    An off-route share of 2/8 sits under the floor, so a day this honest
+    scores nothing for deception — the dial only opens once most of what
+    welds does not win.
+    """
+    day = _tiny_day()
+    saldo = Saldo(pos={}, senses={})
+    scored = score_day(day, report(_payload(day), saldo), saldo)
+    assert scored.subscores["deception"] == 0.0
