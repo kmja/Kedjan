@@ -110,10 +110,11 @@ export function useKedjan(day: Day | null) {
   /**
    * Judge the whole bridge.
    *
-   * Every joint between placed parts is marked, but the joint *into the target*
-   * is only judged once the chain cannot grow further. While a part could
-   * still be added, a red cross under an unfinished bridge says "wrong" where
-   * the honest answer is "not yet".
+   * Every joint between placed parts is marked. The joint *into the target*
+   * is marked green the moment it holds — that weld is real information
+   * whichever way the rest of the bridge is going — but its red cross is
+   * withheld while a part could still be added: a cross under an unfinished
+   * bridge says "wrong" where the honest answer is "not yet".
    */
   const judge = useCallback(
     (nextChain: string[], atCeiling: boolean): ("ok" | "broken" | null)[] => {
@@ -121,9 +122,10 @@ export function useKedjan(day: Day | null) {
       const full = fullChain(day, nextChain);
       const wins = brokenJoints(day, nextChain).length === 0;
       return full.slice(0, -1).map((part, i) => {
+        const holds = weld(day, part, full[i + 1]!);
         const isFinalJoint = i === full.length - 2;
-        if (isFinalJoint && !atCeiling && !wins) return null;
-        return weld(day, part, full[i + 1]!) ? "ok" : "broken";
+        if (isFinalJoint && !atCeiling && !wins && !holds) return null;
+        return holds ? "ok" : "broken";
       });
     },
     [day],

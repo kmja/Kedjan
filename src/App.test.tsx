@@ -237,7 +237,7 @@ describe("judging the chain", () => {
     expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
   });
 
-  it("withholds a verdict on the final joint while slots remain", async () => {
+  it("withholds the final joint's cross while slots remain", async () => {
     const u = user();
     render(<App />);
     await board();
@@ -245,6 +245,18 @@ describe("judging the chain", () => {
     // sten+mur holds; mur+hus does not, but with two slots free the honest
     // answer is "not yet", not "wrong".
     expect(screen.queryByText("bruten länk")).not.toBeInTheDocument();
+  });
+
+  it("shows the final joint's check the moment that weld holds", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));
+    // sten+vägg is broken, but vägg+hus is a real word — that weld holding is
+    // information whichever way the rest of the bridge is going.
+    expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
+    expect(screen.getAllByText("länken håller")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /vägghus.*SAOL/i })).toBeInTheDocument();
   });
 
   it("judges the final joint once the board is full", async () => {

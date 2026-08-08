@@ -17,9 +17,10 @@ Par is hidden too. The first hint buys it, which makes asking a real decision
 rather than a formality.
 
 Nothing is ever refused, so a chip you are unsure of costs you a thought rather
-than a slap. The joint *into the target* stays unmarked while slots remain: a
-red cross under a half-built bridge would say "wrong" when the honest answer is
-"not yet".
+than a slap. The joint *into the target* shows its green check the moment that
+weld holds — a real word is real information — but its red cross is withheld
+while slots remain: a cross under a half-built bridge would say "wrong" when
+the honest answer is "not yet".
 
 ```
 npm install
