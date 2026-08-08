@@ -16,6 +16,7 @@ __pycache__/
 .venv/
 generator/candidates*.json
 generator/sweep*.json
+generator/sweep*.log
 generator/saldo_2.3/
 generator/saldo_2.3.tgz
 

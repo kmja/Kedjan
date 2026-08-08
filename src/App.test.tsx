@@ -74,13 +74,42 @@ describe("the welcome dialog", () => {
 });
 
 describe("the day board", () => {
-  it("labels a day with the lexicon that witnessed it", async () => {
-    mockCalendar([{ ...testDay, date: "2026-08-06", no: 2, lexicon: "saldo" }]);
+  it("labels each archive chain with its tier", async () => {
+    mockCalendar([
+      { ...testDay, date: "2026-08-06", no: 2, tier: "easy" },
+      { ...testDay, date: "2026-08-06", no: 3, start: "glas", target: "sten",
+        par: 4, budget: 5, tier: "hard",
+        pairs: { "glas>tak": "glastak", "tak>mur": "takmur",
+                 "mur>vägg": "murvägg", "vägg>sten": "väggsten" } },
+    ]);
     render(<App />);
     await board();
-    // Once in the day header, once on the archive row — the comparison is
-    // visible when picking a day, not only after opening one.
-    expect(screen.getAllByText("SALDO")).toHaveLength(2);
+    expect(screen.getByText("LÄTT")).toBeInTheDocument();
+    expect(screen.getByText("SVÅR")).toBeInTheDocument();
+  });
+
+  it("switches between the day's two chains, each keeping its own board", async () => {
+    const u = userEvent.setup();
+    mockCalendar([
+      { ...testDay, date: "2026-08-06", no: 2, tier: "easy" },
+      { ...testDay, date: "2026-08-06", no: 3, start: "glas", target: "sten",
+        par: 4, budget: 5, tier: "hard",
+        pairs: { "glas>tak": "glastak", "tak>mur": "takmur",
+                 "mur>vägg": "murvägg", "vägg>sten": "väggsten" } },
+    ]);
+    render(<App />);
+    await board();
+    expect(screen.getByText(/#2 ·/)).toBeInTheDocument();
+
+    await u.click(screen.getByRole("button", { name: "Svår" }));
+    expect(await screen.findByText(/#3 ·/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Svår" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await u.click(screen.getByRole("button", { name: "Lätt" }));
+    expect(await screen.findByText(/#2 ·/)).toBeInTheDocument();
   });
 
   it("serves the puzzle dated today", async () => {
@@ -422,7 +451,7 @@ describe("judging the chain", () => {
     expect(await screen.findAllByText("länken håller")).toHaveLength(1);
     // The weld's word is the reward — written out beside the link, and one
     // tap from the authority that can settle a doubt about it.
-    const word = screen.getByRole("link", { name: /stenmur.*SAOL/i });
+    const word = screen.getByRole("link", { name: /stenmur.*ordboken/i });
     expect(word).toHaveAttribute("href", "https://svenska.se/?q=stenmur");
   });
 
@@ -462,7 +491,7 @@ describe("judging the chain", () => {
     // information whichever way the rest of the chain is going.
     expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
     expect(screen.getAllByText("länken håller")).toHaveLength(1);
-    expect(screen.getByRole("link", { name: /vägghus.*SAOL/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /vägghus.*ordboken/i })).toBeInTheDocument();
   });
 
   it("judges the final joint once the board is full", async () => {
@@ -677,7 +706,7 @@ describe("persistence", () => {
     // The verdicts are transient state, but the chain they judge is not: a
     // reloaded chain comes back judged, with its checks and weld words.
     expect(await screen.findAllByText("länken håller")).toHaveLength(1);
-    expect(screen.getByRole("link", { name: /stenmur.*SAOL/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /stenmur.*ordboken/i })).toBeInTheDocument();
   });
 
   it("keeps a solved day's checks and weld words across a reload", async () => {
@@ -691,8 +720,8 @@ describe("persistence", () => {
     render(<App />);
     expect(await screen.findByText(/Under par — briljant!/)).toBeInTheDocument();
     expect(await screen.findAllByText("länken håller")).toHaveLength(2);
-    expect(screen.getByRole("link", { name: /stenbro.*SAOL/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /brohus.*SAOL/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /stenbro.*ordboken/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /brohus.*ordboken/i })).toBeInTheDocument();
   });
 });
 
@@ -752,7 +781,7 @@ describe("the archive", () => {
     // re-solving must not count it a second time either.
     const saved = JSON.parse(localStorage.getItem("kedjan.v1") ?? "{}");
     expect(saved.stats.solved).toBe(1);
-    expect(saved.progress["2026-08-06"].solvedAt).toBeTruthy();
+    expect(saved.progress["2026-08-06#easy"].solvedAt).toBeTruthy();
   });
 
   it("leaves the days alone when the reset is waved off", async () => {

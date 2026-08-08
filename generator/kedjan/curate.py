@@ -26,15 +26,12 @@ from .graph import (
     head_pos_consistent,
 )
 from .analysis import report as analyse
+from .days import EASY_PAR, solution_band
 from .lexicon import Lexicon
 from .saldo import Saldo
 from .split import CONNECTORS, PREFIX_SET, SUFFIX_STOP
 
 MIN_POOL = 9
-#: Mirrors days.py: 2-6 winning routes. The first archive shipped under a
-#: ceiling of twelve, and days near it were walkovers — with that many escapes
-#: the pool cannot help but hand one over.
-SOLUTION_BAND = range(2, 7)
 #: The healthy density band measured in playtesting, over roughly twelve parts.
 PAIR_BAND = range(20, 31)
 #: Choice at both ends of the chain, and at every step between.
@@ -153,10 +150,11 @@ def check_day(
     if f"{start}>{target}" in pairs:
         err(f"{start}+{target} welds directly — there is no puzzle here")
     found = solutions_within_budget(day)
-    if len(found) not in SOLUTION_BAND:
+    band = solution_band(par)
+    if len(found) not in band:
         err(
             f"{len(found)} solutions within budget, needs "
-            f"{SOLUTION_BAND.start}-{SOLUTION_BAND.stop - 1}"
+            f"{band.start}-{band.stop - 1} at par {par}"
         )
     # Par names the shortest route. A day whose best line is longer than par
     # is mislabelled, and no player can ever make par on it.
@@ -330,12 +328,58 @@ def check_calendar(
                     )
                 )
 
+    # A date carries one chain per tier — an easy par-3 and a hard par-4/5.
+    slots = [
+        f"{d.get('date')} {'easy' if int(d['par']) <= EASY_PAR else 'hard'}"  # type: ignore[arg-type]
+        for d in days
+        if d.get("date")
+    ]
+    for dupe in sorted(duplicates(slots)):
+        out.append(Finding(Level.ERROR, dupe, "two chains share a date and a tier"))
     dates = [str(d.get("date", "")) for d in days if d.get("date")]
-    for dupe in sorted(duplicates(dates)):
-        out.append(Finding(Level.ERROR, dupe, "two days share a date"))
     if dates and dates != sorted(dates):
         out.append(Finding(Level.WARN, "calendar", "days are not in date order"))
 
+    return out
+
+
+def check_svenska(
+    days: Sequence[DayLike], verdicts: Mapping[str, Mapping[str, bool]]
+) -> list[Finding]:
+    """Apply svenska.se's verdicts to every shipped weld.
+
+    The weld links point at svenska.se, and SO is the dictionary that makes
+    them worth tapping — it has the definitions. A weld the site lacks
+    entirely is a broken promise and blocks; a weld only SAOL carries keeps
+    the link alive but shows no meaning, which a reviewer may accept
+    knowingly; a weld nobody has asked about yet is only a warning, so a
+    calendar can be linted before the check has run.
+    """
+    out: list[Finding] = []
+    for day in days:
+        label = _label(day)
+        for word in sorted(set(_pairs(day).values())):
+            verdict = verdicts.get(word)
+            if verdict is None:
+                out.append(
+                    Finding(Level.WARN, label, f"{word} is unverified against svenska.se")
+                )
+            elif not verdict.get("so") and not verdict.get("saol"):
+                out.append(
+                    Finding(
+                        Level.ERROR,
+                        label,
+                        f"{word} has no svenska.se entry — the weld link breaks",
+                    )
+                )
+            elif not verdict.get("so"):
+                out.append(
+                    Finding(
+                        Level.WARN,
+                        label,
+                        f"{word} is in SAOL but not SO — the link shows no definition",
+                    )
+                )
     return out
 
 

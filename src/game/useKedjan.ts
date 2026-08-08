@@ -19,6 +19,7 @@ import {
   persistSave,
   recordSolve,
 } from "./storage";
+import { dayKey } from "./days";
 import { todayISO } from "./dates";
 import { plural } from "./plural";
 
@@ -77,7 +78,8 @@ export function useKedjan(day: Day | null) {
 
   useEffect(() => persistSave(save), [save]);
 
-  const key = day?.date ?? "";
+  // Two chains share every date, so progress is keyed by date and tier both.
+  const key = day ? dayKey(day) : "";
   const stored = save.progress[key];
   /** The most parts a chain may hold: every chip there is. No link budget. */
   const maxParts = day ? day.pool.length : 0;
@@ -391,8 +393,9 @@ export function useKedjan(day: Day | null) {
     return allSolutions(day).filter((s) => !sameChain(s, chain));
   }, [day, solved, chain]);
 
-  const solvedDates = useMemo(
-    () => new Set(Object.entries(save.progress).filter(([, p]) => p.solved).map(([d]) => d)),
+  /** Progress keys — date#tier — of every solved chain, for the archive. */
+  const solvedKeys = useMemo(
+    () => new Set(Object.entries(save.progress).filter(([, p]) => p.solved).map(([k]) => k)),
     [save.progress],
   );
 
@@ -430,7 +433,7 @@ export function useKedjan(day: Day | null) {
     announceKey,
     stats: save.stats,
     streak: liveStreak(save.stats, today),
-    solvedDates,
+    solvedKeys,
     placeAt,
     removeFrom,
     toggleJoint,

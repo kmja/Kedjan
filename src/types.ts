@@ -15,12 +15,12 @@ export interface Day {
   /** "a>b" -> the real compound that witnesses the weld. */
   pairs: Record<string, string>;
   /**
-   * Which lexicon witnessed this day's welds — a temporary A/B label while
-   * the two curation modes are compared in play. "sfol" accepts any compound
-   * the spellchecker's list carries; "saldo" only compounds established
-   * enough to be SALDO lemmas.
+   * Every date carries two chains: the easy one is par 3 with a generous
+   * solution count, the hard one par 4-5 with few winning routes through a
+   * fabric of welds that mostly lead nowhere. Absent in data from before the
+   * tiers existed — derive with `tierOf`, never read this raw.
    */
-  lexicon?: "sfol" | "saldo";
+  tier?: "easy" | "hard";
 }
 
 /** Per-day progress, persisted so a reload never costs the player their chain. */

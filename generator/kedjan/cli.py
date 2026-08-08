@@ -111,6 +111,73 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     return 0
 
 
+def _weld_words(args: argparse.Namespace) -> list[str]:
+    """The words to verify: a plain list, or every weld the calendar ships."""
+    if args.words:
+        return sorted(
+            {
+                w
+                for line in Path(args.words).read_text(encoding="utf-8").splitlines()
+                if (w := line.strip()) and not w.startswith("#")
+            }
+        )
+    payload = json.loads(Path(args.days).read_text(encoding="utf-8"))
+    return sorted({word for day in payload for word in day["pairs"].values()})
+
+
+def cmd_svenskacheck(args: argparse.Namespace) -> int:
+    """Verify every shipped weld against svenska.se itself — SO first.
+
+    The weld links point at svenska.se, so the site is the promise the game
+    makes. SO is the dictionary that matters: it has the definitions. The
+    verdict file this writes is committed, and `lint` reads it — so a check
+    run on any machine with open network hardens the lint everywhere.
+    """
+    from . import svenska as sv_mod
+
+    client = sv_mod.Svenska(verdicts_path=args.verdicts)
+
+    if args.probe:
+        html = client.probe(args.probe, args.dictionary)
+        if html is None:
+            print(client.last_error, file=sys.stderr)
+            return 2
+        print(html[:3000])
+        return 0
+
+    so_ok, saol_only, missing, unanswered = [], [], [], []
+    for word in _weld_words(args):
+        verdict = client.lookup(word)
+        if verdict is None:
+            unanswered.append(word)
+        elif verdict["so"]:
+            so_ok.append(word)
+            definition = getattr(client, "last_definition", None)
+            if definition:
+                print(f"SO       {word} — {definition}")
+        elif verdict["saol"]:
+            saol_only.append(word)
+        else:
+            missing.append(word)
+
+    total = len(so_ok) + len(saol_only) + len(missing) + len(unanswered)
+    print(f"\n{len(so_ok)} of {total} welds in SO.")
+    for word in saol_only:
+        print(f"SAOL ONLY  {word} — the link lives, but shows no definition")
+    for word in missing:
+        print(f"MISSING    {word} — svenska.se has no entry. The weld link breaks.")
+    for word in unanswered:
+        print(f"?          {word} — no answer", file=sys.stderr)
+    if unanswered and client.last_error:
+        print(f"last error: {client.last_error}", file=sys.stderr)
+
+    if missing:
+        return 1
+    if unanswered:
+        return 2
+    return 0
+
+
 def cmd_saolcheck(args: argparse.Namespace) -> int:
     """Ask Karp — Språkbanken's lexical API — whether the welds are in SAOL.
 
@@ -138,18 +205,7 @@ def cmd_saolcheck(args: argparse.Namespace) -> int:
             print(f"{rid:40} {state}")
         return 0
 
-    if args.words:
-        words = sorted(
-            {
-                w
-                for line in Path(args.words).read_text(encoding="utf-8").splitlines()
-                if (w := line.strip()) and not w.startswith("#")
-            }
-        )
-    else:
-        payload = json.loads(Path(args.days).read_text(encoding="utf-8"))
-        words = sorted({word for day in payload for word in day["pairs"].values()})
-
+    words = _weld_words(args)
     attested, missing, unanswered = [], [], []
     for word in words:
         verdict = client.lookup(word)
@@ -364,6 +420,7 @@ def cmd_accept(args: argparse.Namespace) -> int:
     lex = lex_mod.load(args.dic, args.wordlist, args.frequency) if args.dic else None
     saldo = saldo_mod.load_if_present(args.saldo)
     findings = curate.check_calendar(chosen, lex, saldo)
+    findings += _svenska_findings(chosen, args.svenska_verdicts)
     _report(findings)
     if curate.blocking(findings):
         print("blocking findings — nothing written.", file=sys.stderr)
@@ -425,6 +482,20 @@ def _recurring_rejections(ledger: list[dict]) -> dict[str, list[str]]:
     }
 
 
+def _svenska_findings(payload: list[dict], path_str: str) -> list[curate.Finding]:
+    """svenska.se verdicts folded into a lint, when a check has been run."""
+    path = Path(path_str)
+    if not path.exists():
+        print(
+            "note: no svenska.se verdicts on disk — welds unverified against the\n"
+            "site the weld links point at. Run svenskacheck where the network is open.",
+            file=sys.stderr,
+        )
+        return []
+    verdicts = json.loads(path.read_text(encoding="utf-8"))
+    return curate.check_svenska(payload, verdicts)
+
+
 def cmd_lint(args: argparse.Namespace) -> int:
     payload = json.loads(Path(args.days).read_text(encoding="utf-8"))
     lex = None
@@ -440,6 +511,7 @@ def cmd_lint(args: argparse.Namespace) -> int:
         return 2
     saldo = saldo_mod.load_if_present(args.saldo)
     findings = curate.check_calendar(payload, lex, saldo)
+    findings += _svenska_findings(payload, args.svenska_verdicts)
     _report(findings)
     if curate.blocking(findings):
         return 1
@@ -485,6 +557,21 @@ def main(argv: list[str] | None = None) -> int:
     sw.add_argument("--out", default="sweep.json")
     sw.add_argument("--top", type=int, default=30, help="rows to print")
     sw.set_defaults(func=cmd_sweep)
+
+    sv = sub.add_parser(
+        "svenskacheck",
+        help="verify every shipped weld against svenska.se, SO first (needs open network)",
+    )
+    sv.add_argument("--days", default="../public/days.json", help="calendar to verify")
+    sv.add_argument("--words", default=None,
+                    help="check a plain word list (one per line) instead of the calendar")
+    sv.add_argument("--verdicts", default="svenska-verdicts.json",
+                    help="verdict file, committed so lint can read it everywhere")
+    sv.add_argument("--probe", default=None, metavar="WORD",
+                    help="print the raw fragment for one word, to calibrate the parser")
+    sv.add_argument("--dictionary", default="so", choices=("so", "saol", "saob"),
+                    help="which dictionary --probe asks")
+    sv.set_defaults(func=cmd_svenskacheck)
 
     sc = sub.add_parser(
         "saolcheck",
@@ -534,6 +621,7 @@ def main(argv: list[str] | None = None) -> int:
     accept.add_argument("--start-no", type=int, default=1)
     accept.add_argument("--out", default="../public/days.json")
     accept.add_argument("--ledger", default="curation-log.json")
+    accept.add_argument("--svenska-verdicts", default="svenska-verdicts.json")
     accept.set_defaults(func=cmd_accept)
 
     lint = sub.add_parser("lint", help="check a curated calendar against the rules")
@@ -544,6 +632,7 @@ def main(argv: list[str] | None = None) -> int:
     lint.add_argument("--saldo", default="saldo_2.3/saldo20v03.txt")
     lint.add_argument("--no-lexicon", action="store_true",
                       help="run the structural checks without a dictionary")
+    lint.add_argument("--svenska-verdicts", default="svenska-verdicts.json")
     lint.set_defaults(func=cmd_lint)
 
     args = parser.parse_args(argv)

@@ -1,20 +1,22 @@
 import { useState } from "react";
 import type { Day } from "../types";
+import { dayKey, tierOf } from "../game/days";
 import { formatShortDate, formatSwedishDate } from "../game/dates";
 import { plural } from "../game/plural";
 
 interface Props {
   days: Day[];
+  /** The progress key — date#tier — of the chain on the board. */
   selected: string;
-  solvedDates: ReadonlySet<string>;
-  onSelect: (date: string) => void;
-  /** Put every finished day back on the table, keeping the stats. */
+  solvedKeys: ReadonlySet<string>;
+  onSelect: (day: Day) => void;
+  /** Put every finished chain back on the table, keeping the stats. */
   onReplayAll: () => void;
 }
 
-export function Archive({ days, selected, solvedDates, onSelect, onReplayAll }: Props) {
+export function Archive({ days, selected, solvedKeys, onSelect, onReplayAll }: Props) {
   const newestFirst = [...days].reverse();
-  const finished = days.filter((d) => solvedDates.has(d.date)).length;
+  const finished = days.filter((d) => solvedKeys.has(dayKey(d))).length;
   // Undoing a day's worth of play deserves a beat of thought, but a browser
   // confirm() is a modal a keyboard user cannot style or escape gracefully.
   const [confirming, setConfirming] = useState(false);
@@ -27,13 +29,13 @@ export function Archive({ days, selected, solvedDates, onSelect, onReplayAll }: 
       </p>
       <ul className="flex flex-col gap-1.5">
         {newestFirst.map((d) => {
-          const done = solvedDates.has(d.date);
-          const isSelected = d.date === selected;
+          const done = solvedKeys.has(dayKey(d));
+          const isSelected = dayKey(d) === selected;
           return (
-            <li key={d.date}>
+            <li key={dayKey(d)}>
               <button
                 type="button"
-                onClick={() => onSelect(d.date)}
+                onClick={() => onSelect(d)}
                 aria-current={isSelected ? "true" : undefined}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left"
                 style={{
@@ -48,16 +50,18 @@ export function Archive({ days, selected, solvedDates, onSelect, onReplayAll }: 
                 <span className="flex-1 text-sm font-bold uppercase">
                   {d.start} → {d.target}
                 </span>
-                {d.lexicon && (
-                  <span className="lexicon-tag shrink-0">{d.lexicon.toUpperCase()}</span>
-                )}
+                <span className="tier-tag shrink-0">
+                  {tierOf(d) === "hard" ? "SVÅR" : "LÄTT"}
+                </span>
                 <span className="shrink-0 text-xs font-semibold opacity-80">
                   par {d.par}
                 </span>
                 <span className="w-5 shrink-0 text-center text-sm">
                   <span aria-hidden="true">{done ? "✓" : "·"}</span>
                   <span className="sr-only">
-                    {formatSwedishDate(d.date)}, {done ? "klarad" : "ospelad"}
+                    {formatSwedishDate(d.date)},{" "}
+                    {tierOf(d) === "hard" ? "svår" : "lätt"},{" "}
+                    {done ? "klarad" : "ospelad"}
                   </span>
                 </span>
               </button>

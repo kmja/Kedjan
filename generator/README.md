@@ -88,6 +88,25 @@ is worse than no lint.
 
 The full process, and what it has caught, is in `../CURATION.md`.
 
+### Checking the welds against svenska.se — the link the player taps
+
+```
+python3 -m kedjan.cli svenskacheck                  # every shipped weld
+python3 -m kedjan.cli svenskacheck --words list.txt
+python3 -m kedjan.cli svenskacheck --probe stenmur  # calibrate the parser
+```
+
+Weld words link to svenska.se in the game, and **SO** (Svensk ordbok) is
+the dictionary that makes the link worth tapping: it has the definitions.
+`svenskacheck` asks the site's own per-dictionary fragments for every weld,
+SO first, prints SO's definition when it finds one, and grades each word —
+in SO (good), SAOL-only (link lives, no definition — a warning), missing
+(the link breaks — an error). Verdicts land in `svenska-verdicts.json`,
+which is **committed**: `lint` and `accept` read it, so a check run once on
+any machine with open network hardens the lint everywhere, and no word is
+ever asked about twice. It needs open network — run it from a developer
+machine; the sandbox cannot reach the site.
+
 ### Checking the welds against SAOL itself
 
 ```

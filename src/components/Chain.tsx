@@ -111,7 +111,7 @@ export function Chain({
         href={`https://svenska.se/?q=${encodeURIComponent(word)}`}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`${word} — slå upp i SAOL`}
+        aria-label={`${word} — slå upp i ordboken`}
       >
         {word}
       </a>

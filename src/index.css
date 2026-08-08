@@ -368,7 +368,7 @@ body {
   }
 
   /* The A/B label while two curation modes are compared in play. */
-  .lexicon-tag {
+  .tier-tag {
     display: inline-block;
     margin-left: 0.45rem;
     padding: 0.1rem 0.4rem;
@@ -377,6 +377,29 @@ body {
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.06em;
+  }
+
+  /* The day's two chains, side by side. Pressed = the chain on the board. */
+  .tier-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: -0.5rem;
+  }
+  .tier-pill {
+    padding: 0.3rem 1.1rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--edge);
+    background: var(--panel);
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+  }
+  .tier-pill[aria-pressed="true"] {
+    background: var(--falu);
+    border-color: var(--falu-deep);
+    color: var(--on-falu);
   }
 
   .dag-part {

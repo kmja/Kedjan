@@ -20,6 +20,10 @@ export function HowToPlayBody() {
         Ledtrådarna, i tur och ordning: hur många länkar dagen är tänkt att ta,
         vilka delar som inte leder till målet, och till sist en del som passar.
       </p>
+      <p>
+        <strong>Varje dag har två kedjor</strong> — en lätt och en svår. Den
+        svåra är längre och har färre vägar till målet.
+      </p>
     </div>
   );
 }

@@ -58,7 +58,7 @@ day that fails one can neither be generated nor accepted.
 
 | requirement | why |
 |---|---|
-| 2–6 solutions within budget | fewer is a single line to find; more and the day solves itself — see below |
+| solutions within budget: 3–12 at par 3, 2–6 at par 4–5 | fewer is a single line to find; more and the day solves itself — see below |
 | independent routes: 3 at par 3, 2 at par 4–5 | raw solution count flatters a day — see below |
 | each route reaches ≥ 2 chips outside itself | otherwise it is an island, found by elimination |
 | ≤ 1 chip welding only inside its own route | two or more and the pool reads as separate groups |
@@ -156,14 +156,15 @@ solution paths, SFOL for decoys — gets built.
 
 ## Solution count is not route diversity
 
-The band is 2–6. It used to be 3–12, and the first shipped archive is the
-evidence against that ceiling: days near it were walkovers, because with
-eight or more escapes almost any plausible sequence of welds runs into one.
-The design wants *many welds, few escapes* — the weld fabric stays dense, but
-most of it must lead nowhere. The sweep now scores that ratio directly
-(`deception`: the share of valid welds on no winning route), alongside a par
-that moved from 3–4 to 4–5, because length is the other half of difficulty:
-a three-link day is over before the pool gets to lie.
+The band is tiered, because every date now carries two chains. The easy
+chain is par 3 under the generous 3–12 launch band. The hard chain is par
+4–5 under a 2–6 band: the first shipped archive proved that a short chain
+near the old ceiling is a walkover — with eight or more escapes almost any
+plausible sequence of welds runs into one. The design wants *many welds,
+few escapes* — the weld fabric stays dense, but most of it must lead
+nowhere. The sweep scores that ratio directly (`deception`: the share of
+valid welds on no winning route), and every chain is SALDO-lexicalized —
+the SFOL/SALDO A/B test is settled in SALDO's favour.
 
 Worse, the raw count flatters. `fin→tro` has eight solutions and only **two**
 that are genuinely independent — the rest funnel through `gäst`, so a player

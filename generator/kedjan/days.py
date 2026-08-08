@@ -1,10 +1,11 @@
 """Day generation.
 
-The three measured dials are par (4 as the standard, 5 for harder days),
-valid-pairs count (a healthy band is roughly 20-30 over twelve parts), and
-solution count (a hard requirement of 2-6 within budget). The single most
-descriptive number for a day is the pairs-to-solutions ratio: many welds, few
-escapes.
+Every date carries two chains. The easy one is par 3 under the generous
+3-12 solution band — the shape the game launched with. The hard one is
+par 4-5 under a 2-6 band, because the first archive proved that a short
+chain with many escapes solves itself. The single most descriptive number
+for a day is still the pairs-to-solutions ratio: many welds, few escapes —
+the hard tier just demands it.
 """
 
 from __future__ import annotations
@@ -21,11 +22,18 @@ from .split import PREFIX_SET
 POOL_SIZE = 10
 MIN_POOL_SIZE = 9
 CORE_SIZE = 8
-#: Hard requirement. Fewer than two and the day is a single line to find; the
-#: ceiling used to be twelve, and the archive taught us that was far too many —
-#: a day with eight escapes solves itself. The difficulty lives in the ratio:
-#: many welds to try, few of them part of any way out.
-SOLUTION_BAND = range(2, 7)
+#: Hard requirements, by tier. Par 3 is the easy chain and keeps the generous
+#: launch band. Par 4-5 is the hard chain: fewer than two solutions is a
+#: single line to find, and past six the escapes multiply faster than the
+#: deduction — the archive taught us that at this length even eight is a
+#: walkover. Difficulty lives in the ratio: many welds, few of them a way out.
+EASY_SOLUTION_BAND = range(3, 13)
+HARD_SOLUTION_BAND = range(2, 7)
+EASY_PAR = 3
+
+
+def solution_band(par: int) -> range:
+    return EASY_SOLUTION_BAND if par <= EASY_PAR else HARD_SOLUTION_BAND
 #: A good decoy is selective — it opens two to five new welds, no more.
 DECOY_PAIRS = range(2, 6)
 #: No pool part may weld to more than this many others in the pool.
@@ -175,7 +183,7 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
     """
     budget = par + 1
     routes = paths_between(graph, start, target, budget)
-    if len(routes) < SOLUTION_BAND.start:
+    if len(routes) < solution_band(par).start:
         return None
 
     routes.sort(key=lambda r: sum(lex.obscurity(p) for p in r))
@@ -232,7 +240,7 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
         return None
 
     found = solutions(graph, pool, start, target, budget)
-    if len(found) not in SOLUTION_BAND:
+    if len(found) not in solution_band(par):
         return None
 
     day_view = {

@@ -16,6 +16,7 @@ export const testDay: Day = {
   target: "hus",
   par: 3,
   budget: 4,
+  tier: "easy",
   pool: ["mur", "vägg", "bro", "tak", "glas"],
   pairs: {
     "sten>mur": "stenmur",

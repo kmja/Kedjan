@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Day } from "./types";
-import { dayForDate, fetchCalendar, releasedDays } from "./game/days";
+import {
+  dayForDate,
+  dayKey,
+  fetchCalendar,
+  releasedDays,
+  tierOf,
+  type Tier,
+} from "./game/days";
 import { formatSwedishDate, todayISO } from "./game/dates";
 import { plural } from "./game/plural";
 import { useKedjan } from "./game/useKedjan";
@@ -36,6 +43,7 @@ export default function App() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [view, setView] = useState<View>("spel");
   const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const [tier, setTier] = useState<Tier>("easy");
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -55,10 +63,11 @@ export default function App() {
   const day = useMemo(() => {
     if (!calendar) return null;
     return (
-      (pickedDate ? released.find((d) => d.date === pickedDate) : null) ??
-      dayForDate(calendar, today)
+      (pickedDate
+        ? released.find((d) => d.date === pickedDate && tierOf(d) === tier)
+        : null) ?? dayForDate(calendar, today, tier)
     );
-  }, [calendar, released, pickedDate, today]);
+  }, [calendar, released, pickedDate, today, tier]);
 
   const game = useKedjan(day);
   // Chips travel both ways and land in a specific slot. Nothing is validated
@@ -87,8 +96,9 @@ export default function App() {
     return () => clearTimeout(t);
   }, [day, game.solved, game.failed]);
 
-  const openDay = (date: string) => {
-    setPickedDate(date);
+  const openDay = (picked: Day) => {
+    setPickedDate(picked.date);
+    setTier(tierOf(picked));
     setView("spel");
   };
 
@@ -165,10 +175,32 @@ export default function App() {
             <p className="text-center text-xs font-semibold" style={{ color: "var(--ink-soft)" }}>
               #{day.no} · {formatSwedishDate(day.date)}
               {day.date !== today && " · arkiv"}
-              {day.lexicon && (
-                <span className="lexicon-tag">{day.lexicon.toUpperCase()}</span>
-              )}
             </p>
+
+            {/* Every date carries two chains. The toggle never resets the
+                other chain — each keeps its own saved progress. */}
+            <div
+              className="tier-row"
+              role="group"
+              aria-label="Välj kedja"
+            >
+              {(
+                [
+                  ["easy", "Lätt"],
+                  ["hard", "Svår"],
+                ] as [Tier, string][]
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className="tier-pill"
+                  aria-pressed={tier === id}
+                  onClick={() => setTier(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
             <Chain
               day={day}
@@ -191,11 +223,6 @@ export default function App() {
 
             {!game.solved && !game.failed && (
               <>
-                <p className="-mt-3 text-center text-xs" style={{ color: "var(--ink-soft)" }}>
-                  Lägg till så många delar du behöver. Kedjan kontrolleras varje
-                  gång du lägger en del.
-                </p>
-
                 <Pool
                   parts={game.pool}
                   marked={game.marked}
@@ -274,8 +301,8 @@ export default function App() {
           >
             <Archive
               days={released}
-              selected={day.date}
-              solvedDates={game.solvedDates}
+              selected={dayKey(day)}
+              solvedKeys={game.solvedKeys}
               onSelect={openDay}
               onReplayAll={game.replayAll}
             />

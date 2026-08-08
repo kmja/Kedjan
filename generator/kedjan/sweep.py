@@ -7,10 +7,11 @@ usable start can carry, at both pars, and ranks them.
 
 The score makes explicit four judgements curation has been applying by hand:
 
-  goldilocks   solution count low — two to four winning routes, still
-               genuinely independent of each other. The first archive proved
-               that generous solution counts make walkover days: a pool with
-               eight escapes hands one over
+  goldilocks   solution count in its tier's sweet spot — the middle of the
+               3-12 band for the easy par-3 chain, two to four routes for the
+               hard par-4/5 chain — still genuinely independent of each
+               other. The first archive proved that at short par a generous
+               solution count makes walkover days
   density      many welds among the pool chips, entangled across routes, no
                chip stranded inside its own route — the pool should read as one
                fabric, not as islands
@@ -35,14 +36,16 @@ from multiprocessing import Pool
 
 from . import curate
 from .analysis import DayReport, report
-from .days import Day, build_day, distances_from, usable_endpoint
+from .days import EASY_PAR, Day, build_day, distances_from, usable_endpoint
 from .graph import PartGraph
 from .lexicon import Lexicon
 from .saldo import Saldo
 
-#: The solution band is 2-6; its sweet bottom. One route is a single line to
-#: find; past four the escapes multiply faster than the deduction does.
-SWEET_SOLUTIONS = range(2, 5)
+#: Sweet solution counts by tier. The easy chain (par 3) keeps the launch
+#: shape: the middle of its 3-12 band. The hard chain (par 4-5) wants the
+#: bottom of its 2-6 band — past four, escapes multiply faster than deduction.
+SWEET_SOLUTIONS_EASY = range(6, 10)
+SWEET_SOLUTIONS_HARD = range(2, 5)
 #: Independent routes saturate here — routes consume pool, and the longer the
 #: par the fewer truly disjoint routes a pool this size can carry.
 INDEP_CAP = {3: 4, 4: 3, 5: 2}
@@ -99,9 +102,13 @@ class Scored:
 def score_day(day: Day, rep: DayReport, saldo: Saldo) -> Scored:
     sols = len(rep.solutions)
     cap = INDEP_CAP[day.par]
-    goldilocks = (
-        _band(sols, 1, SWEET_SOLUTIONS, 7) + min(rep.disjoint_routes, cap) / cap
-    ) / 2
+    easy = day.par <= EASY_PAR
+    sols_band = (
+        _band(sols, 2, SWEET_SOLUTIONS_EASY, 13)
+        if easy
+        else _band(sols, 1, SWEET_SOLUTIONS_HARD, 7)
+    )
+    goldilocks = (sols_band + min(rep.disjoint_routes, cap) / cap) / 2
 
     entangled = min(rep.min_cross_links, CROSS_CAP) / CROSS_CAP
     density = (
@@ -157,9 +164,8 @@ def _sweep_start(start: str) -> list[dict[str, object]]:
     assert _G and _LEX and _SALDO
     out = []
     distances = distances_from(_G, start)
-    # Par 3 is retired: even at two escapes a three-link day is over before the
-    # pool gets to lie. Length is the other half of the difficulty.
-    for par in (4, 5):
+    # Par 3 days feed the easy tier; par 4-5 the hard one.
+    for par in (3, 4, 5):
         for target, distance in distances.items():
             if distance != par or not usable_endpoint(_LEX, _G, target):
                 continue
