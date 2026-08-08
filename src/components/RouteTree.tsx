@@ -183,14 +183,13 @@ export function RouteTree({ day, mine, others }: Props) {
               d={`M ${from.x} ${y1} C ${from.x} ${y1 + bend}, ${to.x} ${y2 - bend}, ${to.x} ${y2}`}
               fill="none"
               stroke={onMine ? "var(--gran-ok)" : "var(--edge)"}
-              strokeWidth={onMine ? 2.5 : 2}
+              strokeWidth={onMine ? 3.5 : 2}
             />
           );
         })}
         {nodes.map((n) => {
           const endpoint = n.part === day.start || n.part === day.target;
-          const label = n.mine ? `${n.part} ✓` : n.part;
-          const w = n.width + (n.mine ? 14 : 0);
+          const w = n.width;
           return (
             <g key={n.id}>
               <rect
@@ -201,7 +200,7 @@ export function RouteTree({ day, mine, others }: Props) {
                 rx={9}
                 fill={endpoint ? "var(--falu)" : "var(--panel)"}
                 stroke={n.mine ? "var(--gran-ok)" : endpoint ? "var(--falu-deep)" : "var(--edge)"}
-                strokeWidth={n.mine ? 2.5 : 1.5}
+                strokeWidth={n.mine ? 3 : 1.5}
               />
               <text
                 x={n.x}
@@ -211,15 +210,12 @@ export function RouteTree({ day, mine, others }: Props) {
                 data-mine={n.mine || undefined}
                 fill={endpoint ? "var(--on-falu)" : n.mine ? "var(--gran-ok)" : "var(--ink)"}
               >
-                {label}
+                {n.part}
               </text>
             </g>
           );
         })}
       </svg>
-      <p className="mt-2 text-xs" style={{ color: "var(--ink-soft)" }}>
-        Din väg i grönt med ✓. Vägar som delar fortsättning löper ihop igen.
-      </p>
       {/* The same routes as plain text, for screen readers — an SVG map is a
           picture, and the picture is not the only way to read it. */}
       <ul className="sr-only">

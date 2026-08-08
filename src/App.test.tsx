@@ -266,12 +266,14 @@ describe("solving", () => {
     // back into a single target node — hus appears once, with both branches
     // joined into it. The played route carries a visible check.
     const tree = screen.getByLabelText("Alla vägar till målet, som ett träd");
-    expect(within(tree).getByText("sten ✓")).toBeInTheDocument();
-    expect(within(tree).getByText("bro ✓")).toBeInTheDocument();
-    expect(within(tree).getByText("hus ✓")).toBeInTheDocument();
+    expect(within(tree).getByText("sten")).toBeInTheDocument();
     expect(within(tree).getByText("mur")).toBeInTheDocument();
     expect(within(tree).getByText("vägg")).toBeInTheDocument();
-    expect(within(tree).queryAllByText(/^hus/)).toHaveLength(1);
+    expect(within(tree).getAllByText("hus")).toHaveLength(1);
+    // The played branch is distinguished, and never by colour alone: it is
+    // also the heavier stroke.
+    expect(within(tree).getByText("bro")).toHaveAttribute("data-mine", "true");
+    expect(within(tree).getByText("mur")).not.toHaveAttribute("data-mine");
     // The same routes stay readable as text, the played one named as yours.
     expect(within(tree).getByText("sten, bro, hus — din väg")).toBeInTheDocument();
     expect(within(tree).getByText("sten, mur, vägg, hus")).toBeInTheDocument();

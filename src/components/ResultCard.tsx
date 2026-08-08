@@ -66,6 +66,12 @@ export function ResultCard({
           <button
             type="button"
             className="btn w-full"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "1.35rem",
+              fontWeight: 800,
+              padding: "0.85rem 1rem",
+            }}
             onClick={() => setShowRoutes((v) => !v)}
             aria-expanded={showRoutes}
           >
