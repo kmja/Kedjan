@@ -67,3 +67,12 @@ def test_verb_flags_still_survive_the_filter(tmp_path):
     """The verb-only flags are read from the entries that are kept."""
     _, verbs, _ = lexicon.read_dic(write_dic(tmp_path, ["poängsätt/jm", "sätt/AD"]))
     assert verbs == {"poängsätt"}
+
+
+def test_ghost_words_are_dropped_despite_a_clean_entry(tmp_path):
+    """`tomslag` has an ordinary SFOL entry and exists nowhere else — not
+    SALDO, not SAOL, not SO, not SAOB. One line in one dictionary is one
+    witness, and this one was caught in play."""
+    words, _, forbidden = lexicon.read_dic(write_dic(tmp_path, ["tomslag/ABDvX", "slag/AD"]))
+    assert words == {"slag"}
+    assert "tomslag" in forbidden

@@ -122,6 +122,7 @@ Each entry was a defect found in play or in review, and is now a rule.
 | `benbrott`, `skallbrott`, `hundbett` | an injury pool in a cosy daily — cut on tone |
 | `helfin`, `helkul`, `heltokig` | degree prefixes, caught by adjective-head share |
 | `morfin`, `bankett`, `tonsur`, `minnesvärd` | a compound must inherit its head's word class |
+| `tomslag` (caught in play, checked against SAOL/SO/SAOB by hand) | a ghost-word denylist for SFOL entries no other source will vouch for |
 
 The two linking-morpheme rules are worth reading together. The letter between
 two parts can belong to either neighbour, and if it belongs to one, the
@@ -443,6 +444,14 @@ None of these would have been noticed by eye. All three were found because
   pool and passes every metric both times. SALDO's association links were tried
   for this and do not work — see above. Tone remains the human's job, and the
   ledger's repeat-offender report is the only mechanism pushing back.
+- **SFOL alone is one witness, and it is sometimes wrong.** `tomslag` sat on
+  two winning routes of a shipped day with an ordinary SFOL entry and no
+  other attestation anywhere — SALDO's only match is *grötomslag*, which
+  merely contains the letters. 117 shipped welds currently rest on SFOL
+  alone; the enormous majority are real (`sånglärare`, `medelvikt`), so the
+  class cannot be purged wholesale. Confirmed fakes go into `GHOST_WORDS` in
+  `lexicon.py`, each with its evidence; the in-game report button is the
+  channel that finds them.
 - **A concatenation can coincide with an unrelated word.** `skydd` + `svärd`
   spells *skyddsvärd*, which is real but parses as skydds+värd, "worthy of
   protection" — an adjective, not a compound of shield and sword. SALDO's POS

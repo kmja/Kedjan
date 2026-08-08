@@ -97,6 +97,17 @@ VERB_ONLY_FLAGS = frozenset("jm")
 #: machine-readable form.
 UNUSABLE_FLAGS = frozenset("%¤Z!")
 
+#: Words SFOL carries as ordinary entries that no other source will vouch for
+#: — not SALDO, not the frequency list, and, checked by hand, not SAOL, SO or
+#: SAOB. A single line in one dictionary is one witness, and each of these was
+#: caught *in play* by a player who went looking. SALDO's only match for the
+#: first is grötomslag — gröt+omslag, a different word that happens to contain
+#: the letters. Each entry is a known SFOL ghost; the list is expected to be
+#: short, and every addition should name its evidence here.
+#:
+#:   tomslag   checked 2026-08-09 against SAOL/SO/SAOB: no hits in any
+GHOST_WORDS = frozenset({"tomslag"})
+
 
 def read_dic(path: Path | str) -> tuple[set[str], set[str], set[str]]:
     """Read a hunspell .dic into (words, verb forms, unusable entries).
@@ -118,7 +129,7 @@ def read_dic(path: Path | str) -> tuple[set[str], set[str], set[str]]:
             word, _, flags = line.strip().partition("/")
             if not (WORD_RE.fullmatch(word) and len(word) >= 3):
                 continue
-            if UNUSABLE_FLAGS & set(flags):
+            if word in GHOST_WORDS or UNUSABLE_FLAGS & set(flags):
                 unusable.add(word)
                 continue
             words.add(word)
