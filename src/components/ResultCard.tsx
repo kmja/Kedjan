@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { Day, DayProgress } from "../types";
-import { spellChain } from "../game/graph";
 import { shareResult, shareText } from "../game/share";
 import { plural } from "../game/plural";
 import { chainOf } from "../game/storage";
@@ -45,13 +44,9 @@ export function ResultCard({
   return (
     <div className="snap flex flex-col gap-4">
       <div className="card text-center">
-        <p
-          className="font-[family-name:var(--font-display)] text-lg leading-snug font-extrabold"
-          style={{ fontWeight: 800 }}
-        >
-          {spellChain(day, chain).join(" → ")}
-        </p>
-        <p className="mt-1 text-sm font-semibold" style={{ color: "var(--honey-ink)" }}>
+        {/* The welds are written on the chain itself now — repeating them
+            here said the same thing twice. */}
+        <p className="text-sm font-semibold" style={{ color: "var(--honey-ink)" }}>
           {plural(links, "ord", "ord")} — {parVerdict(links, day.par)}
         </p>
         <p className="mt-1 text-xs" style={{ color: "var(--ink-soft)" }}>

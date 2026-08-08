@@ -150,14 +150,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 2.2rem;
+    height: 3rem;
     width: 100%;
     transition: height 0.16s ease;
   }
   /* Open joints grow to hold a chip-shaped target: a drop zone should look
      like the thing that will land in it. */
   .joint--open {
-    height: 3.4rem;
+    height: 3.8rem;
   }
   .joint-line {
     width: 3px;
@@ -225,10 +225,10 @@ body {
     pointer-events: none;
     display: grid;
     place-items: center;
-    width: 2.1rem;
-    height: 2.1rem;
+    width: 1.8rem;
+    height: 1.8rem;
     border-radius: 999px;
-    font-size: 1.3rem;
+    font-size: 1.05rem;
     font-weight: 800;
     line-height: 1;
     animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;

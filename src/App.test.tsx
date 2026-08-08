@@ -273,7 +273,7 @@ describe("judging the chain", () => {
     await board();
     // sten+bro ✓ and bro+hus ✓ — two links, well under the budget of four.
     await u.click(chip("bro"));
-    expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
+    expect(await screen.findByText(/Under par — briljant!/)).toBeInTheDocument();
   });
 
   it("counts a full board that does not hold as a felförsök", async () => {
@@ -287,7 +287,7 @@ describe("judging the chain", () => {
 
     await u.click(screen.getByRole("button", { name: "Rensa" }));
     await u.click(chip("bro"));
-    await screen.findByText("stenbro → brohus");
+    await screen.findByText(/Under par — briljant!/);
     await u.click(screen.getByRole("button", { name: "Dela resultat" }));
     expect(await navigator.clipboard.readText()).toContain("1 felförsök");
   });
@@ -298,7 +298,7 @@ describe("judging the chain", () => {
     await board();
     chip("bro").focus();
     await u.keyboard("{Enter}");
-    expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
+    expect(await screen.findByText(/Under par — briljant!/)).toBeInTheDocument();
   });
 });
 
@@ -316,11 +316,11 @@ describe("solving", () => {
     // side of it is sound. Taking mur out is the winning move.
     await u.click(screen.getByRole("button", { name: /^mur\./i }));
     await u.click(screen.getByRole("button", { name: /^bro\./i }));
-    expect(screen.queryByText("stenbro → brohus")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Under par — briljant!/)).not.toBeInTheDocument();
 
     await u.click(screen.getByRole("button", { name: /^länk 1, mur\./i }));
 
-    expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
+    expect(await screen.findByText(/Under par — briljant!/)).toBeInTheDocument();
     const saved = JSON.parse(localStorage.getItem("kedjan.v1") ?? "{}");
     expect(saved.stats.solved).toBe(1);
   });
@@ -330,8 +330,7 @@ describe("solving", () => {
     render(<App />);
     await board();
     await solveUnderPar(u);
-    expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
-    expect(screen.getByText(/Under par — briljant!/)).toBeInTheDocument();
+    expect(await screen.findByText(/Under par — briljant!/)).toBeInTheDocument();
   });
 
   it("reveals the other routes as one branching, rejoining map", async () => {
@@ -379,7 +378,7 @@ describe("test mode", () => {
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
   const solve = async (u: ReturnType<typeof user>) => {
     await u.click(chip("bro"));
-    await screen.findByText("stenbro → brohus");
+    await screen.findByText(/Under par — briljant!/);
   };
 
   beforeEach(() => {
@@ -421,7 +420,7 @@ describe("test mode", () => {
     await solve(u);
 
     await u.click(screen.getByRole("button", { name: "Spela om dagen" }));
-    expect(screen.queryByText("stenbro → brohus")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Under par — briljant!/)).not.toBeInTheDocument();
     expect(chip("bro")).toBeInTheDocument();
     expect(screen.getByText("1 länk")).toBeInTheDocument();
   });
@@ -510,7 +509,7 @@ describe("the archive", () => {
     render(<App />);
     await board();
     await u.click(screen.getByRole("button", { name: /^bro\./i }));
-    await screen.findByText("stenbro → brohus");
+    await screen.findByText(/Under par — briljant!/);
 
     await openArchive(u);
     await u.click(replayAll()!);
@@ -518,7 +517,7 @@ describe("the archive", () => {
 
     await u.click(screen.getByRole("tab", { name: "Dagens" }));
     expect(screen.getByRole("button", { name: /^bro\./i })).toBeInTheDocument();
-    expect(screen.queryByText("stenbro → brohus")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Under par — briljant!/)).not.toBeInTheDocument();
 
     // The day was played and solved; reopening it does not un-play it, and
     // re-solving must not count it a second time either.
@@ -532,14 +531,14 @@ describe("the archive", () => {
     render(<App />);
     await board();
     await u.click(screen.getByRole("button", { name: /^bro\./i }));
-    await screen.findByText("stenbro → brohus");
+    await screen.findByText(/Under par — briljant!/);
 
     await openArchive(u);
     await u.click(replayAll()!);
     await u.click(screen.getByRole("button", { name: "Avbryt" }));
 
     await u.click(screen.getByRole("tab", { name: "Dagens" }));
-    expect(screen.getByText("stenbro → brohus")).toBeInTheDocument();
+    expect(screen.getByText(/Under par — briljant!/)).toBeInTheDocument();
   });
 });
 

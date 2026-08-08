@@ -191,7 +191,7 @@ export function RouteTree({ day, mine, others }: Props) {
               key={`${from.id}>${to.id}`}
               d={`M ${from.x} ${y1} C ${from.x} ${y1 + bend}, ${to.x} ${y2 - bend}, ${to.x} ${y2}`}
               fill="none"
-              stroke={onMine ? "var(--gran-ok)" : "var(--edge)"}
+              stroke={onMine ? "var(--falu)" : "var(--edge)"}
               strokeWidth={onMine ? 3.5 : 2}
             />
           );
@@ -208,7 +208,7 @@ export function RouteTree({ day, mine, others }: Props) {
                 height={30}
                 rx={9}
                 fill={endpoint ? "var(--falu)" : "var(--panel)"}
-                stroke={n.mine ? "var(--gran-ok)" : endpoint ? "var(--falu-deep)" : "var(--edge)"}
+                stroke={n.mine ? "var(--falu)" : endpoint ? "var(--falu-deep)" : "var(--edge)"}
                 strokeWidth={n.mine ? 3 : 1.5}
               />
               <text
@@ -217,7 +217,7 @@ export function RouteTree({ day, mine, others }: Props) {
                 textAnchor="middle"
                 className="dag-part"
                 data-mine={n.mine || undefined}
-                fill={endpoint ? "var(--on-falu)" : n.mine ? "var(--gran-ok)" : "var(--ink)"}
+                fill={endpoint ? "var(--on-falu)" : n.mine ? "var(--falu-ink)" : "var(--ink)"}
               >
                 {n.part}
               </text>
