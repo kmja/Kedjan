@@ -1,0 +1,46 @@
+# Pulls every written form in salex (SAOL + SO, the svenska.se material)
+# through Karp into generator/saol-words.txt. Manual: it walks somebody
+# else's whole lexicon, and the development sandbox cannot reach
+# spraakbanken.gu.se at all.
+#
+# The word list is always uploaded as a run artifact. It is only committed
+# to the branch when asked: the data is Svenska Akademien's, and the job
+# prints the resource's own licence metadata — read it before flipping the
+# commit switch.
+name: SAOL pull
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit saol-words.txt to this branch (check the printed licence first)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  saolpull:
+    name: saolpull
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m kedjan.cli saolpull --out saol-words.txt
+        working-directory: generator
+      - run: wc -l generator/saol-words.txt && head -5 generator/saol-words.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: saol-words
+          path: generator/saol-words.txt
+          retention-days: 90
+      - if: inputs.commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f generator/saol-words.txt
+          git commit -m "Store the SAOL word list pulled through Karp"
+          git push

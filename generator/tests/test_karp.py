@@ -88,6 +88,80 @@ def test_list_resources_reads_both_shapes(tmp_path, monkeypatch):
     assert client.list_resources() == ["salex", "saol15"]
 
 
+# ── dumping a whole lexicon ──────────────────────────────────────
+
+
+def paged_fake_get(entries: list[dict], licence: str | None = None, fail_from: int | None = None):
+    """A Karp server carrying the given entries, pageable, as `_get`."""
+
+    def _get(self, path):
+        _get.calls.append(path)
+        parsed = urllib.parse.urlparse(path)
+        if parsed.path.startswith("/resources/"):
+            info = {"resource_id": "salex", "metadata": {}}
+            if licence:
+                info["metadata"]["license"] = licence
+            return info
+        qs = urllib.parse.parse_qs(parsed.query)
+        if "q" in qs:
+            return {"total": 0, "hits": []}
+        start = int(qs.get("from", ["0"])[0])
+        if fail_from is not None and start >= fail_from:
+            return None
+        size = int(qs["size"][0])
+        return {"total": len(entries), "hits": entries[start : start + size]}
+
+    _get.calls = []
+    return _get
+
+
+SALEX_ENTRIES = [
+    {"entry": {"so": {"ortografi": "hund"}, "saol": [{"ortografi": "hund"}]}},
+    {"entry": {"saol": [{"ortografi": "stenmur"}, {"ortografi": "sten"}]}},
+    {"entry": {"so": {"ortografi": "mur"}}},
+]
+
+
+def test_dump_pages_through_the_whole_lexicon(tmp_path, monkeypatch):
+    monkeypatch.setattr(karp.Karp, "_get", paged_fake_get(SALEX_ENTRIES))
+    client = karp.Karp(cache_path=tmp_path / "cache.json")
+    client.delay = 0
+    assert client.dump(page=2) == ["hund", "mur", "sten", "stenmur"]
+
+
+def test_dump_refuses_to_pass_off_a_partial_pull(tmp_path, monkeypatch):
+    """A partial dump would quietly call every unlisted word a ghost."""
+    monkeypatch.setattr(karp.Karp, "_get", paged_fake_get(SALEX_ENTRIES, fail_from=2))
+    client = karp.Karp(cache_path=tmp_path / "cache.json")
+    client.delay = 0
+    assert client.dump(page=2) is None
+
+
+def test_saolpull_writes_the_list_and_prints_the_licence(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(
+        karp.Karp, "_get", paged_fake_get(SALEX_ENTRIES, licence="CC BY 4.0")
+    )
+    monkeypatch.setattr(karp, "COURTESY_DELAY", 0)
+    out = tmp_path / "saol-words.txt"
+    code = cli.main(
+        ["saolpull", "--out", str(out), "--cache", str(tmp_path / "cache.json")]
+    )
+    assert code == 0
+    assert out.read_text(encoding="utf-8") == "hund\nmur\nsten\nstenmur\n"
+    printed = capsys.readouterr().out
+    assert 'metadata.license: "CC BY 4.0"' in printed
+
+
+def test_saolpull_says_when_no_licence_is_declared(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(karp.Karp, "_get", paged_fake_get(SALEX_ENTRIES))
+    monkeypatch.setattr(karp, "COURTESY_DELAY", 0)
+    code = cli.main(
+        ["saolpull", "--out", str(tmp_path / "w.txt"), "--cache", str(tmp_path / "c.json")]
+    )
+    assert code == 0
+    assert "assume all rights reserved" in capsys.readouterr().out
+
+
 # ── the saolcheck command ────────────────────────────────────────
 
 

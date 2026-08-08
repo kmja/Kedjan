@@ -177,6 +177,60 @@ def cmd_saolcheck(args: argparse.Namespace) -> int:
     return 0
 
 
+def _licence_lines(info: dict, prefix: str = "") -> list[str]:
+    """Every key that smells like licence terms, with its path and value."""
+    lines = []
+    for key, value in info.items():
+        path = f"{prefix}{key}"
+        if "licen" in key.lower():
+            lines.append(f"{path}: {json.dumps(value, ensure_ascii=False)}")
+        elif isinstance(value, dict):
+            lines.extend(_licence_lines(value, f"{path}."))
+    return lines
+
+
+def cmd_saolpull(args: argparse.Namespace) -> int:
+    """Pull every written form in the lexicon and store it as a word list.
+
+    That turns SAOL from something we ask about one word at a time into a
+    local witness corpus: exact ghost detection over the whole graph, welds
+    gated on real academy membership, no per-word queries.
+
+    The word list is SAOL's material, not ours, so it is written to a
+    gitignored path and the resource's own metadata is printed before the
+    pull — read what it says about licensing before the file goes anywhere
+    beyond this working copy.
+    """
+    from . import karp as karp_mod
+
+    client = karp_mod.Karp(resources=args.resources, cache_path=args.cache)
+
+    for rid in args.resources.split(","):
+        info = client.resource_info(rid)
+        if info is None:
+            print(f"could not read metadata for {rid} — is the network open?", file=sys.stderr)
+            return 2
+        terms = _licence_lines(info)
+        print(f"resource {rid}:")
+        for line in terms:
+            print(f"  {line}")
+        if not terms:
+            print("  metadata declares no licence field — assume all rights reserved:")
+            print(f"  {json.dumps(info, ensure_ascii=False)[:600]}")
+
+    words = client.dump(
+        page=args.page,
+        progress=lambda done, total: print(f"  {done}/{total}", file=sys.stderr),
+    )
+    if words is None:
+        print("the dump did not complete — nothing written.", file=sys.stderr)
+        return 2
+
+    Path(args.out).write_text("\n".join(words) + "\n", encoding="utf-8")
+    print(f"{len(words)} distinct written forms from {args.resources} → {args.out}")
+    return 0
+
+
 def cmd_review(args: argparse.Namespace) -> int:
     """Print what a curator has to judge, and nothing else.
 
@@ -431,6 +485,16 @@ def main(argv: list[str] | None = None) -> int:
     sc.add_argument("--list-resources", action="store_true",
                     help="print the lexicon ids this Karp serves, then stop")
     sc.set_defaults(func=cmd_saolcheck)
+
+    sp = sub.add_parser(
+        "saolpull",
+        help="pull every written form in a Karp lexicon into a local word list",
+    )
+    sp.add_argument("--resources", default="salex", help="Karp lexicon ids to dump")
+    sp.add_argument("--out", default="saol-words.txt", help="where the word list lands")
+    sp.add_argument("--page", type=int, default=500, help="entries per request")
+    sp.add_argument("--cache", default="karp-cache.json")
+    sp.set_defaults(func=cmd_saolpull)
 
     review = sub.add_parser("review", help="print what a curator has to judge")
     review.add_argument("days", help="path to candidates.json or days.json")

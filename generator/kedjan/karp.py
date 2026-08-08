@@ -36,6 +36,28 @@ PROBE_WORD = "hund"
 #: Seconds between requests. Somebody else's server.
 COURTESY_DELAY = 0.25
 
+#: Entries per page when dumping a whole lexicon. The spec sets no maximum;
+#: this keeps each response modest and the request count in the hundreds.
+PAGE = 500
+
+#: Keys that carry a written form. Entry shapes differ per lexicon — salex
+#: nests SO and SAOL material under one entry — so extraction walks the whole
+#: entry and takes every string sitting under one of these names.
+ORTHOGRAPHY_KEYS = frozenset({"ortografi", "wf", "baseform", "grundform"})
+
+
+def _written_forms(obj: object):
+    """Every string under an orthography key, wherever the entry keeps it."""
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if key in ORTHOGRAPHY_KEYS and isinstance(value, str):
+                yield value
+            else:
+                yield from _written_forms(value)
+    elif isinstance(obj, list):
+        for item in obj:
+            yield from _written_forms(item)
+
 
 class Karp:
     """Word-existence lookups against Karp lexicons, cached on disk.
@@ -104,6 +126,36 @@ class Karp:
                     out.append(r)
             return out
         return None
+
+    def resource_info(self, resource_id: str) -> dict | None:
+        """The resource's own metadata — where its licence terms live."""
+        payload = self._get(f"/resources/{resource_id}")
+        return payload if isinstance(payload, dict) else None
+
+    def dump(self, page: int = PAGE, progress=None) -> list[str] | None:
+        """Every written form in the lexicon, by paging an unfiltered query.
+
+        The spec is explicit that a missing `q` returns all entries, so a
+        full dump is a paginated walk. Returns the sorted distinct forms, or
+        None if any page could not be fetched — a partial dump presented as
+        the whole lexicon would quietly call every unlisted word a ghost.
+        """
+        first = self._get(f"/query/{self.resources}?size=1")
+        if not isinstance(first, dict) or not isinstance(first.get("total"), int):
+            return None
+        total = first["total"]
+
+        words: set[str] = set()
+        for start in range(0, total, page):
+            time.sleep(self.delay)
+            payload = self._get(f"/query/{self.resources}?from={start}&size={page}")
+            if not isinstance(payload, dict) or not isinstance(payload.get("hits"), list):
+                return None
+            for hit in payload["hits"]:
+                words.update(_written_forms(hit))
+            if progress:
+                progress(min(start + page, total), total)
+        return sorted(words)
 
     def lookup(self, word: str) -> bool | None:
         """Is the word in the lexicon? None means the API could not be asked."""

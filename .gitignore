@@ -18,3 +18,8 @@ generator/candidates*.json
 generator/sweep*.json
 generator/saldo_2.3/
 generator/saldo_2.3.tgz
+
+# SAOL material pulled through Karp — Svenska Akademien's data, not ours to
+# vendor. python -m kedjan.cli saolpull, or the saolpull workflow, recreates it.
+generator/saol-words.txt
+generator/karp-cache.json

@@ -110,6 +110,14 @@ The development sandbox cannot reach spraakbanken.gu.se, so run it from a
 machine with open network — or from the manual **SAOL check** workflow in the
 Actions tab, which exists for exactly that reason.
 
+`saolpull` goes further: it pages an unfiltered query through the whole
+lexicon and writes every written form to `saol-words.txt` — SAOL as a local
+witness corpus rather than a per-word question. The file is gitignored by
+default because the material is Svenska Akademien's, not ours; the command
+prints the resource's own licence metadata before pulling, and the manual
+**SAOL pull** workflow uploads the list as a run artifact (committing it to
+the branch only when its `commit` switch is flipped knowingly).
+
 ## The heuristics, and what replaces them
 
 Every rule in `split.py` and the `INFLECTED_FORMS` list in `graph.py` are
