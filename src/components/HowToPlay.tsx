@@ -3,7 +3,7 @@ export function HowToPlayBody() {
   return (
     <div className="flex flex-col gap-2 text-sm" style={{ color: "var(--ink-soft)" }}>
       <p>
-        Bygg en bro från <strong>start</strong> till <strong>mål</strong>. Dra
+        Bygg en kedja från <strong>start</strong> till <strong>mål</strong>. Dra
         eller tryck på en del för att lägga den i kedjan — i vilken ordning du
         vill, och du kan ta tillbaka delar när som helst.
       </p>
@@ -14,7 +14,7 @@ export function HowToPlayBody() {
       </p>
       <p>
         <strong>Du har tre liv.</strong> En del som inte fäster vid någon av
-        sina grannar kostar ett hjärta. Tar hjärtana slut brister bron.
+        sina grannar kostar ett hjärta. Tar hjärtana slut brister kedjan.
       </p>
       <p>
         Ledtrådarna, i tur och ordning: hur många länkar dagen är tänkt att ta,

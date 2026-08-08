@@ -108,7 +108,7 @@ export default function App() {
           Kedjan
         </h1>
         <p className="mt-1 text-sm font-medium" style={{ color: "var(--ink-soft)" }}>
-          Bygg bron — varje par bildar ett ord.
+          Bygg kedjan — varje par bildar ett ord.
         </p>
       </header>
 

@@ -115,7 +115,7 @@ export function fullChain(day: Day, chain: readonly string[]): string[] {
  * between element `i` and `i + 1`.
  *
  * Parts are placed freely and nothing is checked until the player closes the
- * chain onto the target, so this runs over the whole bridge at once and
+ * chain onto the target, so this runs over the whole chain at once and
  * reports every failure rather than stopping at the first.
  */
 export function brokenJoints(day: Day, chain: readonly string[]): number[] {

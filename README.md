@@ -2,7 +2,7 @@
 
 A Swedish daily word puzzle. Each day gives a start part, a target part, and a
 pool of ten part-chips. You drag or tap chips into the chain to build
-a bridge from start to target, where **every adjacent pair of parts must fuse
+a chain from start to target, where **every adjacent pair of parts must fuse
 into a real Swedish compound** — grund+val → grundval, val+natt → valnatt.
 There is no cap on length: any chain that holds wins, and par is the measure
 to beat rather than a wall to hit. Three lives guard against brute force — a
@@ -20,7 +20,7 @@ rather than a formality.
 Nothing is ever refused, so a chip you are unsure of costs you a thought rather
 than a slap. The joint *into the target* shows its green check the moment that
 weld holds — a real word is real information — but its red cross is withheld
-while slots remain: a cross under a half-built bridge would say "wrong" when
+while slots remain: a cross under a half-built chain would say "wrong" when
 the honest answer is "not yet".
 
 ```

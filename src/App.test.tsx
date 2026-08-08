@@ -93,7 +93,7 @@ describe("the day board", () => {
   it("shows an empty chain with one open joint, and never says how long it should be", async () => {
     render(<App />);
     await board();
-    // The target is the foot of the bridge, not a control to press.
+    // The target is the last link's anchor, not a control to press.
     expect(screen.queryByRole("button", { name: /^hus$/i })).not.toBeInTheDocument();
     // One place to add a part, and no row of gaps announcing the answer's shape.
     expect(screen.getAllByRole("button", { name: /lägg en del efter/i })).toHaveLength(1);
@@ -255,7 +255,7 @@ describe("the ending dialog", () => {
       if (i < 2) await u.click(screen.getByRole("button", { name: /^länk 1, glas\./i }));
     }
     const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
-    expect(within(dialog).getByText("Bron brast")).toBeInTheDocument();
+    expect(within(dialog).getByText("Kedjan brast")).toBeInTheDocument();
     expect(within(dialog).getByText(/fäste varken vid delen före eller efter/)).toBeInTheDocument();
 
     await u.click(within(dialog).getByRole("button", { name: "Försök igen" }));
@@ -328,7 +328,7 @@ describe("lives", () => {
     await u.click(screen.getByRole("button", { name: /^länk 3, vägg\./i }));
     await u.click(chip("tak"));   // after mur: mur+tak ✗, tak+hus ✗ — 3
 
-    expect(await screen.findByText("Bron brast")).toBeInTheDocument();
+    expect(await screen.findByText("Kedjan brast")).toBeInTheDocument();
     // The board is over: no pool, no more placements.
     expect(screen.queryByRole("group", { name: /delar att välja bland/i })).not.toBeInTheDocument();
     // The routes that existed are on offer, and a fresh run is one press away.
@@ -359,7 +359,7 @@ describe("lives", () => {
       await u.click(chip("glas"));
       if (i < 2) await u.click(screen.getByRole("button", { name: /^länk 1, glas\./i }));
     }
-    expect(await screen.findByText("Bron brast")).toBeInTheDocument();
+    expect(await screen.findByText("Kedjan brast")).toBeInTheDocument();
 
     await u.click(screen.getByRole("button", { name: "Försök igen" }));
     await board();
@@ -459,7 +459,7 @@ describe("judging the chain", () => {
     await board();
     await u.click(chip("vägg"));
     // sten+vägg is broken, but vägg+hus is a real word — that weld holding is
-    // information whichever way the rest of the bridge is going.
+    // information whichever way the rest of the chain is going.
     expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
     expect(screen.getAllByText("länken håller")).toHaveLength(1);
     expect(screen.getByRole("link", { name: /vägghus.*SAOL/i })).toBeInTheDocument();
@@ -517,7 +517,7 @@ describe("solving", () => {
     const u = user();
     render(<App />);
     await board();
-    // sten → mur → bro → hus: mur+bro is broken, but the bridge on either
+    // sten → mur → bro → hus: mur+bro is broken, but the chain on either
     // side of it is sound. Taking mur out is the winning move.
     await u.click(screen.getByRole("button", { name: /^mur\./i }));
     await u.click(screen.getByRole("button", { name: /^bro\./i }));

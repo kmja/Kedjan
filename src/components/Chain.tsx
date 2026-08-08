@@ -35,7 +35,7 @@ interface Props {
 }
 
 /**
- * The bridge, built downwards, growing as it is built.
+ * The chain, built downwards, growing as it is built.
  *
  * There is no row of empty slots. How many links a day needs is part of the
  * puzzle — a board laying out four gaps has already answered it — so the chain

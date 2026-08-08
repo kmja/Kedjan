@@ -116,13 +116,13 @@ export function useKedjan(day: Day | null) {
   const pool = day ? availableParts(day, chain) : [];
 
   /**
-   * Judge the whole bridge.
+   * Judge the whole chain.
    *
    * Every joint between placed parts is marked. The joint *into the target*
    * is marked green the moment it holds — that weld is real information
-   * whichever way the rest of the bridge is going — but its red cross is
+   * whichever way the rest of the chain is going — but its red cross is
    * withheld while a part could still be added: a cross under an unfinished
-   * bridge says "wrong" where the honest answer is "not yet".
+   * chain says "wrong" where the honest answer is "not yet".
    */
   const judge = useCallback(
     (nextChain: string[], atCeiling: boolean): ("ok" | "broken" | null)[] => {
@@ -184,7 +184,7 @@ export function useKedjan(day: Day | null) {
   /**
    * End the day if this chain holds — however it came to hold. A win by
    * *removing* a part is a legitimate win: taking a wrong link out of a
-   * bridge that was otherwise sound is exactly the kind of move the free
+   * chain that was otherwise sound is exactly the kind of move the free
    * placement invites.
    */
   const finishIfSolved = useCallback(
@@ -243,7 +243,7 @@ export function useKedjan(day: Day | null) {
           kind: "no",
           msg:
             left <= 0
-              ? `${upper(part)} fäster varken vid ${upper(before)} eller ${upper(after)}. Bron brast — inga liv kvar.`
+              ? `${upper(part)} fäster varken vid ${upper(before)} eller ${upper(after)}. Kedjan brast — inga liv kvar.`
               : `${upper(part)} fäster varken vid ${upper(before)} eller ${upper(after)} · ${plural(left, "liv kvar", "liv kvar")}`,
         });
         return;

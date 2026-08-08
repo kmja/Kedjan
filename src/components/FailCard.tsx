@@ -24,7 +24,7 @@ export function FailCard({ day, onReplay }: Props) {
     <div className="snap flex flex-col gap-4">
       <div className="card text-center">
         <p className="text-lg font-extrabold" style={{ color: "var(--falu-ink)" }}>
-          Bron brast
+          Kedjan brast
         </p>
         <p className="mt-1 text-sm" style={{ color: "var(--ink-soft)" }}>
           Tre delar som inte håller — dagens kedja är över.

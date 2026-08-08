@@ -28,7 +28,7 @@ export function OutcomeDialog({ kind, day, chain, others, onClose, onReplay }: P
 
   return (
     <dialog ref={ref} className="outcome" onClose={onClose} aria-label={
-      kind === "win" ? "Kedjan håller" : "Bron brast"
+      kind === "win" ? "Kedjan håller" : "Kedjan brast"
     }>
       {kind === "win" ? (
         <>
@@ -47,10 +47,10 @@ export function OutcomeDialog({ kind, day, chain, others, onClose, onReplay }: P
         </>
       ) : (
         <>
-          <h2 className="outcome-title outcome-title--fail">Bron brast</h2>
+          <h2 className="outcome-title outcome-title--fail">Kedjan brast</h2>
           <p className="outcome-sub">
             Tre delar fäste varken vid delen före eller efter sig. Utan liv
-            kvar går bron inte att rädda.
+            kvar går kedjan inte att rädda.
           </p>
           <div className="mt-4 flex gap-2">
             <button
