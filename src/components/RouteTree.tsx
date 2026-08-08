@@ -171,7 +171,16 @@ export function RouteTree({ day, mine, others }: Props) {
         viewBox={`${-width / 2} 0 ${width} ${height}`}
         role="img"
         aria-label={`Karta över alla vägar från ${day.start} till ${day.target}. Din väg är markerad.`}
-        style={{ width: "100%", height: "auto", display: "block" }}
+        style={{
+          width: "100%",
+          // The coordinate system is drawn at chip scale, so natural size is
+          // the ceiling: a wide map shrinks to fit, a narrow one must not
+          // balloon its chips past the size they have on the board.
+          maxWidth: width,
+          height: "auto",
+          display: "block",
+          margin: "0 auto",
+        }}
       >
         {edges.map(({ from, to, mine: onMine }) => {
           const y1 = nodeY(from) + 16;
