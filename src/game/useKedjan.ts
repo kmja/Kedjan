@@ -158,6 +158,28 @@ export function useKedjan(day: Day | null) {
   }, []);
 
   /**
+   * End the day if this chain holds — however it came to hold. A win by
+   * *removing* a part is a legitimate win: taking a wrong link out of a
+   * bridge that was otherwise sound is exactly the kind of move the free
+   * placement invites.
+   */
+  const finishIfSolved = useCallback(
+    (next: string[]): boolean => {
+      if (!day || next.length === 0 || brokenJoints(day, next).length > 0) return false;
+      const alreadyCounted = Boolean(progress.solvedAt);
+      patch(
+        (p) => ({ ...p, solved: true, solvedAt: p.solvedAt ?? new Date().toISOString() }),
+        alreadyCounted
+          ? undefined
+          : (s) => recordSolve(s, day.date, next.length + 1, day.par),
+      );
+      say({ kind: "ok", msg: "Kedjan håller — klart!" });
+      return true;
+    },
+    [day, progress.solvedAt, patch, say],
+  );
+
+  /**
    * Put a part into the chain at a joint. Nothing is validated on the way
    * down — parts go in in any order, and the whole chain is judged after.
    */
@@ -182,22 +204,12 @@ export function useKedjan(day: Day | null) {
       const atCeiling = next.length >= maxParts;
       applyVerdicts(next);
 
-      const broken = brokenJoints(day, next);
-      if (broken.length === 0) {
-        const alreadyCounted = Boolean(progress.solvedAt);
-        patch(
-          (p) => ({ ...p, solved: true, solvedAt: p.solvedAt ?? new Date().toISOString() }),
-          alreadyCounted
-            ? undefined
-            : (s) => recordSolve(s, day.date, next.length + 1, day.par),
-        );
-        say({ kind: "ok", msg: "Kedjan håller — klart!" });
-        return;
-      }
+      if (finishIfSolved(next)) return;
       // A chain that has run out of room and still does not hold is the only
       // arrangement worth counting as a failed attempt.
       if (atCeiling) {
         patch((p) => ({ ...p, misses: p.misses + 1 }));
+        const broken = brokenJoints(day, next);
         const full = fullChain(day, next);
         const named = broken.slice(0, 2).map((i) => `${upper(full[i]!)}+${upper(full[i + 1]!)}`);
         const rest = broken.length - named.length;
@@ -212,7 +224,7 @@ export function useKedjan(day: Day | null) {
       }
       say({ kind: "info", msg: `${upper(part)} lagd i kedjan.` });
     },
-    [day, solved, chain, maxParts, armedJoint, progress.solvedAt, patch, say, applyVerdicts],
+    [day, solved, chain, maxParts, armedJoint, patch, say, applyVerdicts, finishIfSolved],
   );
 
   /** Take a part back out. The chain closes up behind it. */
@@ -224,9 +236,10 @@ export function useKedjan(day: Day | null) {
       setMarked(null);
       setDimmed(new Set());
       applyVerdicts(next);
+      if (finishIfSolved(next)) return;
       say({ kind: "info", msg: `${upper(part)} tillbaka i poolen.` });
     },
-    [day, solved, chain, patch, say, applyVerdicts],
+    [day, solved, chain, patch, say, applyVerdicts, finishIfSolved],
   );
 
   /** Arm a joint so the next chip lands there, or disarm it. */

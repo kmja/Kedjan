@@ -288,6 +288,23 @@ describe("solving", () => {
     await u.click(screen.getByRole("button", { name: /^bro\./i }));
   };
 
+  it("finishes the day when a removal makes the chain hold", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    // sten → mur → bro → hus: mur+bro is broken, but the bridge on either
+    // side of it is sound. Taking mur out is the winning move.
+    await u.click(screen.getByRole("button", { name: /^mur\./i }));
+    await u.click(screen.getByRole("button", { name: /^bro\./i }));
+    expect(screen.queryByText("stenbro → brohus")).not.toBeInTheDocument();
+
+    await u.click(screen.getByRole("button", { name: /^länk 1, mur\./i }));
+
+    expect(await screen.findByText("stenbro → brohus")).toBeInTheDocument();
+    const saved = JSON.parse(localStorage.getItem("kedjan.v1") ?? "{}");
+    expect(saved.stats.solved).toBe(1);
+  });
+
   it("spells the chain back and calls an under-par result", async () => {
     const u = user();
     render(<App />);
