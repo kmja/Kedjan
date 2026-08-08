@@ -193,10 +193,13 @@ cheaply". Both are in:
 - **Failed weld attempts join the share line** as a second stat
   (`· 2 felförsök`), next to the confessed hint count.
 - **Solved days reveal the alternative routes** — "8 andra vägar fanns",
-  expandable into one branching prefix tree from start to target. A flat list
-  hides that most routes share a stem (`lön+skatt` carries five of eight on
-  one day); the tree *is* that shape, with the player's own route picked out
-  in green and a ✓ — never colour alone.
+  expandable into one map: routes branch out from the start in every
+  direction, join back wherever the rest of the way is shared, and funnel
+  into a single target node. Joins are only drawn when two branches share
+  their *entire* continuation, which is what makes them safe — every path
+  through the picture is a real way to win, never a chimera of two routes.
+  The player's own route runs through it in green with a ✓ — never colour
+  alone — and the routes stay readable as plain text for screen readers.
 
 ## Status and next steps
 

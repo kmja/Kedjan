@@ -254,7 +254,7 @@ describe("solving", () => {
     expect(screen.getByText(/Under par — briljant!/)).toBeInTheDocument();
   });
 
-  it("reveals the other routes as one branching tree", async () => {
+  it("reveals the other routes as one branching, rejoining map", async () => {
     const u = user();
     render(<App />);
     await board();
@@ -262,15 +262,19 @@ describe("solving", () => {
     const reveal = await screen.findByRole("button", { name: /1 annan väg fanns/i });
     await u.click(reveal);
 
-    // A prefix tree, not a flat list: one shared root, two branches, and the
-    // target as the leaf of each. The played route is marked as the player's.
+    // One map, not a flat list: routes diverge after the start and funnel
+    // back into a single target node — hus appears once, with both branches
+    // joined into it. The played route carries a visible check.
     const tree = screen.getByLabelText("Alla vägar till målet, som ett träd");
-    expect(within(tree).getAllByText("sten")).toHaveLength(1);
+    expect(within(tree).getByText("sten ✓")).toBeInTheDocument();
+    expect(within(tree).getByText("bro ✓")).toBeInTheDocument();
+    expect(within(tree).getByText("hus ✓")).toBeInTheDocument();
     expect(within(tree).getByText("mur")).toBeInTheDocument();
     expect(within(tree).getByText("vägg")).toBeInTheDocument();
-    expect(within(tree).getAllByText("hus")).toHaveLength(2);
-    expect(within(tree).getByText("bro")).toHaveClass("tree-part--mine");
-    expect(within(tree).getByText("mur")).not.toHaveClass("tree-part--mine");
+    expect(within(tree).queryAllByText(/^hus/)).toHaveLength(1);
+    // The same routes stay readable as text, the played one named as yours.
+    expect(within(tree).getByText("sten, bro, hus — din väg")).toBeInTheDocument();
+    expect(within(tree).getByText("sten, mur, vägg, hus")).toBeInTheDocument();
   });
 
   it("copies the share line to the clipboard", async () => {
