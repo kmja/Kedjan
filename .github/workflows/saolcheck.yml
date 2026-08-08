@@ -1,0 +1,20 @@
+# Asks Karp — Språkbanken's lexical API — whether every shipped weld is in
+# SAOL. Manual because it queries somebody else's server: run it from the
+# Actions tab after changing the calendar. The development sandbox cannot
+# reach spraakbanken.gu.se at all, which is why this lives in CI.
+name: SAOL check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  saolcheck:
+    name: saolcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m kedjan.cli saolcheck --days ../public/days.json
+        working-directory: generator

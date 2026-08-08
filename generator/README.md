@@ -13,7 +13,8 @@ kedjan/split.py    recursive-minimal compound splitting
 kedjan/graph.py    the pair graph, hub selection, concatenation augmentation
 kedjan/days.py     day generation under the playtested constraints
 kedjan/curate.py   the lint a curated calendar must pass
-kedjan/cli.py      generate / lint
+kedjan/karp.py     word-existence lookups against Språkbanken's Karp API
+kedjan/cli.py      generate / lint / saolcheck
 ```
 
 ## Corpora
@@ -86,6 +87,28 @@ that catches a compound that does not exist, and a green lint that skipped it
 is worse than no lint.
 
 The full process, and what it has caught, is in `../CURATION.md`.
+
+### Checking the welds against SAOL itself
+
+```
+python3 -m kedjan.cli saolcheck --days ../public/days.json
+python3 -m kedjan.cli saolcheck --words suspects.txt
+python3 -m kedjan.cli saolcheck --list-resources
+```
+
+Weld words link to svenska.se in the game, which makes the academy
+dictionaries the player-facing authority: a weld whose link comes up empty is
+a broken promise no matter what our corpora say. Every ghost so far —
+`tomslag`, `tryckord` — was found by a human tapping that link. `saolcheck`
+asks the same question in bulk through [Karp](https://spraakbanken.gu.se/karp),
+Språkbanken's lexical API: it reports welds the queried lexicon lacks, flags
+`GHOST_WORDS` entries the lexicon actually attests (a ghost wrongly buried),
+and warns when a `LEXICALIZED_SUPPLEMENT` word rests on nothing. Answers are
+cached in `karp-cache.json` so repeated runs only ask about new welds.
+
+The development sandbox cannot reach spraakbanken.gu.se, so run it from a
+machine with open network — or from the manual **SAOL check** workflow in the
+Actions tab, which exists for exactly that reason.
 
 ## The heuristics, and what replaces them
 

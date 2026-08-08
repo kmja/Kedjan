@@ -109,6 +109,74 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_saolcheck(args: argparse.Namespace) -> int:
+    """Ask Karp — Språkbanken's lexical API — whether the welds are in SAOL.
+
+    Every ghost so far was found by a player-shaped human tapping a weld word
+    and getting an empty svenska.se page. This asks the same question in bulk,
+    before shipping. The development sandbox cannot reach spraakbanken.gu.se;
+    run this from CI or a developer machine.
+    """
+    from . import karp as karp_mod
+
+    client = karp_mod.Karp(resources=args.resources, cache_path=args.cache)
+
+    if args.list_resources:
+        ids = client.list_resources()
+        if ids is None:
+            print("could not reach Karp — is the network open?", file=sys.stderr)
+            return 2
+        print("\n".join(ids))
+        return 0
+
+    if args.words:
+        words = sorted(
+            {
+                w
+                for line in Path(args.words).read_text(encoding="utf-8").splitlines()
+                if (w := line.strip()) and not w.startswith("#")
+            }
+        )
+    else:
+        payload = json.loads(Path(args.days).read_text(encoding="utf-8"))
+        words = sorted({word for day in payload for word in day["pairs"].values()})
+
+    attested, missing, unanswered = [], [], []
+    for word in words:
+        verdict = client.lookup(word)
+        if verdict is None:
+            unanswered.append(word)
+        elif verdict:
+            attested.append(word)
+        else:
+            missing.append(word)
+
+    print(f"{len(attested)} of {len(words)} welds attested in {args.resources}.")
+    for word in missing:
+        print(f"MISSING  {word} — shipped, but {args.resources} has no entry. Ghost?")
+    for word in unanswered:
+        print(f"?        {word} — Karp gave no answer", file=sys.stderr)
+
+    # The exception lists must keep earning their keep in both directions:
+    # a ghost that Karp *does* know is a ghost wrongly buried, and a
+    # supplement word Karp lacks is a supplement resting on nothing.
+    false_ghosts = [g for g in sorted(lex_mod.GHOST_WORDS) if client.lookup(g)]
+    for g in false_ghosts:
+        print(f"FALSE GHOST  {g} — on GHOST_WORDS, yet {args.resources} attests it.")
+    for s in sorted(lex_mod.LEXICALIZED_SUPPLEMENT):
+        if client.lookup(s) is False:
+            print(
+                f"warning: supplement word {s} is not in {args.resources} either",
+                file=sys.stderr,
+            )
+
+    if missing or false_ghosts:
+        return 1
+    if unanswered:
+        return 2
+    return 0
+
+
 def cmd_review(args: argparse.Namespace) -> int:
     """Print what a curator has to judge, and nothing else.
 
@@ -348,6 +416,21 @@ def main(argv: list[str] | None = None) -> int:
     sw.add_argument("--out", default="sweep.json")
     sw.add_argument("--top", type=int, default=30, help="rows to print")
     sw.set_defaults(func=cmd_sweep)
+
+    sc = sub.add_parser(
+        "saolcheck",
+        help="verify every shipped weld against SAOL via Karp (needs open network)",
+    )
+    sc.add_argument("--days", default="../public/days.json", help="calendar to verify")
+    sc.add_argument("--words", default=None,
+                    help="check a plain word list (one per line) instead of the calendar")
+    sc.add_argument("--resources", default="salex",
+                    help="comma-separated Karp lexicon ids to query")
+    sc.add_argument("--cache", default="karp-cache.json",
+                    help="where answers are remembered between runs")
+    sc.add_argument("--list-resources", action="store_true",
+                    help="print the lexicon ids this Karp serves, then stop")
+    sc.set_defaults(func=cmd_saolcheck)
 
     review = sub.add_parser("review", help="print what a curator has to judge")
     review.add_argument("days", help="path to candidates.json or days.json")
