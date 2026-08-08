@@ -63,9 +63,14 @@ class Svenska:
         self,
         verdicts_path: Path | str = DEFAULT_VERDICTS,
         base: str = BASE,
+        trace=None,
     ):
         self.base = base.rstrip("/")
         self.delay = COURTESY_DELAY
+        #: Called with one line per HTTP request — timing, size, outcome.
+        #: A run over a thousand welds takes half an hour, and silence that
+        #: long is indistinguishable from a hang.
+        self.trace = trace
         self.verdicts_path = Path(verdicts_path)
         self.verdicts: dict[str, dict[str, bool]] = {}
         if self.verdicts_path.exists():
@@ -78,18 +83,31 @@ class Svenska:
             url,
             headers={"User-Agent": "kedjan-curation/1.0 (word-game weld check)"},
         )
+        started = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 if resp.status != 200:
                     self.last_error = f"HTTP {resp.status} on f_{dictionary} for {word}"
+                    if self.trace:
+                        self.trace(f"GET f_{dictionary} {word} -> {self.last_error}")
                     return None
-                return resp.read().decode("utf-8", "replace")
+                html = resp.read().decode("utf-8", "replace")
+                if self.trace:
+                    ms = (time.monotonic() - started) * 1000
+                    hit = "hit" if HIT_MARK in html else "miss"
+                    self.trace(
+                        f"GET f_{dictionary} {word} -> 200, {len(html)} bytes, "
+                        f"{ms:.0f}ms, {hit}"
+                    )
+                return html
         except urllib.error.HTTPError as e:
             self.last_error = f"HTTP {e.code} on f_{dictionary} for {word}"
-            return None
         except Exception as e:
             self.last_error = f"{type(e).__name__}: {e} on f_{dictionary} for {word}"
-            return None
+        if self.trace:
+            ms = (time.monotonic() - started) * 1000
+            self.trace(f"GET f_{dictionary} {word} -> {self.last_error} ({ms:.0f}ms)")
+        return None
 
     def probe(self, word: str, dictionary: str = "so") -> str | None:
         """The raw fragment, for calibrating the parser against the live site."""

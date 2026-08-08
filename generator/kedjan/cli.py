@@ -135,7 +135,13 @@ def cmd_svenskacheck(args: argparse.Namespace) -> int:
     """
     from . import svenska as sv_mod
 
-    client = sv_mod.Svenska(verdicts_path=args.verdicts)
+    trace = (
+        (lambda line: print(f"    {line}", file=sys.stderr, flush=True))
+        if args.verbose
+        else None
+    )
+    client = sv_mod.Svenska(verdicts_path=args.verdicts, trace=trace)
+    client.delay = args.delay
 
     if args.probe:
         html = client.probe(args.probe, args.dictionary)
@@ -145,20 +151,48 @@ def cmd_svenskacheck(args: argparse.Namespace) -> int:
         print(html[:3000])
         return 0
 
+    words = _weld_words(args)
+    cached = [w for w in words if w in client.verdicts]
+    fresh = len(words) - len(cached)
+    # Two requests per new word, a courtesy delay before each: say up front
+    # what the wait will be, because half an hour of silence reads as a hang.
+    minutes = fresh * 2 * (args.delay + 0.3) / 60
+    print(
+        f"{len(words)} welds: {len(cached)} already in {args.verdicts}, "
+        f"{fresh} to ask svenska.se about — roughly {minutes:.0f} min at "
+        f"--delay {args.delay}. Verdicts are saved word by word; Ctrl-C "
+        "loses nothing.",
+        file=sys.stderr,
+        flush=True,
+    )
+
     so_ok, saol_only, missing, unanswered = [], [], [], []
-    for word in _weld_words(args):
+    for i, word in enumerate(words, 1):
+        was_cached = word in client.verdicts
         verdict = client.lookup(word)
         if verdict is None:
             unanswered.append(word)
+            mark = "?!"
         elif verdict["so"]:
             so_ok.append(word)
-            definition = getattr(client, "last_definition", None)
-            if definition:
-                print(f"SO       {word} — {definition}")
+            mark = "SO"
         elif verdict["saol"]:
             saol_only.append(word)
+            mark = "saol"
         else:
             missing.append(word)
+            mark = "MISS"
+        print(
+            f"[{i}/{len(words)}] {word:24} {mark}{' (cached)' if was_cached else ''}",
+            file=sys.stderr,
+            flush=True,
+        )
+        if verdict is None and client.last_error:
+            print(f"    {client.last_error}", file=sys.stderr, flush=True)
+        if mark == "SO" and not was_cached:
+            definition = getattr(client, "last_definition", None)
+            if definition:
+                print(f"SO       {word} — {definition}", flush=True)
 
     total = len(so_ok) + len(saol_only) + len(missing) + len(unanswered)
     print(f"\n{len(so_ok)} of {total} welds in SO.")
@@ -571,6 +605,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="print the raw fragment for one word, to calibrate the parser")
     sv.add_argument("--dictionary", default="so", choices=("so", "saol", "saob"),
                     help="which dictionary --probe asks")
+    sv.add_argument("--delay", type=float, default=1.0,
+                    help="seconds between requests — it is somebody's website")
+    sv.add_argument("--verbose", action="store_true",
+                    help="print every HTTP request with timing and outcome")
     sv.set_defaults(func=cmd_svenskacheck)
 
     sc = sub.add_parser(

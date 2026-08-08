@@ -102,13 +102,13 @@ def write_days(tmp_path, pairs):
 
 def svenskacheck(tmp_path, monkeypatch, so, saol):
     monkeypatch.setattr(svenska.Svenska, "_fetch", fake_fetch(so, saol))
-    monkeypatch.setattr(svenska, "COURTESY_DELAY", 0)
     days = write_days(tmp_path, {"a>b": "stenmur", "b>c": "murvägg"})
     return cli.main(
         [
             "svenskacheck",
             "--days", str(days),
             "--verdicts", str(tmp_path / "verdicts.json"),
+            "--delay", "0",
         ]
     )
 
@@ -116,7 +116,12 @@ def svenskacheck(tmp_path, monkeypatch, so, saol):
 def test_svenskacheck_passes_when_so_carries_every_weld(tmp_path, monkeypatch, capsys):
     code = svenskacheck(tmp_path, monkeypatch, so={"stenmur", "murvägg"}, saol=set())
     assert code == 0
-    assert "2 of 2 welds in SO." in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert "2 of 2 welds in SO." in captured.out
+    # A run this long must narrate itself: a plan up front, a line per word.
+    assert "2 to ask svenska.se about" in captured.err
+    assert "[1/2] murvägg" in captured.err
+    assert "[2/2] stenmur" in captured.err
 
 
 def test_svenskacheck_fails_on_a_weld_the_site_lacks(tmp_path, monkeypatch, capsys):
