@@ -287,8 +287,8 @@ body {
   }
 
   /* The route map: SVG text inherits no typography, so it is set here. */
-  /* Lives, big and by the chain. The cross that lands on a lost heart is
-     the chain's own broken-weld cross — one grammar for mistakes. */
+  /* Lives, big and by the chain. Losing one is an event: the heart steps
+     forward, breaks into halves, and fades — no bookkeeping crosses. */
   .lives-row {
     display: flex;
     justify-content: center;
@@ -302,24 +302,78 @@ body {
     font-size: 1.6rem;
     line-height: 1;
     color: var(--falu-ink);
-    transition: color 0.25s ease, opacity 0.25s ease;
   }
-  .life-big--lost {
-    color: var(--ink-soft);
-    opacity: 0.45;
+  .life-break {
+    animation: life-break 0.9s ease both;
   }
-  .life-cross {
+  .life-ghost {
+    visibility: hidden;
+  }
+  .life-shard {
     position: absolute;
     inset: 0;
     display: grid;
     place-items: center;
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--falu);
-    text-shadow: 0 0 3px var(--paper);
   }
-  .life-cross--pop {
-    animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
+  .life-shard--left {
+    clip-path: inset(-20% 50% -20% -20%);
+    animation: life-shard-left 0.9s ease both;
+  }
+  .life-shard--right {
+    clip-path: inset(-20% -20% -20% 50%);
+    animation: life-shard-right 0.9s ease both;
+  }
+  /* Step forward — up and larger — hold a beat whole, then gone. */
+  @keyframes life-break {
+    0% { transform: none; opacity: 1; }
+    35% { transform: translateY(-10px) scale(1.4); opacity: 1; }
+    70% { transform: translateY(-12px) scale(1.4); opacity: 0.9; }
+    100% { transform: translateY(-16px) scale(1.3); opacity: 0; }
+  }
+  /* The halves part company only after the heart has stepped forward. */
+  @keyframes life-shard-left {
+    0%, 40% { transform: none; }
+    100% { transform: translate(-7px, 5px) rotate(-16deg); }
+  }
+  @keyframes life-shard-right {
+    0%, 40% { transform: none; }
+    100% { transform: translate(7px, 5px) rotate(16deg); }
+  }
+
+  /* The refused chip shakes itself off, flashing, and stays home. Two
+     identical animations under two names: the pool swaps between them so a
+     chip refused twice in a row shakes twice without being remounted. */
+  .chip--rejected-a {
+    animation: chip-reject-a 0.55s ease both;
+  }
+  .chip--rejected-b {
+    animation: chip-reject-b 0.55s ease both;
+  }
+  @keyframes chip-reject-a {
+    0%, 100% { transform: none; }
+    10% { transform: translateX(-6px) rotate(-2deg); }
+    25% { transform: translateX(6px) rotate(2deg); }
+    40% { transform: translateX(-5px) rotate(-1.5deg); }
+    55% { transform: translateX(4px) rotate(1deg); }
+    70% { transform: translateX(-2px); }
+    0%, 60% {
+      background: var(--falu);
+      border-color: var(--falu-deep);
+      color: var(--on-falu);
+    }
+  }
+  @keyframes chip-reject-b {
+    0%, 100% { transform: none; }
+    10% { transform: translateX(-6px) rotate(-2deg); }
+    25% { transform: translateX(6px) rotate(2deg); }
+    40% { transform: translateX(-5px) rotate(-1.5deg); }
+    55% { transform: translateX(4px) rotate(1deg); }
+    70% { transform: translateX(-2px); }
+    0%, 60% {
+      background: var(--falu);
+      border-color: var(--falu-deep);
+      color: var(--on-falu);
+    }
   }
 
   /* The ending dialog. Native <dialog>, so Esc, focus and the backdrop come
@@ -619,8 +673,17 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .outcome[open],
-  .life-cross--pop {
+  .life-break,
+  .life-shard--left,
+  .life-shard--right,
+  .chip--rejected-a,
+  .chip--rejected-b {
     animation: none;
+  }
+  /* Without its animation the breaking heart would linger whole; it is
+     already spent, so it simply is not shown. */
+  .life-break {
+    display: none;
   }
   .dag-edge {
     animation: none;

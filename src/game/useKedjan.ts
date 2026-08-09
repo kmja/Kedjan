@@ -50,6 +50,11 @@ export function useKedjan(day: Day | null) {
    */
   const [armedJoint, setArmedJoint] = useState<number | null>(null);
   /**
+   * The chip whose last placement was refused, for the pool to shake it.
+   * The nonce restarts the animation when the same chip is refused twice.
+   */
+  const [rejection, setRejection] = useState<{ part: string; nonce: number } | null>(null);
+  /**
    * The verdict per joint of [start, ...chain, target], recomputed on every
    * placement. `null` means the joint has not been judged yet.
    */
@@ -222,25 +227,24 @@ export function useKedjan(day: Day | null) {
       const at = Math.min(index ?? armedJoint ?? withoutPart.length, withoutPart.length);
       const next = [...withoutPart.slice(0, at), part, ...withoutPart.slice(at)];
 
-      patch((p) => ({ ...p, chain: next }));
-      setArmedJoint(null);
-      setMarked(null);
-      setDimmed(new Set());
-
-      applyVerdicts(next);
-
-      if (finishIfSolved(next)) return;
-
       // A chip must stick to at least one of its neighbours. One that welds
-      // with neither the word before it nor the word after it costs a life —
-      // that is what a brute-force tap looks like. A chip that holds on one
-      // side is a real move whatever the other side says.
+      // with neither the word before it nor the word after it never lands:
+      // it shakes off back to the pool and costs a life — that is what a
+      // brute-force tap looks like. A chip that holds on one side is a real
+      // move whatever the other side says.
       const fullNext = fullChain(day, next);
       const before = fullNext[at]!;
       const after = fullNext[at + 2]!;
       if (!weld(day, before, part) && !weld(day, part, after)) {
         const left = MAX_LIVES - livesLost - 1;
-        patch((p) => ({ ...p, livesLost: (p.livesLost ?? 0) + 1 }));
+        // If the chip came out of the chain for this move, it stays out —
+        // rejected means back to the pool, wherever it was lifted from.
+        patch((p) => ({ ...p, chain: withoutPart, livesLost: (p.livesLost ?? 0) + 1 }));
+        setRejection((r) => ({ part, nonce: (r?.nonce ?? 0) + 1 }));
+        setArmedJoint(null);
+        setMarked(null);
+        setDimmed(new Set());
+        applyVerdicts(withoutPart);
         say({
           kind: "no",
           msg:
@@ -250,6 +254,15 @@ export function useKedjan(day: Day | null) {
         });
         return;
       }
+
+      patch((p) => ({ ...p, chain: next }));
+      setArmedJoint(null);
+      setMarked(null);
+      setDimmed(new Set());
+
+      applyVerdicts(next);
+
+      if (finishIfSolved(next)) return;
       say({ kind: "info", msg: `${upper(part)} lagd i kedjan.` });
     },
     [day, solved, failed, chain, maxParts, armedJoint, livesLost, patch, say, applyVerdicts, finishIfSolved],
@@ -424,6 +437,7 @@ export function useKedjan(day: Day | null) {
     pool,
     marked,
     dimmed,
+    rejection,
     armedJoint,
     maxParts,
     jointMarks,

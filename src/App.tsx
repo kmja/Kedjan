@@ -230,6 +230,7 @@ export default function App() {
                   incoming={drag?.over === POOL_ZONE}
                   armedJoint={game.armedJoint}
                   dimmed={game.dimmed}
+                  rejected={game.rejection}
                   handlers={handlers}
                 />
 

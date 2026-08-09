@@ -150,13 +150,15 @@ describe("building the chain", () => {
     await expectStatus(/VÄGG lagd i kedjan/);
   });
 
-  it("charges a life for a part that sticks to neither neighbour", async () => {
+  it("refuses a part that sticks to neither neighbour, and charges a life", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("glas"));  // sten+glas and glas+hus both fail
-    expect(link(1, "glas")).toBeInTheDocument();
     await expectStatus(/GLAS fäster varken vid STEN eller HUS · 2 liv kvar/);
+    // The chip never lands: it shakes itself off, back home in the pool.
+    expect(screen.queryByRole("button", { name: /^länk 1, glas/i })).not.toBeInTheDocument();
+    expect(chip("glas")).toBeInTheDocument();
   });
 
   it("grows the chain a part at a time", async () => {
@@ -165,9 +167,9 @@ describe("building the chain", () => {
     await board();
     await u.click(chip("vägg"));
     expect(screen.getByText("2 länkar")).toBeInTheDocument();
-    await u.click(chip("glas"));
+    await u.click(chip("bro"));   // vägg+bro fails, but bro+hus holds — free
     expect(link(1, "vägg")).toBeInTheDocument();
-    expect(link(2, "glas")).toBeInTheDocument();
+    expect(link(2, "bro")).toBeInTheDocument();
     expect(screen.getByText("3 länkar")).toBeInTheDocument();
   });
 
@@ -178,8 +180,8 @@ describe("building the chain", () => {
     await u.click(chip("vägg"));
     // Aim at the joint after the start, so the next part goes in front.
     await u.click(joint("sten"));
-    await u.click(chip("glas"));
-    expect(link(1, "glas")).toBeInTheDocument();
+    await u.click(chip("tak"));   // sten+tak holds
+    expect(link(1, "tak")).toBeInTheDocument();
     expect(link(2, "vägg")).toBeInTheDocument();
   });
 
@@ -188,26 +190,26 @@ describe("building the chain", () => {
     render(<App />);
     await board();
     await u.click(chip("vägg"));
-    await u.click(chip("glas"));
+    await u.click(chip("bro"));
     await u.click(joint("sten"));
-    await u.click(link(2, "glas"));   // out of the chain
-    await u.click(chip("glas"));      // back in, at the armed joint
-    expect(link(1, "glas")).toBeInTheDocument();
+    await u.click(link(2, "bro"));   // out of the chain
+    await u.click(chip("bro"));      // back in, at the armed joint: sten+bro holds
+    expect(link(1, "bro")).toBeInTheDocument();
     // Exactly one home: in the chain, and no longer in the pool.
-    expect(screen.queryByRole("button", { name: /^glas\./i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^länk 2, glas/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^bro\./i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^länk 2, bro/i })).not.toBeInTheDocument();
   });
 
   it("closes the chain up when a part is taken out", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));
+    await u.click(chip("tak"));
     await u.click(chip("glas"));
-    await u.click(link(1, "vägg"));
+    await u.click(link(1, "tak"));
     // glas moves up rather than leaving a hole behind.
     expect(link(1, "glas")).toBeInTheDocument();
-    expect(chip("vägg")).toBeInTheDocument();
+    expect(chip("tak")).toBeInTheDocument();
   });
 
   it("lets a chain run past par — the long way round is a real win", async () => {
@@ -376,10 +378,9 @@ describe("the ending dialog", () => {
     const u = user();
     render(<App />);
     await board();
-    for (let i = 0; i < 3; i++) {
-      await u.click(chip("glas"));
-      if (i < 2) await u.click(screen.getByRole("button", { name: /^länk 1, glas\./i }));
-    }
+    // The refused chip bounces home each time, so the same tap thrice is
+    // the whole brute-force loop.
+    for (let i = 0; i < 3; i++) await u.click(chip("glas"));
     const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
     expect(within(dialog).getByText("Kedjan brast")).toBeInTheDocument();
     expect(within(dialog).getByText(/fäste varken vid delen före eller efter/)).toBeInTheDocument();
@@ -416,20 +417,24 @@ describe("lives", () => {
     await expectStatus(/MUR lagd i kedjan/);
     await u.click(chip("tak"));   // sticks to neither mur nor hus — one life
     await expectStatus(/TAK fäster varken vid MUR eller HUS · 2 liv kvar/);
-    // glas holds backward onto tak, so the red it reveals into hus is free.
-    await u.click(chip("glas"));
-    await expectStatus(/GLAS lagd i kedjan/);
+    expect(chip("tak")).toBeInTheDocument(); // bounced home
+    // bro fails backward onto mur but holds into hus — a real move, free.
+    await u.click(chip("bro"));
+    await expectStatus(/BRO lagd i kedjan/);
     expect(screen.getByLabelText("2 liv kvar")).toBeInTheDocument();
   });
 
-  it("crosses out the freshly lost heart with the chain's own pop", async () => {
+  it("breaks the lost heart and shakes the refused chip, at home", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("glas"));
     const row = screen.getByLabelText("2 liv kvar");
-    expect(row.querySelectorAll(".life-cross")).toHaveLength(1);
-    expect(row.querySelectorAll(".life-cross--pop")).toHaveLength(1);
+    // Two hearts remain; the third is mid-break, on its way out.
+    expect(row.querySelectorAll(".life-break")).toHaveLength(1);
+    expect(row.querySelectorAll(".life-big")).toHaveLength(3);
+    // The refused chip shakes in the pool, where it stayed.
+    expect(chip("glas").className).toMatch(/chip--rejected/);
   });
 
   it("removals are free", async () => {
@@ -439,7 +444,7 @@ describe("lives", () => {
     await u.click(chip("tak"));   // ✓
     await u.click(chip("mur"));   // sticks to neither tak nor hus — one life
     await expectStatus(/2 liv kvar/);
-    await u.click(screen.getByRole("button", { name: /^länk 2, mur\./i }));
+    await u.click(screen.getByRole("button", { name: /^länk 1, tak\./i }));
     await expectStatus(/tillbaka i poolen/);
     expect(screen.getByLabelText("2 liv kvar")).toBeInTheDocument();
   });
@@ -448,11 +453,9 @@ describe("lives", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("glas"));  // sticks to nothing — 1
-    await u.click(chip("mur"));   // after glas: glas+mur ✗, mur+hus ✗ — 2
-    await u.click(chip("vägg"));  // after mur: mur+vägg ✓ — a hold, free
-    await u.click(screen.getByRole("button", { name: /^länk 3, vägg\./i }));
-    await u.click(chip("tak"));   // after mur: mur+tak ✗, tak+hus ✗ — 3
+    // Each refusal bounces the chip home, so the same tap thrice is the
+    // brute-force loop in its entirety.
+    for (let i = 0; i < 3; i++) await u.click(chip("glas"));
 
     expect(await screen.findByText("Kedjan brast")).toBeInTheDocument();
     // The board is over: no pool, no more placements.
@@ -479,12 +482,9 @@ describe("lives", () => {
     const u = user();
     render(<App />);
     await board();
-    // Place-and-remove the same loose chip three times: each placement
-    // sticks to nothing, so each one charges — the brute-force loop.
-    for (let i = 0; i < 3; i++) {
-      await u.click(chip("glas"));
-      if (i < 2) await u.click(screen.getByRole("button", { name: /^länk 1, glas\./i }));
-    }
+    // The same loose chip three times: each placement sticks to nothing,
+    // bounces home, and charges — the brute-force loop.
+    for (let i = 0; i < 3; i++) await u.click(chip("glas"));
     expect(await screen.findByText("Kedjan brast")).toBeInTheDocument();
 
     await u.click(screen.getByRole("button", { name: "Försök igen" }));
@@ -496,14 +496,17 @@ describe("lives", () => {
 describe("judging the chain", () => {
   const chip = (part: string) =>
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
+  const joint = (after: string) =>
+    screen.getByRole("button", { name: new RegExp(`lägg en del efter ${after}`, "i") });
 
   it("leaves untouched joints alone when a chip is removed", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("mur"));    // sten+mur ✓
-    await u.click(chip("tak"));    // mur+tak ✗
+    await u.click(chip("tak"));    // sten+tak ✓
     await u.click(chip("glas"));   // tak+glas ✓
+    await u.click(joint("sten"));
+    await u.click(chip("mur"));    // in front: sten+mur ✓, mur+tak ✗
     const before = screen
       .getAllByText("länken håller")
       .map((el) => el.closest(".verdict"));
@@ -595,12 +598,19 @@ describe("judging the chain", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("mur"));
+    // Every placement holds on one side; the board fills to all five parts
+    // as bro, mur, vägg, tak, glas — and the final joint glas+hus, whose
+    // cross is withheld while moves remain, is judged with the rest.
     await u.click(chip("tak"));
     await u.click(chip("glas"));
-    // glas itself stuck (tak+glas), so no complaint — but the full board is
-    // judged, crosses and all.
-    expect((await screen.findAllByText("bruten länk")).length).toBeGreaterThan(0);
+    await u.click(joint("sten"));
+    await u.click(chip("mur"));
+    await u.click(joint("mur"));
+    await u.click(chip("vägg"));
+    await u.click(joint("sten"));
+    await u.click(chip("bro"));
+    // bro+mur, vägg+tak, and the final glas+hus.
+    expect(await screen.findAllByText("bruten länk")).toHaveLength(3);
   });
 
   it("re-judges after a part is taken back out", async () => {
@@ -985,6 +995,8 @@ describe("drag and drop", () => {
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
   const link = (n: number, part: string) =>
     screen.getByRole("button", { name: new RegExp(`^länk ${n}, ${part}\\.`, "i") });
+  const joint = (after: string) =>
+    screen.getByRole("button", { name: new RegExp(`lägg en del efter ${after}`, "i") });
 
   /** jsdom reports every rect as zero, so zones need real geometry to hit. */
   function placeZones(heightOf: (index: number) => number = () => 40) {
@@ -1028,14 +1040,17 @@ describe("drag and drop", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));
-    await u.click(chip("glas"));   // vägg, glas — joints 0, 1 and 2 exist
+    await u.click(chip("tak"));
+    await u.click(chip("glas"));
+    await u.click(joint("sten"));
+    await u.click(chip("mur"));    // mur, tak, glas — joints 0 through 3 exist
     // Deliberately joint 1, not joint 0: an index-0 drop cannot tell a working
-    // parser from one that returns zero for everything.
-    await dragTo(chip("tak"), 100, 120);
-    expect(link(1, "vägg")).toBeInTheDocument();
-    expect(link(2, "tak")).toBeInTheDocument();
-    expect(link(3, "glas")).toBeInTheDocument();
+    // parser from one that returns zero for everything. vägg holds onto mur.
+    await dragTo(chip("vägg"), 100, 120);
+    expect(link(1, "mur")).toBeInTheDocument();
+    expect(link(2, "vägg")).toBeInTheDocument();
+    expect(link(3, "tak")).toBeInTheDocument();
+    expect(link(4, "glas")).toBeInTheDocument();
   });
 
   it("returns a chain part to the pool when dropped there", async () => {
@@ -1052,9 +1067,10 @@ describe("drag and drop", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));
-    // Released over the gap between joints, hitting neither outright.
-    await dragTo(chip("glas"), 100, 70);
+    await u.click(chip("tak"));
+    // Released over the gap between joints, hitting neither outright but
+    // nearer joint 1, where glas holds onto tak.
+    await dragTo(chip("glas"), 100, 80);
     expect(screen.getByRole("button", { name: /^länk \d, glas\./i })).toBeInTheDocument();
   });
 
@@ -1068,10 +1084,10 @@ describe("drag and drop", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));
+    await u.click(chip("tak"));
     await u.click(chip("glas"));
-    await dragTo(chip("tak"), 100, 175);
-    expect(link(3, "tak")).toBeInTheDocument();
+    await dragTo(chip("vägg"), 100, 175);   // vägg holds forward into hus
+    expect(link(3, "vägg")).toBeInTheDocument();
   });
 
   it("still takes drops from its own parts once the chain is full", async () => {

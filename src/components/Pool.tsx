@@ -12,6 +12,8 @@ interface Props {
   armedJoint: number | null;
   /** Chips a hint has ruled out: in no winning route from here. */
   dimmed: ReadonlySet<string>;
+  /** The chip whose placement was just refused — it shakes, here, at home. */
+  rejected: { part: string; nonce: number } | null;
   handlers: (part: string, source: "pool" | "chain") => ChipHandlers;
 }
 
@@ -28,6 +30,7 @@ export function Pool({
   incoming,
   armedJoint,
   dimmed,
+  rejected,
   handlers,
 }: Props) {
   const destination =
@@ -49,7 +52,17 @@ export function Pool({
           {...handlers(part, "pool")}
           className={`chip ${marked === part ? "chip--marked" : ""} ${
             liftedPart === part ? "chip--lifted" : ""
-          } ${dimmed.has(part) ? "chip--dimmed" : ""}`}
+          } ${dimmed.has(part) ? "chip--dimmed" : ""} ${
+            // Two identical animations, alternated by nonce, so a chip
+            // refused twice in a row shakes twice — swapping the class name
+            // restarts the animation without remounting the button, which
+            // would throw away keyboard focus.
+            rejected?.part === part
+              ? rejected.nonce % 2
+                ? "chip--rejected-b"
+                : "chip--rejected-a"
+              : ""
+          }`}
           aria-label={
             `${part}. Lägg på ${destination}.` +
             (marked === part ? " Ledtråd: den här passar." : "") +
