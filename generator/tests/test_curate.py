@@ -16,9 +16,13 @@ def a_day(**over):
         "target": "hus",
         "par": 3,
         "budget": 4,
-        "pool": ["mur", "vägg", "bro", "tak", "glas", "gård", "port", "torg", "kaj"],
+        # `sump` is the day's trap: it welds off the start and goes nowhere,
+        # which every chain needs at least one of.
+        "pool": ["mur", "vägg", "bro", "tak", "glas", "gård", "port", "torg",
+                 "kaj", "sump"],
         "pairs": {
             "sten>mur": "stenmur", "sten>bro": "stenbro", "sten>tak": "stentak",
+            "sten>sump": "stensump",
             "mur>vägg": "murvägg", "mur>gård": "murgård", "mur>tak": "murtak",
             "vägg>hus": "vägghus", "vägg>mur": "väggmur", "vägg>torg": "väggtorg",
             "bro>port": "broport", "bro>glas": "broglas",
@@ -48,6 +52,22 @@ def warnings(findings):
 
 def test_a_healthy_day_has_no_blocking_findings():
     assert errors(curate.check_day(a_day())) == []
+
+
+def test_flags_a_chain_where_every_opening_wins():
+    """A first move that cannot be wrong is not a move."""
+    day = a_day()
+    del day["pairs"]["sten>sump"]
+    day["pool"] = [p for p in day["pool"] if p != "sump"]
+    found = errors(curate.check_day(day))
+    assert any("lead nowhere" in m for m in found)
+
+
+def test_a_trap_that_springs_at_once_is_only_a_warning():
+    """Better than none, but a part that dies immediately costs little."""
+    day = a_day()
+    assert any("deep" in m for m in warnings(curate.check_day(day)))
+    assert not any("deep" in m for m in errors(curate.check_day(day)))
 
 
 def test_flags_a_direct_start_to_target_weld():

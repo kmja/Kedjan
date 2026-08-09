@@ -187,6 +187,55 @@ def report(day: DayLike, saldo: Saldo | None = None) -> DayReport:
     )
 
 
+def false_paths(day: DayLike) -> tuple[list[str], int]:
+    """The traps: welds that look like a way in and are not.
+
+    Returns the chips that weld off the start but can reach the target from
+    nowhere — a first move that is legal, inviting, and already lost — and
+    how many parts a doomed line lets a player lay down before the board
+    stops offering anything at all.
+
+    This is what makes a chain hard. Not the number of ways to win: a player
+    does not count those, they try a promising part and find out. A day whose
+    every opening wins has nothing to find out, however few ways to win it
+    has, and the calendar measured here had exactly that — no false opening
+    on a single easy chain, and none on half the hard ones.
+    """
+    start, target = str(day["start"]), str(day["target"])
+    pool = _pool(day)
+    pairs = day.get("pairs", {})
+    weld = lambda a, b: f"{a}>{b}" in pairs  # noqa: E731
+
+    def reaches_target(head: str, used: set[str]) -> bool:
+        seen, stack = {head}, [head]
+        while stack:
+            part = stack.pop()
+            if weld(part, target):
+                return True
+            for nxt in pool:
+                if nxt not in used and nxt not in seen and weld(part, nxt):
+                    seen.add(nxt)
+                    stack.append(nxt)
+        return False
+
+    openings = [p for p in pool if weld(start, p)]
+    false_openings = [p for p in openings if not reaches_target(p, {p})]
+
+    deepest = 0
+
+    def walk(head: str, used: set[str]) -> None:
+        nonlocal deepest
+        if not reaches_target(head, used):
+            deepest = max(deepest, len(used))
+            return
+        for nxt in pool:
+            if nxt not in used and weld(head, nxt):
+                walk(nxt, used | {nxt})
+
+    walk(start, set())
+    return false_openings, deepest
+
+
 def route_shape(day: DayLike, routes: Sequence[Sequence[str]]) -> tuple[int, int]:
     """How much of a day is choice, and how much is corridor.
 

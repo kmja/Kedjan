@@ -49,6 +49,18 @@ MIN_DISJOINT_FALLBACK = 2
 #: at two or under, and five hard ones did not. The hard band asks for few
 #: winning routes, and a single line is the cheapest way to give it that —
 #: so the band was selecting for exactly what it was meant to rule out.
+#: Openings that go nowhere. A chain whose every promising first move is a
+#: winning one asks the player nothing: they try the part that welds and it
+#: works. When this went in, no easy chain on the calendar had a single false
+#: opening and half the hard ones had none either — which is the best account
+#: of why a chain could satisfy every other rule and still feel like a walk.
+MIN_FALSE_OPENINGS = {"easy": 1, "hard": 2}
+#: And a trap is worth more the longer it takes to spring: a part that dies
+#: on the next weld is noticed at once, one that lets a player build three
+#: deep before the board goes quiet has cost them the thing the game is made
+#: of. Counted in parts laid down before nothing more can be reached.
+MIN_TRAP_DEPTH = 3
+
 MAX_FORCED_RUN = 2
 #: Places where routes arrive at one part from different directions. Without
 #: them a day is separate lines rather than a structure, and none of the
@@ -224,6 +236,20 @@ def check_day(
             f"an independent route reaches only {r.min_cross_links} chip(s) outside "
             f"itself (cross-links {r.route_cross_links}) — it is an island"
         )
+    traps, trap_depth = analysis.false_paths(day)
+    wanted = MIN_FALSE_OPENINGS[str(day.get("tier", "easy"))]
+    if len(traps) < wanted:
+        err(
+            f"{len(traps)} opening(s) lead nowhere, needs {wanted} — every "
+            "part that welds off the start is a winning move, so the first "
+            "move asks nothing"
+        )
+    if trap_depth < MIN_TRAP_DEPTH:
+        warn(
+            f"a doomed line runs only {trap_depth} part(s) deep — a trap that "
+            "springs at once costs a player little"
+        )
+
     joins, forced_run = analysis.route_shape(day, r.solutions)
     if forced_run > MAX_FORCED_RUN:
         err(

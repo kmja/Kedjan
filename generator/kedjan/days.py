@@ -14,7 +14,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from .analysis import cross_links, largest_disjoint_set, route_shape
+from .analysis import cross_links, false_paths, largest_disjoint_set, route_shape
 from .graph import PartGraph, doublet_partner
 from .lexicon import Lexicon
 from .split import PREFIX_SET
@@ -75,6 +75,11 @@ MIN_ROUTE_CROSS_LINKS = 2
 #: where they are checked.
 MAX_FORCED_RUN = 2
 MIN_JOINS = 3
+#: Mirrors curate.py: a chain needs first moves that look like a way in and
+#: are not. The pool is grown out of winning routes, so left alone it makes
+#: days where every opening wins — which is what the calendar measured before
+#: this went in.
+MIN_FALSE_OPENINGS = {3: 1, 4: 2, 5: 2}
 #: At most one chip may weld solely within its own route; beyond that the pool
 #: reads as separate groups and elimination replaces deduction.
 MAX_ISOLATED_CHIPS = 1
@@ -279,6 +284,10 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
 
     joins, forced_run = route_shape(day_view, found)
     if forced_run > MAX_FORCED_RUN or joins < MIN_JOINS:
+        return None
+
+    traps, _ = false_paths({**day_view, "budget": budget})
+    if len(traps) < MIN_FALSE_OPENINGS.get(par, 1):
         return None
 
     independent = largest_disjoint_set(found)
