@@ -104,22 +104,26 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-8 pb-16">
-      <header className="mb-4">
-        <h1
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 800,
-            fontSize: "2.4rem",
-            lineHeight: 1,
-            letterSpacing: "-0.02em",
-            color: "var(--falu-ink)",
-          }}
-        >
-          Kedjan
-        </h1>
-        <p className="mt-1 text-sm font-medium" style={{ color: "var(--ink-soft)" }}>
-          Bygg kedjan — varje par bildar ett ord.
-        </p>
+      <header className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: "2.4rem",
+              lineHeight: 1,
+              letterSpacing: "-0.02em",
+              color: "var(--falu-ink)",
+            }}
+          >
+            Kedjan
+          </h1>
+          <p className="mt-1 text-sm font-medium" style={{ color: "var(--ink-soft)" }}>
+            Bygg kedjan — varje par bildar ett ord.
+          </p>
+        </div>
+
+        <HowToPlay />
       </header>
 
       <nav className="mb-5 flex gap-1" role="tablist" aria-label="Vyer">
@@ -202,38 +206,49 @@ export default function App() {
               ))}
             </div>
 
-            <Chain
-              day={day}
-              chain={game.chain}
-              solved={game.solved}
-              marked={game.marked}
-              armedJoint={game.armedJoint}
-              maxParts={game.maxParts}
-              jointMarks={game.jointMarks}
-              jointStamps={game.jointStamps}
-              settled={game.settled}
-              dragOver={drag?.over ?? null}
-              dragSource={drag?.source ?? null}
-              liftedPart={drag?.part ?? null}
-              handlers={handlers}
-              onJoint={game.toggleJoint}
-            />
+            {/* Chain and pool stand side by side, both reading downwards, so
+                the chain grows in place instead of pushing the pool off the
+                bottom of the screen. */}
+            <div className="board">
+              <div className="board-chain">
+                <Chain
+                  day={day}
+                  chain={game.chain}
+                  solved={game.solved}
+                  marked={game.marked}
+                  armedJoint={game.armedJoint}
+                  maxParts={game.maxParts}
+                  jointMarks={game.jointMarks}
+                  jointStamps={game.jointStamps}
+                  settled={game.settled}
+                  dragOver={drag?.over ?? null}
+                  dragSource={drag?.source ?? null}
+                  liftedPart={drag?.part ?? null}
+                  handlers={handlers}
+                  onJoint={game.toggleJoint}
+                />
+              </div>
+
+              {!game.solved && !game.failed && (
+                <div className="board-pool">
+                  <Pool
+                    parts={game.pool}
+                    marked={game.marked}
+                    liftedPart={drag?.part ?? null}
+                    incoming={drag?.over === POOL_ZONE}
+                    armedJoint={game.armedJoint}
+                    dimmed={game.dimmed}
+                    rejected={game.rejection}
+                    handlers={handlers}
+                  />
+                </div>
+              )}
+            </div>
 
             {!game.solved && <Lives left={game.livesLeft} />}
 
             {!game.solved && !game.failed && (
               <>
-                <Pool
-                  parts={game.pool}
-                  marked={game.marked}
-                  liftedPart={drag?.part ?? null}
-                  incoming={drag?.over === POOL_ZONE}
-                  armedJoint={game.armedJoint}
-                  dimmed={game.dimmed}
-                  rejected={game.rejection}
-                  handlers={handlers}
-                />
-
                 <Controls
                   day={day}
                   status={game.status}
@@ -281,8 +296,6 @@ export default function App() {
               />
             )}
 
-            <HowToPlay />
-
             {dev && (
               <DevPanel
                 day={day}
@@ -329,16 +342,6 @@ export default function App() {
           {drag.part}
         </span>
       )}
-
-      {/* Attribution tracks the corpora actually in use: SFOL supplies the
-          compound inventory, SALDO gates every weld. */}
-      <footer
-        className="mt-auto pt-10 text-center text-[0.7rem]"
-        style={{ color: "var(--ink-soft)" }}
-      >
-        Ordmaterial från SALDO, Språkbanken Text (CC BY 4.0), och SFOL — Den
-        stora fria ordlistan (LGPL-3.0).
-      </footer>
     </div>
   );
 }

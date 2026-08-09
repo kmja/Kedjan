@@ -301,7 +301,7 @@ body {
     padding: 0.45rem 0.3rem;
     white-space: nowrap;
     font-family: var(--font-dictionary);
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 400;
     letter-spacing: 0.01em;
     color: var(--ink);
@@ -585,14 +585,85 @@ body {
     font-weight: 700;
     padding-inline: 0.1rem;
   }
-  .dropzone {
-    border-radius: 0.9rem;
-    outline: 2px dashed transparent;
-    outline-offset: 6px;
-    transition: outline-color 0.15s ease;
+  /* ── the board: chain and pool side by side ────────────────── */
+  .board {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
   }
-  .dropzone--armed {
-    outline-color: var(--honey);
+  .board-chain {
+    flex: 1 1 auto;
+    /* Without this the chain's own width sets the floor and the pool is
+       squeezed off the right edge of a narrow phone. */
+    min-width: 0;
+  }
+  /* The chain is narrow and sits at the left of its column, because every
+     weld word hangs off its right side and that gutter is the room they get. */
+  .board-chain .chain {
+    width: 7rem;
+  }
+  /* Once the day is over there is no pool, and the chain takes the whole
+     width back rather than hugging the left edge on its own. */
+  .board:not(:has(.board-pool)) .chain {
+    width: auto;
+    margin-inline: auto;
+  }
+  /* The pool holds its place while a long chain scrolls past it. */
+  .board-pool {
+    flex: 0 0 6.25rem;
+    position: sticky;
+    top: 0.75rem;
+  }
+  /* On the narrowest phones the gutter cannot hold a thirteen-letter
+     compound at full size, so chain, pool and word each give a little. */
+  @media (max-width: 379px) {
+    .board-chain .chain {
+      width: 6.25rem;
+    }
+    .board-pool {
+      flex-basis: 5.75rem;
+    }
+    .weld-word {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* ── the pool ──────────────────────────────────────────────── */
+  /* The pool is also the drop zone for a part on its way back out of the
+     chain, so its border doubles as the target: dashed at rest, honey when
+     a chip is over it. */
+  .pool-box {
+    border: 2px dashed var(--edge);
+    border-radius: 0.9rem;
+    padding: 0.5rem 0.45rem 0.55rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .pool-box--armed {
+    border-color: var(--honey);
+    background: var(--panel);
+  }
+  .pool-label {
+    margin-bottom: 0.45rem;
+    text-align: center;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .pool-rack {
+    display: flex;
+    min-height: 3rem;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  /* Stacked and full width, the chips read as a rack of parts waiting their
+     turn rather than a heap. */
+  .pool-rack .chip {
+    width: 100%;
+    justify-content: center;
+    padding-inline: 0.45rem;
+    font-size: 0.82rem;
   }
 
   /* ── buttons ───────────────────────────────────────────────── */
@@ -656,6 +727,49 @@ body {
     border: 1px solid var(--edge);
     background: var(--panel);
     padding: 1rem;
+  }
+
+  /* ── the rules, folded into the header ─────────────────────── */
+  .howto {
+    position: relative;
+    flex: none;
+  }
+  .howto-toggle {
+    /* Two ways to hide the disclosure triangle, because Safari only listens
+       to the pseudo-element and everyone else only to list-style. */
+    list-style: none;
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--edge);
+    background: var(--panel);
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .howto-toggle::-webkit-details-marker {
+    display: none;
+  }
+  .howto[open] .howto-toggle {
+    border-color: var(--falu);
+    color: var(--ink);
+  }
+  /* The panel hangs over the board instead of pushing it down: opening the
+     rules never moves the chain out from under the player. */
+  .howto-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 30;
+    width: min(20rem, calc(100vw - 2.5rem));
+    border-radius: 0.9rem;
+    border: 1px solid var(--edge);
+    background: var(--panel);
+    padding: 1rem;
+    box-shadow: 0 10px 24px var(--shadow);
   }
 }
 

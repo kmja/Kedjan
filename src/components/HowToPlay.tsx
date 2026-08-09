@@ -24,15 +24,27 @@ export function HowToPlayBody() {
         <strong>Varje dag har två kedjor</strong> — en lätt och en svår. Den
         svåra är längre och har färre vägar till målet.
       </p>
+      {/* The corpora are licensed on the condition that they are credited.
+          The credit used to stand in a footer under the board; it lives here
+          now — out of the way, still one tap from every player. */}
+      <p className="text-[0.7rem]">
+        Ordmaterial från SALDO, Språkbanken Text (CC BY 4.0), och SFOL — Den
+        stora fria ordlistan (LGPL-3.0).
+      </p>
     </div>
   );
 }
 
+/**
+ * The rules, folded into the header: a pill that opens a panel over the
+ * board. A plain <details>, so it works before any script runs and answers
+ * to the keyboard without help.
+ */
 export function HowToPlay() {
   return (
-    <details className="card text-sm">
-      <summary className="cursor-pointer font-bold">Så spelar du</summary>
-      <div className="mt-3">
+    <details className="howto">
+      <summary className="howto-toggle">Så spelar du</summary>
+      <div className="howto-panel">
         <HowToPlayBody />
       </div>
     </details>

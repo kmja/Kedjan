@@ -39,42 +39,50 @@ export function Pool({
   return (
     <div
       data-drop-zone={POOL_ZONE}
-      className={`dropzone flex min-h-14 flex-wrap content-start justify-center gap-2 p-1 ${
-        incoming ? "dropzone--armed" : ""
-      }`}
+      className={`pool-box ${incoming ? "pool-box--armed" : ""}`}
       role="group"
       aria-label={`Delar att välja bland, ${parts.length} kvar`}
     >
-      {parts.map((part) => (
-        <button
-          key={part}
-          type="button"
-          {...handlers(part, "pool")}
-          className={`chip ${marked === part ? "chip--marked" : ""} ${
-            liftedPart === part ? "chip--lifted" : ""
-          } ${dimmed.has(part) ? "chip--dimmed" : ""} ${
-            // Two identical animations, alternated by nonce, so a chip
-            // refused twice in a row shakes twice — swapping the class name
-            // restarts the animation without remounting the button, which
-            // would throw away keyboard focus.
-            rejected?.part === part
-              ? rejected.nonce % 2
-                ? "chip--rejected-b"
-                : "chip--rejected-a"
-              : ""
-          }`}
-          aria-label={
-            `${part}. Lägg på ${destination}.` +
-            (marked === part ? " Ledtråd: den här passar." : "") +
-            // Dimmed chips stay playable: the hint narrows the field, it does
-            // not confiscate a move.
-            (dimmed.has(part) ? " Ledtråd: den här leder inte till målet." : "")
-          }
-        >
-          {marked === part && <span aria-hidden="true">⭐</span>}
-          {part}
-        </button>
-      ))}
+      {/* The group already names itself to a screen reader; this is that
+          same word again, for eyes. */}
+      <p className="pool-label" aria-hidden="true">
+        Delar
+      </p>
+
+      <div className="pool-rack">
+        {parts.map((part) => (
+          <button
+            key={part}
+            type="button"
+            {...handlers(part, "pool")}
+            className={`chip ${marked === part ? "chip--marked" : ""} ${
+              liftedPart === part ? "chip--lifted" : ""
+            } ${dimmed.has(part) ? "chip--dimmed" : ""} ${
+              // Two identical animations, alternated by nonce, so a chip
+              // refused twice in a row shakes twice — swapping the class name
+              // restarts the animation without remounting the button, which
+              // would throw away keyboard focus.
+              rejected?.part === part
+                ? rejected.nonce % 2
+                  ? "chip--rejected-b"
+                  : "chip--rejected-a"
+                : ""
+            }`}
+            aria-label={
+              `${part}. Lägg på ${destination}.` +
+              (marked === part ? " Ledtråd: den här passar." : "") +
+              // Dimmed chips stay playable: the hint narrows the field, it
+              // does not confiscate a move.
+              (dimmed.has(part)
+                ? " Ledtråd: den här leder inte till målet."
+                : "")
+            }
+          >
+            {marked === part && <span aria-hidden="true">⭐</span>}
+            {part}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
