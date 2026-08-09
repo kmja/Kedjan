@@ -67,10 +67,10 @@ const RING_STROKE = 2.2;
 /** Centre to centre. Less than two radii, so consecutive rings interlock. */
 const RING_STEP = 9.4;
 const RING_W = 14;
-/** A dangling end is two whole links and then the open one at the tip. */
-const LOOSE_RINGS = 3;
-/** Enough small links to run the height of a forged joint. */
-const FORGED_RINGS = 4;
+/** A dangling end is the open link at the tip, and nothing more. */
+const LOOSE_RINGS = 1;
+/** A weld is two whole links. */
+const FORGED_RINGS = 2;
 
 const rem = (units: number) => `${units / 16}rem`;
 

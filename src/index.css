@@ -176,7 +176,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 3rem;
+    /* Close enough that the two links of a weld reach both parts: the art
+       is sized by its rings, so the box has to be sized by them too. */
+    height: 2.25rem;
     width: 100%;
     transition: height 0.16s ease;
   }
@@ -184,9 +186,9 @@ body {
      way the forged link's rings sit on a closed one: centred, with the same
      air showing above and below it. */
   .joint--open {
-    /* Room for a whole dangling end above and below: two links and the open
-       one, on each side, with air before the slot they have not reached. */
-    height: 7.5rem;
+    /* Room for a dangling end above and below, with air before the slot
+       neither has reached. */
+    height: 5.5rem;
   }
   /* A forged link is two rings, interlocked, in the colour of a weld that
      holds. Sized to the ring geometry rather than to the joint, so the
@@ -269,7 +271,10 @@ body {
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
+    /* Its own keyframes, not the shared pop: the mark is centred with a
+       translate, and any animation of `transform` that forgets to carry it
+       drops the word half its height onto the part below. */
+    animation: weld-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
   }
   .weld-tick {
     color: var(--gran-ok);
@@ -653,20 +658,21 @@ body {
   }
 }
 
-@keyframes verdict-pop {
+@keyframes weld-pop {
   0% {
-    transform: scale(0.2) rotate(-18deg);
+    transform: translateY(-50%) scale(0.4);
     opacity: 0;
   }
   60% {
-    transform: scale(1.25) rotate(4deg);
+    transform: translateY(-50%) scale(1.14);
     opacity: 1;
   }
   100% {
-    transform: scale(1) rotate(0);
+    transform: translateY(-50%) scale(1);
     opacity: 1;
   }
 }
+
 
 /* The chain never sits perfectly still. Every piece — part and joint alike —
    drifts through the same slow standing wave, its amplitude set per piece by
