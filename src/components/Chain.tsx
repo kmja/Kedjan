@@ -21,20 +21,21 @@ import { JOINT_ZONE } from "../game/useChipDrag";
  * swings a beat after its neighbour and less far, which is what makes the
  * chain read as one connected thing rather than a stack of chips.
  */
-/** Sideways travel at the widest point of the resting sway, in pixels. */
-const IDLE_AMPLITUDE = 2.4;
-/** A loose end is the free tip of its chain: it travels furthest… */
-const LOOSE_GAIN = 1;
+/** How far a whole chain swings from upright, in degrees. */
+const SWAY_ANGLE = 2.2;
+
 /**
- * …and swings, pivoting where it is attached, rather than only drifting.
- * The tilt runs opposite the drift in sign because CSS rotates clockwise on
- * a y-down axis: with the pivot above a piece, a negative angle is what
- * carries its lower end the same way the chain is drifting. Matching signs
- * had the two cancelling, which is why the loose end barely moved.
+ * What each kind of piece contributes to a chain's length, in pixels at the
+ * default text size. These mirror the heights in the stylesheet: the sway is
+ * built out of them, so a piece's travel is its real distance from the
+ * anchor and the chain holds together where the pieces meet.
  */
-const LOOSE_TILT = 6;
-/** A part is a rigid box hung on the chain; it barely tips. */
-const PART_TILT = 1.1;
+const HEIGHT_OF: Record<"part" | "link" | "loose-below" | "loose-above", number> = {
+  part: 44,
+  link: 44,
+  "loose-below": 25,
+  "loose-above": 25,
+};
 /** How far the piece at the epicentre of a placement swings, in degrees. */
 const PULSE_DEGREES = 3.2;
 /** Each piece further from the epicentre swings e^-k as far. */
@@ -367,18 +368,61 @@ export function Chain({
    * target, or its topmost part if nothing holds it. That word outlives
    * every part added to the chain, so the rhythm never lurches mid-play.
    */
-  const rhythm = new Map<number, { period: number; phase: number }>();
+  /*
+   * Every chain swings as what it is: a pendulum hanging from its anchor.
+   * A piece's sideways travel is therefore not chosen — it is how far the
+   * piece sits from that anchor, times the angle the chain has swung
+   * through. Every piece shares the angle, so every piece tips; the ones
+   * further down simply have further to travel. Given the same angle and
+   * true distances, each piece's foot lands exactly where the next piece's
+   * head does, and the chain holds together for free.
+   */
+  const anchored = new Map<
+    number,
+    {
+      period: number;
+      phase: number;
+      angle: number;
+      heldBelow: boolean;
+      order: number[];
+      reach: Map<number, number>;
+      still: Set<number>;
+    }
+  >();
   for (const chainNo of new Set(seq.map((x) => x.chainNo))) {
-    const kin = seq.filter((x) => x.chainNo === chainNo);
-    const fromTop = kin.some((x) => x.kind === "part" && x.at === 0);
-    const fromBottom = kin.some(
-      (x) => x.kind === "part" && x.at === full.length - 1,
-    );
+    const order = seq
+      .map((x, i) => ({ x, i }))
+      .filter(({ x }) => x.chainNo === chainNo)
+      .map(({ i }) => i);
+    const fromTop = seq[order[0]!]!.kind === "part" && seq[order[0]!]!.at === 0;
+    const last = seq[order[order.length - 1]!]!;
+    const fromBottom = last.kind === "part" && last.at === full.length - 1;
+
+    // Held at both ends once the day is won: taut, and going nowhere.
+    const angle = fromTop && fromBottom ? 0 : SWAY_ANGLE;
+    const heldBelow = fromBottom && !fromTop;
+
+    // Walk out from the anchor, adding up what hangs between. The anchoring
+    // part itself is the thing the chain hangs from: it does not move, and
+    // the first piece under it hangs from an edge that stays put.
+    const reach = new Map<number, number>();
+    const still = new Set<number>();
+    let far = 0;
+    (heldBelow ? [...order].reverse() : order).forEach((at, i) => {
+      if (i === 0 && (fromTop || fromBottom)) {
+        reach.set(at, 0);
+        still.add(at);
+        return;
+      }
+      reach.set(at, far);
+      far += HEIGHT_OF[seq[at]!.kind];
+    });
+
     const anchor = fromTop
       ? day.start
       : fromBottom
         ? day.target
-        : full[kin.find((x) => x.kind === "part")?.at ?? 0]!;
+        : full[seq[order[0]!]!.at]!;
     const seed = seedOf(anchor);
     const period = SWAY_QUICKEST + seed * (SWAY_SLOWEST - SWAY_QUICKEST);
     // Under `alternate`, a delay of one whole period runs a chain backwards
@@ -387,75 +431,46 @@ export function Chain({
     // always oppose — and the seed only jitters it, because two seeds drawn
     // at random can land close enough to look like one mechanism, and once
     // did.
-    const opposed = !fromTop && fromBottom ? 1 : fromTop || fromBottom ? 0 : 0.5;
-    rhythm.set(chainNo, {
+    const opposed = heldBelow ? 1 : fromTop ? 0 : 0.5;
+    anchored.set(chainNo, {
       period,
       phase: -period * (opposed + seed * 0.3),
+      angle,
+      heldBelow,
+      order,
+      reach,
+      still,
     });
   }
   const settledAt = settled ? chain.indexOf(settled.part) : -1;
   const epicentre = settledAt < 0 ? null : partPiece(settledAt + 1);
 
-  /**
-   * How far each piece of one chain travels at rest, as a share of the full
-   * sway. A chain pinned at one end swings furthest at its loose end; pinned
-   * at both — which only happens once the day is won — it stands still at the
-   * ends and swings in the middle; pinned at neither, it drifts as one.
-   */
-  const restingSway = (
-    within: number,
-    of: number,
-    top: boolean,
-    bottom: boolean,
-  ) => {
-    if (of < 2) return top || bottom ? 0 : 1;
-    const t = within / (of - 1);
-    if (top && bottom) return Math.sin(Math.PI * t);
-    if (top) return Math.sin((Math.PI / 2) * t);
-    if (bottom) return Math.sin((Math.PI / 2) * (1 - t));
-    return 1;
-  };
-
   const piece = (at: number) => {
     const mine = seq[at]!;
-    const kin = seq.filter((s) => s.chainNo === mine.chainNo);
-    const within = kin.indexOf(mine);
-    const anchoredTop = kin.some((s) => s.kind === "part" && s.at === 0);
-    const anchoredBottom = kin.some(
-      (s) => s.kind === "part" && s.at === full.length - 1,
-    );
-    const share = restingSway(within, kin.length, anchoredTop, anchoredBottom);
-    const dangling = mine.kind === "loose-below" || mine.kind === "loose-above";
-    const amp = IDLE_AMPLITUDE * share * (dangling ? LOOSE_GAIN : 1);
-    // A piece swings from where it is held: from the link above it, or — on
-    // a chain hanging off the target — from the one below. Which end holds
-    // it also flips the sign of its tilt, because a body below its pivot and
-    // a body above it swing opposite ways for the same angle. Getting that
-    // wrong reads exactly like a loose end pinned to the empty air above it.
-    const heldBelow =
-      mine.kind === "loose-above" || (anchoredBottom && !anchoredTop);
-    const tilt =
-      share * (dangling ? LOOSE_TILT : PART_TILT) * (heldBelow ? -1 : 1);
+    const hang = anchored.get(mine.chainNo)!;
+    const angle = hang.still.has(at) ? 0 : hang.angle;
+    const travel = hang.reach.get(at)! * Math.tan((angle * Math.PI) / 180);
 
-    const beat = rhythm.get(mine.chainNo)!;
     const style = {
-      "--amp": `${amp.toFixed(2)}px`,
-      "--tilt": `${tilt.toFixed(2)}deg`,
-      "--pivot": heldBelow ? "100%" : "-0.35rem",
-      "--period": `${beat.period.toFixed(2)}s`,
-      "--phase": `${beat.phase.toFixed(2)}s`,
-      // A chain held from below bends the other way for the same reason its
-      // pieces tilt the other way: its links sit above their hinges.
-      "--lean": heldBelow ? "-1" : "1",
+      "--amp": `${travel.toFixed(2)}px`,
+      // A piece swings from the end that holds it, and the sign follows:
+      // a body below its pivot and a body above it swing opposite ways for
+      // the same angle. Getting that wrong reads exactly like a loose end
+      // pinned to the empty air above it.
+      "--tilt": `${(hang.heldBelow ? -angle : angle).toFixed(2)}deg`,
+      "--pivot": hang.heldBelow ? "100%" : "0%",
+      "--period": `${hang.period.toFixed(2)}s`,
+      "--phase": `${hang.phase.toFixed(2)}s`,
+      // A chain held from below bends the other way, for the same reason.
+      "--lean": hang.heldBelow ? "-1" : "1",
     } as Record<string, string>;
     let className = "chain-piece";
 
     // A pulse runs along the chain the part landed on, and stops at the break.
+    const within = hang.order.indexOf(at);
     const sameChain =
       epicentre !== null && seq[epicentre]!.chainNo === mine.chainNo;
-    const away = sameChain
-      ? Math.abs(within - kin.indexOf(seq[epicentre!]!))
-      : 0;
+    const away = sameChain ? Math.abs(within - hang.order.indexOf(epicentre!)) : 0;
     const swing = sameChain ? pulseAt(away) : 0;
     if (swing > PULSE_FLOOR) {
       style["--pulse"] = `${swing.toFixed(2)}deg`;
