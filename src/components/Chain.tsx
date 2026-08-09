@@ -84,21 +84,23 @@ const RING_STROKE = 2.2;
 /** Centre to centre. Less than two radii, so consecutive rings interlock. */
 const RING_STEP = 9.4;
 const RING_W = 14;
-/** How far a link leans, at the widest point of a run's bend. */
-const RING_SWING = 4;
+/** How far each link of a loose end leans past the one holding it. */
+const RING_SWING = 5;
 
 /**
  * How far each link of a run leans from upright, as a share of RING_SWING.
  *
- * A run between two parts is held at both ends, so its links have to bend
- * one way and back again and arrive upright: the run curves, but its foot
- * comes down exactly where it started and the part below stays hung on it.
- * A dangling end is held at one end only, so its links may keep leaning the
- * same way and carry the loose tip out.
+ * A run between two parts is pulled taut between them, and the links of a
+ * taut chain all lie along it — so they lean together, by however much the
+ * run itself does, and not against each other. Bending them apart makes the
+ * run bow, and a bow is slack the run has not got.
+ *
+ * A dangling end is held at one end only. Its links may lean further and
+ * further the closer they are to the tip, which is what carries a loose end
+ * out and the one place a chain visibly articulates.
  */
-function leanOf(i: number, rings: number, free: boolean): number {
-  if (free) return i + 1;
-  return rings < 2 ? 0 : 1 - (2 * i) / (rings - 1);
+function leanOf(i: number, free: boolean): number {
+  return free ? i + 1 : 0;
 }
 /** A dangling end is one whole link and then the open one at the tip. */
 const LOOSE_RINGS = 2;
@@ -142,8 +144,8 @@ function Links({
     // this link is told is only its own share of the bend: the difference
     // between how far it leans and how far its parent does.
     const own =
-      (leanOf(i, rings, gap !== undefined) -
-        (i === 0 ? 0 : leanOf(i - 1, rings, gap !== undefined))) *
+      (leanOf(i, gap !== undefined) -
+        (i === 0 ? 0 : leanOf(i - 1, gap !== undefined))) *
       RING_SWING;
     return (
       <g
