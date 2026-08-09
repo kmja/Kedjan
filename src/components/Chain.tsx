@@ -84,10 +84,22 @@ const RING_STROKE = 2.2;
 /** Centre to centre. Less than two radii, so consecutive rings interlock. */
 const RING_STEP = 9.4;
 const RING_W = 14;
-/** How far one link swings against the link it hangs from. */
-const RING_SWING = 2.4;
-/** …and how far behind it runs, so the motion travels down the run. */
-const RING_LAG_MS = 70;
+/** How far a link leans, at the widest point of a run's bend. */
+const RING_SWING = 4;
+
+/**
+ * How far each link of a run leans from upright, as a share of RING_SWING.
+ *
+ * A run between two parts is held at both ends, so its links have to bend
+ * one way and back again and arrive upright: the run curves, but its foot
+ * comes down exactly where it started and the part below stays hung on it.
+ * A dangling end is held at one end only, so its links may keep leaning the
+ * same way and carry the loose tip out.
+ */
+function leanOf(i: number, rings: number, free: boolean): number {
+  if (free) return i + 1;
+  return rings < 2 ? 0 : 1 - (2 * i) / (rings - 1);
+}
 /** A dangling end is one whole link and then the open one at the tip. */
 const LOOSE_RINGS = 2;
 /** A weld is three whole links. */
@@ -126,13 +138,20 @@ function Links({
   const link = (i: number): ReactNode => {
     const cy = RING_RY + 1 + i * RING_STEP;
     const open = i === opened;
+    // Links nest, so each carries whatever the one above it is doing. What
+    // this link is told is only its own share of the bend: the difference
+    // between how far it leans and how far its parent does.
+    const own =
+      (leanOf(i, rings, gap !== undefined) -
+        (i === 0 ? 0 : leanOf(i - 1, rings, gap !== undefined))) *
+      RING_SWING;
     return (
       <g
         className="ring"
         style={
           {
             transformOrigin: `${RING_W / 2}px ${cy - RING_RY}px`,
-            "--lag": `${i * RING_LAG_MS}ms`,
+            "--own": `${own.toFixed(2)}deg`,
           } as CSSProperties
         }
       >
@@ -423,7 +442,9 @@ export function Chain({
       "--pivot": heldBelow ? "100%" : "-0.35rem",
       "--period": `${beat.period.toFixed(2)}s`,
       "--phase": `${beat.phase.toFixed(2)}s`,
-      "--swing": `${(heldBelow ? -RING_SWING : RING_SWING).toFixed(2)}deg`,
+      // A chain held from below bends the other way for the same reason its
+      // pieces tilt the other way: its links sit above their hinges.
+      "--lean": heldBelow ? "-1" : "1",
     } as Record<string, string>;
     let className = "chain-piece";
 

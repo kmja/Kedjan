@@ -200,8 +200,8 @@ body {
      most — a run of links that all moved together would be wire, not chain. */
   .ring {
     transform-box: view-box;
-    animation: ring-swing var(--period, 1s) ease-in-out
-      calc(var(--phase, 0s) + var(--lag, 0ms)) infinite alternate;
+    animation: ring-swing var(--period, 1s) ease-in-out var(--phase, 0s)
+      infinite alternate;
   }
 
   /* A forged link is two rings, interlocked, in the colour of a weld that
@@ -711,12 +711,16 @@ body {
     rotate: calc(var(--tilt, 0deg) * -1);
   }
 }
+/* Every link of the chain bends on the same beat, each by its own amount.
+   Sharing the beat is what keeps the run's foot under the part hanging from
+   it: bends that ran at different times would each be somewhere else at any
+   given instant, and the chain would come apart at every join. */
 @keyframes ring-swing {
   from {
-    rotate: var(--swing, 0deg);
+    rotate: calc(var(--own, 0deg) * var(--lean, 1));
   }
   to {
-    rotate: calc(var(--swing, 0deg) * -1);
+    rotate: calc(var(--own, 0deg) * var(--lean, 1) * -1);
   }
 }
 
