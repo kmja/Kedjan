@@ -138,27 +138,35 @@ function Links({
    * link above it, which is what stops a run of links reading as one rigid
    * piece of wire.
    */
-  const link = (i: number): ReactNode => {
+  // A run reaching upward hangs from its foot, so its links have to be built
+  // from the foot up: the link touching the part is the one the rest hang
+  // off, and each pivots where it meets the link holding it. Built the other
+  // way round — which is what a downward run needs — the attached link ends
+  // up swinging off the free one, and the whole run moves backwards.
+  const upward = gap === "top";
+
+  const link = (out: number): ReactNode => {
+    const i = upward ? rings - 1 - out : out;
     const cy = RING_RY + 1 + i * RING_STEP;
     const open = i === opened;
-    // Links nest, so each carries whatever the one above it is doing. What
-    // this link is told is only its own share of the bend: the difference
-    // between how far it leans and how far its parent does.
+    // Links nest, so each carries whatever the link holding it is doing.
+    // What this link is told is only its own share of the bend: the
+    // difference between how far it leans and how far its parent does.
+    const free = gap !== undefined;
     const own =
-      (leanOf(i, gap !== undefined) -
-        (i === 0 ? 0 : leanOf(i - 1, gap !== undefined))) *
+      (leanOf(out, free) - (out === 0 ? 0 : leanOf(out - 1, free))) *
       RING_SWING;
     return (
       <g
         className="ring"
         style={
           {
-            transformOrigin: `${RING_W / 2}px ${cy - RING_RY}px`,
+            transformOrigin: `${RING_W / 2}px ${cy + (upward ? RING_RY : -RING_RY)}px`,
             "--own": `${own.toFixed(2)}deg`,
           } as CSSProperties
         }
       >
-        {i > 0 && (
+        {out > 0 && (
           <path
             d={ringPath(cy)}
             fill="none"
@@ -176,7 +184,7 @@ function Links({
           strokeDasharray={open ? "72 28" : undefined}
           strokeDashoffset={open ? (gap === "bottom" ? -64 : -14) : undefined}
         />
-        {i + 1 < rings && link(i + 1)}
+        {out + 1 < rings && link(out + 1)}
       </g>
     );
   };
