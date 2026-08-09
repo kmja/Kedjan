@@ -117,10 +117,10 @@ const ROW = 46;
 const NODE_H = 28;
 const GAP = 10;
 const PAD = 6;
-/** Chips inside a folded corridor sit further apart, so the link reads. */
-const RUN_GAP = 18;
-/** A folded corridor may not grow wider than the map is allowed to be. */
-const MAX_RUN_WIDTH = 330;
+/** A map this many rows tall wraps into two columns, like text. */
+const WRAP_MIN_ROWS = 9;
+/** Space between the wrapped columns. */
+const GUTTER = 34;
 
 /**
  * Position the layers. Suffix merging guarantees every child sits on a lower
@@ -165,54 +165,69 @@ function layout(nodes: DagNode[]): { width: number; height: number } {
     }
   }
 
-  // Fold corridors. A run of layers holding one node each, chained parent to
-  // child, is a shared stretch every route walks — and one row per node
-  // spends a screenful on what reads as a single line. Lay it out
-  // horizontally instead: left to right is the flow's direction as much as
-  // downward is. The start and target stay on rows of their own — they
-  // anchor the map — and a run folds only as far as the width allows.
-  const rows: DagNode[][] = [];
-  const chainable: boolean[] = [];
-  const span = (row: DagNode[], gap: number) =>
-    row.reduce((w, n) => w + n.width, 0) + gap * (row.length - 1);
-  for (const layer of layers) {
-    const solo = layer.length === 1 ? layer[0]! : null;
-    const prev = rows[rows.length - 1];
-    const last = prev?.[prev.length - 1];
-    if (
-      solo &&
-      last &&
-      chainable[rows.length - 1] &&
-      last.children.length === 1 &&
-      last.children[0] === solo.id &&
-      solo.parents.length === 1 &&
-      last.parents.length > 0 &&
-      solo.children.length > 0 &&
-      span([...prev!, solo], RUN_GAP) <= MAX_RUN_WIDTH
-    ) {
-      prev!.push(solo);
-    } else {
-      rows.push([...layer]);
-      chainable.push(solo !== null);
-    }
-  }
+  const width = Math.max(...layers.map((l) => place(l)));
+  return { width: width + PAD * 2, height: layers.length * ROW };
+}
 
-  const placeRun = (row: DagNode[]) => {
-    const total = span(row, RUN_GAP);
-    let x = -total / 2;
-    for (const n of row) {
-      n.x = x + n.width / 2;
-      x += n.width + RUN_GAP;
-    }
-    return total;
+/** The DAG nodes a route walks, in order, excluding the start. */
+function nodePath(nodes: DagNode[], day: Day, route: string[]): number[] {
+  const ids: number[] = [];
+  let node = nodes.find((n) => n.parents.length === 0)!;
+  for (const part of [...route, day.target]) {
+    node = nodes[node.children.find((c) => nodes[c]!.part === part)!]!;
+    ids.push(node.id);
+  }
+  return ids;
+}
+
+/**
+ * Wrap a tall map into two columns, the way text wraps.
+ *
+ * A deep day is a narrow strip many rows tall — most of the box it is shown
+ * in goes unused, and no per-row compaction can fix that, because depth is
+ * the route's own length. What can fix it is the same move a newspaper makes:
+ * cut near the middle and continue alongside. The cut happens at a chip every
+ * route passes through — the suffix-merged DAG guarantees no edge jumps past
+ * such a chip, so each edge lands wholly in one column — and the chip is
+ * drawn again, dashed, where the second column resumes.
+ */
+function wrap(nodes: DagNode[], day: Day, routes: string[][]) {
+  const rows = Math.max(...nodes.map((n) => n.y)) + 1;
+  if (rows < WRAP_MIN_ROWS) return null;
+
+  let shared: Set<number> | null = null;
+  for (const route of routes) {
+    const ids = new Set(nodePath(nodes, day, route));
+    const kept: number[] = shared ? [...shared].filter((i) => ids.has(i)) : [...ids];
+    shared = new Set(kept);
+  }
+  const middle = (rows - 1) / 2;
+  const cut = [...(shared ?? [])]
+    .map((i) => nodes[i]!)
+    .filter((n) => n.y >= 2 && n.y <= rows - 3)
+    .sort((a, b) => Math.abs(a.y - middle) - Math.abs(b.y - middle))[0];
+  if (!cut) return null;
+
+  const first = nodes.filter((n) => n.y <= cut.y);
+  const second = nodes.filter((n) => n.y > cut.y);
+  const widthOf = (column: DagNode[]) =>
+    Math.max(...column.map((n) => Math.abs(n.x) * 2 + n.width));
+  const wFirst = widthOf(first);
+  const wSecond = Math.max(widthOf(second), cut.width);
+  const total = wFirst + GUTTER + wSecond;
+  const dxFirst = -total / 2 + wFirst / 2;
+  const dxSecond = total / 2 - wSecond / 2;
+  for (const n of first) n.x += dxFirst;
+  for (const n of second) {
+    n.x += dxSecond;
+    n.y -= cut.y;
+  }
+  return {
+    width: total + PAD * 2,
+    height: Math.max(cut.y + 1, rows - cut.y) * ROW,
+    cut,
+    copy: { x: dxSecond, y: 0 },
   };
-  const width = Math.max(
-    ...rows.map((row, r) => {
-      for (const n of row) n.y = r;
-      return row.length > 1 && chainable[r] ? placeRun(row) : place(row);
-    }),
-  );
-  return { width: width + PAD * 2, height: rows.length * ROW };
 }
 
 /**
@@ -221,11 +236,20 @@ function layout(nodes: DagNode[]): { width: number; height: number } {
  * into the target. The route the player took runs through it in the accent.
  */
 export function RouteTree({ day, mine, others }: Props) {
-  const nodes = buildDag(day, mine ? [mine, ...others] : others);
+  const routes = mine ? [mine, ...others] : others;
+  const nodes = buildDag(day, routes);
   const walked = mine ? markMine(nodes, day, mine) : new Set<string>();
-  const { width, height } = layout(nodes);
+  const laid = layout(nodes);
+  const wrapped = wrap(nodes, day, routes);
+  const { width, height } = wrapped ?? laid;
 
-  const nodeY = (n: DagNode) => n.y * ROW + ROW / 2;
+  const nodeY = (n: { y: number }) => n.y * ROW + ROW / 2;
+  // Edges out of the cut chip leave from its dashed twin at the top of the
+  // second column; edges into it arrive at the original, closing column one.
+  const outOf = (n: DagNode) =>
+    wrapped && n.id === wrapped.cut.id
+      ? { x: wrapped.copy.x, y: wrapped.copy.y }
+      : n;
   const edges = nodes.flatMap((from) =>
     from.children.map((c) => {
       const to = nodes[c]!;
@@ -253,23 +277,16 @@ export function RouteTree({ day, mine, others }: Props) {
         }}
       >
         {edges.map(({ from, to, mine: onMine }) => {
-          // Inside a folded corridor the flow runs left to right: a short
-          // straight link from chip edge to chip edge, on the row's midline.
-          const d =
-            from.y === to.y
-              ? `M ${from.x + from.width / 2 + 1} ${nodeY(from)} L ${to.x - to.width / 2 - 1} ${nodeY(to)}`
-              : (() => {
-                  const y1 = nodeY(from) + NODE_H / 2 + 1;
-                  const y2 = nodeY(to) - NODE_H / 2 - 1;
-                  const bend = Math.min(14, (y2 - y1) / 2);
-                  return `M ${from.x} ${y1} C ${from.x} ${y1 + bend}, ${to.x} ${y2 - bend}, ${to.x} ${y2}`;
-                })();
+          const a = outOf(from);
+          const y1 = nodeY(a) + NODE_H / 2 + 1;
+          const y2 = nodeY(to) - NODE_H / 2 - 1;
+          const bend = Math.min(14, (y2 - y1) / 2);
           return (
             <path
               key={`${from.id}>${to.id}`}
               className="dag-edge"
               pathLength={1}
-              d={d}
+              d={`M ${a.x} ${y1} C ${a.x} ${y1 + bend}, ${to.x} ${y2 - bend}, ${to.x} ${y2}`}
               fill="none"
               stroke={onMine ? "var(--falu)" : "var(--edge)"}
               strokeWidth={onMine ? 3.5 : 2}
@@ -304,6 +321,33 @@ export function RouteTree({ day, mine, others }: Props) {
             </g>
           );
         })}
+        {wrapped && (
+          // The cut chip again, dashed, where the second column resumes —
+          // the same word twice says "continues here" without an arrow.
+          <g>
+            <rect
+              x={wrapped.copy.x - wrapped.cut.width / 2}
+              y={nodeY(wrapped.copy) - NODE_H / 2}
+              width={wrapped.cut.width}
+              height={NODE_H}
+              rx={8}
+              fill="var(--panel)"
+              stroke={wrapped.cut.mine ? "var(--falu)" : "var(--edge)"}
+              strokeWidth={wrapped.cut.mine ? 3 : 1.5}
+              strokeDasharray="5 4"
+            />
+            <text
+              x={wrapped.copy.x}
+              y={nodeY(wrapped.copy) + 4.5}
+              textAnchor="middle"
+              className="dag-part"
+              data-mine={wrapped.cut.mine || undefined}
+              fill={wrapped.cut.mine ? "var(--falu-ink)" : "var(--ink)"}
+            >
+              {wrapped.cut.part}
+            </text>
+          </g>
+        )}
       </svg>
       {/* The same routes as plain text, for screen readers — an SVG map is a
           picture, and the picture is not the only way to read it. */}

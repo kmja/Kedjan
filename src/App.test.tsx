@@ -256,37 +256,39 @@ describe("the route map", () => {
     expect(mineEdges).toHaveLength(3);
   });
 
-  it("folds a corridor onto one row instead of a screenful of layers", async () => {
-    // Both routes funnel through port→gång→torn: a shared stretch every
-    // route walks earns one horizontal row, not one row per chip.
+  it("wraps a deep map into two columns at a chip every route shares", async () => {
+    // Nine rows of mostly corridor: the map cuts at hav — the shared chip
+    // nearest the middle — and continues alongside, like wrapped text.
     mockCalendar([{
       ...testDay, date: "2026-08-06", no: 1, start: "sten", target: "hus",
-      par: 5, budget: 6,
-      pool: ["mur", "vägg", "port", "gång", "torn"],
+      par: 8, budget: 9,
+      pool: ["alfa", "beta", "bok", "dag", "hav", "ljus", "sol", "torn"],
       pairs: {
-        "sten>mur": "stenmur", "sten>vägg": "stenvägg",
-        "mur>port": "murport", "vägg>port": "väggport",
-        "port>gång": "portgång", "gång>torn": "gångtorn", "torn>hus": "tornhus",
+        "sten>alfa": "stenalfa", "sten>beta": "stenbeta",
+        "alfa>bok": "alfabok", "beta>bok": "betabok",
+        "bok>dag": "bokdag", "dag>hav": "daghav", "hav>ljus": "havljus",
+        "ljus>sol": "ljussol", "sol>torn": "soltorn", "torn>hus": "tornhus",
       },
     }]);
     const u = user();
     render(<App />);
     await board();
-    for (const part of ["mur", "port", "gång", "torn"]) {
+    for (const part of ["alfa", "bok", "dag", "hav", "ljus", "sol", "torn"]) {
       await u.click(screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") }));
     }
     const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
     const tree = within(dialog).getByLabelText("Alla vägar till målet, som ett träd");
 
-    const y = (part: string) => within(tree).getByText(part).getAttribute("y");
-    expect(y("gång")).toBe(y("port"));
-    expect(y("torn")).toBe(y("port"));
-    expect(y("hus")).not.toBe(y("torn"));
-    // The corridor's links run left to right: straight horizontal segments.
-    const horizontal = [...tree.querySelectorAll("path")].filter((p) =>
-      p.getAttribute("d")?.includes(" L "),
-    );
-    expect(horizontal).toHaveLength(2);
+    // The cut chip is drawn twice: closing column one, resuming column two.
+    expect(within(tree).getAllByText("hav")).toHaveLength(2);
+    const attr = (part: string, name: string) =>
+      Number(within(tree).getByText(part).getAttribute(name));
+    // Column two runs alongside column one, not below it…
+    expect(attr("ljus", "y")).toBe(attr("alfa", "y"));
+    expect(attr("hus", "y")).toBe(attr("dag", "y") + 46);
+    // …to its right.
+    expect(attr("dag", "x")).toBeLessThan(0);
+    expect(attr("sol", "x")).toBeGreaterThan(0);
   });
 });
 
