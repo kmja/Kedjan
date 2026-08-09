@@ -1,4 +1,10 @@
-import { Fragment, type CSSProperties } from "react";
+import {
+  Fragment,
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import type { Day } from "../types";
 import { JOINT_ZONE } from "../game/useChipDrag";
 
@@ -17,6 +23,12 @@ import { JOINT_ZONE } from "../game/useChipDrag";
  */
 /** Sideways travel at the widest point of the resting sway, in pixels. */
 const IDLE_AMPLITUDE = 2.6;
+/** A loose end is the free tip of its chain: it travels furthest… */
+const LOOSE_GAIN = 1.6;
+/** …and swings, pivoting where it is attached, rather than only drifting. */
+const LOOSE_TILT = 9;
+/** A part is a rigid box hung on the chain; it barely tips. */
+const PART_TILT = 1.4;
 /** How far the piece at the epicentre of a placement swings, in degrees. */
 const PULSE_DEGREES = 3.2;
 /** Each piece further from the epicentre swings e^-k as far. */
@@ -28,6 +40,75 @@ const PULSE_FLOOR = 0.06;
 
 const pulseAt = (distance: number) =>
   PULSE_DEGREES * Math.exp(-PULSE_FALLOFF * distance);
+
+/** The beat a placed part is left where it was dropped, before the chain moves. */
+const SETTLE_HOLD_MS = 110;
+/** How long the chain then takes to open up around it. */
+const SETTLE_MS = 380;
+
+/**
+ * Let the chain rearrange itself in front of the player instead of jumping.
+ *
+ * Adding a part re-lays out everything below it, and a layout jump is a
+ * change nobody can follow: the board simply looks different. So each row
+ * is measured before and after, and any row that moved is animated from
+ * where it was — the standard first-last-invert-play. The whole rearrangement
+ * waits a beat first, which leaves the part sitting where it was dropped
+ * long enough to register before the chain opens up around it.
+ *
+ * The animations run on the rows; the swaying runs on the pieces inside
+ * them, so neither can overwrite the other's transform.
+ */
+function useSettling(signature: string) {
+  const root = useRef<HTMLOListElement>(null);
+  const before = useRef(new Map<string, number>());
+
+  useLayoutEffect(() => {
+    const rows = root.current?.querySelectorAll<HTMLElement>("[data-row]");
+    if (!rows) return;
+    const after = new Map<string, number>();
+    for (const row of rows)
+      after.set(row.dataset.row!, row.getBoundingClientRect().top);
+
+    for (const row of rows) {
+      // jsdom has no Web Animations; the measuring above is harmless there.
+      if (typeof row.animate !== "function") break;
+      const id = row.dataset.row!;
+      const from =
+        before.current.get(id) ?? before.current.get(row.dataset.rowFrom ?? "");
+      const timing = {
+        duration: SETTLE_MS,
+        delay: SETTLE_HOLD_MS,
+        easing: "cubic-bezier(0.22, 0.8, 0.3, 1)",
+        fill: "backwards" as const,
+      };
+      // A link is something the board draws once it knows where things are,
+      // so a new one fades in as the chain moves rather than during the hold.
+      // A part is something the player put down: it shows at once, where they
+      // dropped it. That is what keeps the held frame the board they left.
+      if (
+        before.current.size &&
+        !before.current.has(id) &&
+        "rowFade" in row.dataset
+      ) {
+        row.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+      }
+      if (from === undefined) continue;
+      const travel = from - after.get(id)!;
+      if (Math.abs(travel) < 1) continue;
+      row.animate(
+        [
+          { transform: `translateY(${travel.toFixed(1)}px)` },
+          { transform: "none" },
+        ],
+        timing,
+      );
+    }
+    before.current = after;
+  }, [signature]);
+
+  return root;
+}
 
 type ChipHandlers = Record<string, unknown>;
 
@@ -91,6 +172,9 @@ export function Chain({
 }: Props) {
   const full = [day.start, ...chain, day.target];
   const forged = (index: number) => jointMarks[index] === "ok";
+  const settling = useSettling(
+    `${full.join(">")}|${jointMarks.join(",")}|${solved}`,
+  );
 
   /*
    * The board is not one chain until it is finished. Every link that has not
@@ -119,7 +203,8 @@ export function Chain({
     seq.push({ kind: "part", at: i, chainNo });
   }
 
-  const partPiece = (i: number) => seq.findIndex((s) => s.kind === "part" && s.at === i);
+  const partPiece = (i: number) =>
+    seq.findIndex((s) => s.kind === "part" && s.at === i);
   const settledAt = settled ? chain.indexOf(settled.part) : -1;
   const epicentre = settledAt < 0 ? null : partPiece(settledAt + 1);
 
@@ -129,7 +214,12 @@ export function Chain({
    * at both — which only happens once the day is won — it stands still at the
    * ends and swings in the middle; pinned at neither, it drifts as one.
    */
-  const restingSway = (within: number, of: number, top: boolean, bottom: boolean) => {
+  const restingSway = (
+    within: number,
+    of: number,
+    top: boolean,
+    bottom: boolean,
+  ) => {
     if (of < 2) return top || bottom ? 0 : 1;
     const t = within / (of - 1);
     if (top && bottom) return Math.sin(Math.PI * t);
@@ -143,21 +233,32 @@ export function Chain({
     const kin = seq.filter((s) => s.chainNo === mine.chainNo);
     const within = kin.indexOf(mine);
     const anchoredTop = kin.some((s) => s.kind === "part" && s.at === 0);
-    const anchoredBottom = kin.some((s) => s.kind === "part" && s.at === full.length - 1);
-    const amp = IDLE_AMPLITUDE * restingSway(within, kin.length, anchoredTop, anchoredBottom);
+    const anchoredBottom = kin.some(
+      (s) => s.kind === "part" && s.at === full.length - 1,
+    );
+    const share = restingSway(within, kin.length, anchoredTop, anchoredBottom);
+    const dangling = mine.kind === "loose-below" || mine.kind === "loose-above";
+    const amp = IDLE_AMPLITUDE * share * (dangling ? LOOSE_GAIN : 1);
+    const tilt = share * (dangling ? LOOSE_TILT : PART_TILT);
 
     const style = {
       "--amp": `${amp.toFixed(2)}px`,
+      "--tilt": `${tilt.toFixed(2)}deg`,
       // A piece swings from where it is held: from the link above it, or —
       // on the chain hanging off the target — from the one below.
       "--pivot":
-        mine.kind === "loose-above" || (anchoredBottom && !anchoredTop) ? "100%" : "-0.35rem",
+        mine.kind === "loose-above" || (anchoredBottom && !anchoredTop)
+          ? "100%"
+          : "-0.35rem",
     } as Record<string, string>;
     let className = "chain-piece";
 
     // A pulse runs along the chain the part landed on, and stops at the break.
-    const sameChain = epicentre !== null && seq[epicentre]!.chainNo === mine.chainNo;
-    const away = sameChain ? Math.abs(within - kin.indexOf(seq[epicentre!]!)) : 0;
+    const sameChain =
+      epicentre !== null && seq[epicentre]!.chainNo === mine.chainNo;
+    const away = sameChain
+      ? Math.abs(within - kin.indexOf(seq[epicentre!]!))
+      : 0;
     const swing = sameChain ? pulseAt(away) : 0;
     if (swing > PULSE_FLOOR) {
       style["--pulse"] = `${swing.toFixed(2)}deg`;
@@ -165,13 +266,16 @@ export function Chain({
       // Two identical pulses under alternating names: swapping the class
       // restarts the swing when a part is re-hung, without remounting the
       // piece and throwing away keyboard focus.
-      className += settled!.nonce % 2 ? " chain-piece--pulse-b" : " chain-piece--pulse-a";
+      className +=
+        settled!.nonce % 2 ? " chain-piece--pulse-b" : " chain-piece--pulse-a";
     }
     return { className, style: style as CSSProperties };
   };
 
   const loose = (index: number, side: "below" | "above") => {
-    const at = seq.findIndex((s) => s.kind === `loose-${side}` && s.at === index);
+    const at = seq.findIndex(
+      (s) => s.kind === `loose-${side}` && s.at === index,
+    );
     const { className, style } = piece(at);
     return (
       <span
@@ -184,7 +288,8 @@ export function Chain({
   // A full chain still takes drops from its own parts: moving one around does
   // not lengthen it, and hiding every joint at the ceiling would force a
   // player to take a part out before they could reorder the rest.
-  const canGrow = !solved && (chain.length < maxParts || dragSource === "chain");
+  const canGrow =
+    !solved && (chain.length < maxParts || dragSource === "chain");
 
   const spoken = [
     `Start ${day.start}`,
@@ -234,7 +339,10 @@ export function Chain({
       </>
     );
     /** The compound this joint spells, shown the moment the weld holds. */
-    const word = mark === "ok" ? day.pairs[`${full[index]}>${full[index + 1]}`] : undefined;
+    const word =
+      mark === "ok"
+        ? day.pairs[`${full[index]}>${full[index + 1]}`]
+        : undefined;
     // Hidden while the joint offers its drop slot — the two would overlap.
     // The word links to its dictionary lookup — the player who doubts a weld
     // is one tap from the authority, which is also how ghosts like tomslag
@@ -278,67 +386,103 @@ export function Chain({
     // A forged joint is a piece of chain and hangs like one. An open joint is
     // the gap between two chains: it holds still, and the loose ends inside
     // it swing with whichever chain each belongs to.
-    const hang = forged ? piece(seq.findIndex((x) => x.kind === "link" && x.at === index)) : null;
+    const hang = forged
+      ? piece(seq.findIndex((x) => x.kind === "link" && x.at === index))
+      : null;
+
+    const rowId = `j:${full[index]}>${full[index + 1]}`;
+    // Placing a part splits one link into two; both come out of where that
+    // link was, so the whole board can hold its old shape for the beat.
+    const splitFrom =
+      settledAt >= 0 && (index === settledAt || index === settledAt + 1)
+        ? `j:${full[settledAt]}>${full[settledAt + 2]}`
+        : undefined;
 
     if (!canGrow || forged) {
       return (
         <li
-          className={`joint ${hang?.className ?? ""}`}
-          style={hang?.style}
+          className="link-row"
+          data-row={rowId}
+          data-row-from={splitFrom}
+          data-row-fade=""
           aria-hidden={mark === null}
         >
-          {link}
-          {verdict}
-          {weld}
+          <span
+            className={`joint ${hang?.className ?? ""}`}
+            style={hang?.style}
+          >
+            {link}
+            {verdict}
+            {weld}
+          </span>
         </li>
       );
     }
 
     // Past the forged branch only an open link is left, judged or not yet.
-    const said = mark ? `${full[index]} plus ${full[index + 1]} bildar inget ord. ` : "";
+    const said = mark
+      ? `${full[index]} plus ${full[index + 1]} bildar inget ord. `
+      : "";
     return (
-      <li className={`joint ${open ? "joint--open" : ""}`}>
-        {link}
-        <button
-          type="button"
-          data-drop-zone={`${JOINT_ZONE}${index}`}
-          onClick={() => onJoint(index)}
-          className="joint-hit"
-          aria-label={
-            said +
-            (armed
-              ? `Vald plats i kedjan, efter ${full[index]}.`
-              : `Lägg en del efter ${full[index]}.`)
-          }
-        >
-          {open && (
-            <span
-              className={`joint-slot ${armed ? "joint-slot--armed" : ""} ${
-                over ? "joint-slot--over" : ""
-              }`}
-              aria-hidden="true"
-            >
-              +
-            </span>
-          )}
-        </button>
-        {verdict}
-        {weld}
+      <li
+        className="link-row"
+        data-row={rowId}
+        data-row-from={splitFrom}
+        data-row-fade=""
+      >
+        <span className={`joint ${open ? "joint--open" : ""}`}>
+          {link}
+          <button
+            type="button"
+            data-drop-zone={`${JOINT_ZONE}${index}`}
+            onClick={() => onJoint(index)}
+            className="joint-hit"
+            aria-label={
+              said +
+              (armed
+                ? `Vald plats i kedjan, efter ${full[index]}.`
+                : `Lägg en del efter ${full[index]}.`)
+            }
+          >
+            {open && (
+              <span
+                className={`joint-slot ${armed ? "joint-slot--armed" : ""} ${
+                  over ? "joint-slot--over" : ""
+                }`}
+                aria-hidden="true"
+              >
+                +
+              </span>
+            )}
+          </button>
+          {verdict}
+          {weld}
+        </span>
       </li>
     );
   };
 
+  /**
+   * One row of the chain. A part carries no travel of its own: a placed part
+   * lands where the open link's slot already was, so it simply stays where
+   * the player dropped it while the chain opens up below it.
+   */
+  const row = (i: number, content: ReactNode) => (
+    <li className="link-row" data-row={`p:${full[i]}`}>
+      <span {...piece(partPiece(i))}>{content}</span>
+    </li>
+  );
+
   return (
-    <ol className="chain" aria-label={`Kedjan: ${spoken}`}>
-      <li {...piece(partPiece(0))}>
-        <span className="node node--endpoint">{day.start}</span>
-      </li>
+    <ol className="chain" ref={settling} aria-label={`Kedjan: ${spoken}`}>
+      {row(0, <span className="node node--endpoint">{day.start}</span>)}
 
       {chain.map((part, i) => (
         <Fragment key={part}>
           {joint(i)}
-          <li {...piece(partPiece(i + 1))}>
-            {solved ? (
+          {row(
+            i + 1,
+            solved ? (
               <span className="node">{part}</span>
             ) : (
               <button
@@ -351,21 +495,22 @@ export function Chain({
               >
                 {part}
               </button>
-            )}
-          </li>
+            ),
+          )}
         </Fragment>
       ))}
 
       {joint(chain.length)}
-      <li {...piece(partPiece(full.length - 1))}>
+      {row(
+        full.length - 1,
         <span
           className={`node node--endpoint ${solved ? "snap" : ""} ${
             marked === day.target ? "chip--marked" : ""
           }`}
         >
           {day.target}
-        </span>
-      </li>
+        </span>,
+      )}
     </ol>
   );
 }

@@ -143,21 +143,29 @@ body {
     padding: 0.25rem 0;
     list-style: none;
   }
+  /* A row is where a part or a link sits in the column. The chain's own
+     movement lives on the piece *inside* the row, so re-laying the board out
+     — which animates the rows — can never fight the swaying. */
+  .link-row {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
   /* Every part and every joint is a piece of one chain, and hangs like one:
      it drifts with the resting sway, and pivots from the link above it when
      a pulse reaches it. */
   .chain-piece {
     transform-origin: 50% var(--pivot, -0.35rem);
-    animation: chain-idle 5.4s ease-in-out infinite alternate;
+    animation: chain-idle 4.2s ease-in-out infinite alternate;
   }
   .chain-piece--pulse-a {
     animation:
-      chain-idle 5.4s ease-in-out infinite alternate,
+      chain-idle 4.2s ease-in-out infinite alternate,
       chain-pulse-a 0.95s cubic-bezier(0.36, 0.07, 0.3, 1) var(--pulse-delay, 0ms) both;
   }
   .chain-piece--pulse-b {
     animation:
-      chain-idle 5.4s ease-in-out infinite alternate,
+      chain-idle 4.2s ease-in-out infinite alternate,
       chain-pulse-b 0.95s cubic-bezier(0.36, 0.07, 0.3, 1) var(--pulse-delay, 0ms) both;
   }
 
@@ -684,29 +692,36 @@ body {
    The rest is a pulse that runs out from a part as it clips on, each piece
    swinging a beat after its neighbour and less far.
 
-   Idle animates `translate` and the pulse animates `rotate` — the standalone
-   transform properties, which compose. Both on `transform` and the later
-   animation would simply overwrite the earlier, and the chain would either
-   stop breathing or stop reacting. */
+   Idle animates the standalone `translate` and `rotate` properties and the
+   pulse animates `transform`. The spec applies translate, then rotate, then
+   transform, so all three compose. Driving any two of them from `transform`
+   alone would let the later animation overwrite the earlier, and the chain
+   would stop either breathing or reacting. */
 @keyframes chain-idle {
-  from { translate: calc(var(--amp, 0px) * -1); }
-  to { translate: var(--amp, 0px); }
+  from {
+    translate: calc(var(--amp, 0px) * -1);
+    rotate: calc(var(--tilt, 0deg) * -1);
+  }
+  to {
+    translate: var(--amp, 0px);
+    rotate: var(--tilt, 0deg);
+  }
 }
 @keyframes chain-pulse-a {
-  0% { rotate: 0deg; }
-  18% { rotate: var(--pulse, 0deg); }
-  40% { rotate: calc(var(--pulse, 0deg) * -0.62); }
-  62% { rotate: calc(var(--pulse, 0deg) * 0.34); }
-  82% { rotate: calc(var(--pulse, 0deg) * -0.14); }
-  100% { rotate: 0deg; }
+  0% { transform: rotate(0deg); }
+  18% { transform: rotate(var(--pulse, 0deg)); }
+  40% { transform: rotate(calc(var(--pulse, 0deg) * -0.62)); }
+  62% { transform: rotate(calc(var(--pulse, 0deg) * 0.34)); }
+  82% { transform: rotate(calc(var(--pulse, 0deg) * -0.14)); }
+  100% { transform: rotate(0deg); }
 }
 @keyframes chain-pulse-b {
-  0% { rotate: 0deg; }
-  18% { rotate: var(--pulse, 0deg); }
-  40% { rotate: calc(var(--pulse, 0deg) * -0.62); }
-  62% { rotate: calc(var(--pulse, 0deg) * 0.34); }
-  82% { rotate: calc(var(--pulse, 0deg) * -0.14); }
-  100% { rotate: 0deg; }
+  0% { transform: rotate(0deg); }
+  18% { transform: rotate(var(--pulse, 0deg)); }
+  40% { transform: rotate(calc(var(--pulse, 0deg) * -0.62)); }
+  62% { transform: rotate(calc(var(--pulse, 0deg) * 0.34)); }
+  82% { transform: rotate(calc(var(--pulse, 0deg) * -0.14)); }
+  100% { transform: rotate(0deg); }
 }
 
 @keyframes snap-in {
