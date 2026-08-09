@@ -156,17 +156,22 @@ body {
      a pulse reaches it. */
   .chain-piece {
     transform-origin: 50% var(--pivot, -0.35rem);
-    animation: chain-idle 2.6s ease-in-out infinite alternate;
+    animation: chain-idle var(--period, 2.6s) ease-in-out var(--phase, 0s)
+      infinite alternate;
   }
   .chain-piece--pulse-a {
     animation:
-      chain-idle 2.6s ease-in-out infinite alternate,
-      chain-pulse-a 0.95s cubic-bezier(0.36, 0.07, 0.3, 1) var(--pulse-delay, 0ms) both;
+      chain-idle var(--period, 2.6s) ease-in-out var(--phase, 0s) infinite
+        alternate,
+      chain-pulse-a 0.95s cubic-bezier(0.36, 0.07, 0.3, 1)
+        var(--pulse-delay, 0ms) both;
   }
   .chain-piece--pulse-b {
     animation:
-      chain-idle 2.6s ease-in-out infinite alternate,
-      chain-pulse-b 0.95s cubic-bezier(0.36, 0.07, 0.3, 1) var(--pulse-delay, 0ms) both;
+      chain-idle var(--period, 2.6s) ease-in-out var(--phase, 0s) infinite
+        alternate,
+      chain-pulse-b 0.95s cubic-bezier(0.36, 0.07, 0.3, 1)
+        var(--pulse-delay, 0ms) both;
   }
 
   /* A joint is the run of chain between two parts. It takes a part when the

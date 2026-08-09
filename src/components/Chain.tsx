@@ -47,6 +47,23 @@ const PULSE_FLOOR = 0.06;
 const pulseAt = (distance: number) =>
   PULSE_DEGREES * Math.exp(-PULSE_FALLOFF * distance);
 
+/** The range of resting periods a chain can take, in seconds. */
+const SWAY_SLOWEST = 3.2;
+const SWAY_QUICKEST = 2.2;
+
+/**
+ * A number in [0, 1) from a word — stable, so a chain keeps the same rhythm
+ * for as long as it exists rather than lurching every time it is redrawn.
+ * FNV-1a; nothing here needs a better hash than that.
+ */
+function seedOf(word: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < word.length; i++) {
+    h = Math.imul(h ^ word.charCodeAt(i), 16777619);
+  }
+  return (h >>> 0) / 4294967296;
+}
+
 /**
  * A link, drawn as the ring it is.
  *
@@ -294,6 +311,40 @@ export function Chain({
 
   const partPiece = (i: number) =>
     seq.findIndex((s) => s.kind === "part" && s.at === i);
+
+  /*
+   * Two chains hanging in perfect step look like one mechanism, not two
+   * pieces of chain. Each gets its own period and its own point in the
+   * cycle, seeded from the word at the end that holds it — the start, the
+   * target, or its topmost part if nothing holds it. That word outlives
+   * every part added to the chain, so the rhythm never lurches mid-play.
+   */
+  const rhythm = new Map<number, { period: number; phase: number }>();
+  for (const chainNo of new Set(seq.map((x) => x.chainNo))) {
+    const kin = seq.filter((x) => x.chainNo === chainNo);
+    const fromTop = kin.some((x) => x.kind === "part" && x.at === 0);
+    const fromBottom = kin.some(
+      (x) => x.kind === "part" && x.at === full.length - 1,
+    );
+    const anchor = fromTop
+      ? day.start
+      : fromBottom
+        ? day.target
+        : full[kin.find((x) => x.kind === "part")?.at ?? 0]!;
+    const seed = seedOf(anchor);
+    const period = SWAY_QUICKEST + seed * (SWAY_SLOWEST - SWAY_QUICKEST);
+    // Under `alternate`, a delay of one whole period runs a chain backwards
+    // against its neighbour. Which end holds a chain sets that coarse
+    // offset — the two on screen are always held at opposite ends, so they
+    // always oppose — and the seed only jitters it, because two seeds drawn
+    // at random can land close enough to look like one mechanism, and once
+    // did.
+    const opposed = !fromTop && fromBottom ? 1 : fromTop || fromBottom ? 0 : 0.5;
+    rhythm.set(chainNo, {
+      period,
+      phase: -period * (opposed + seed * 0.3),
+    });
+  }
   const settledAt = settled ? chain.indexOf(settled.part) : -1;
   const epicentre = settledAt < 0 ? null : partPiece(settledAt + 1);
 
@@ -338,10 +389,13 @@ export function Chain({
     const tilt =
       share * (dangling ? LOOSE_TILT : PART_TILT) * (heldBelow ? -1 : 1);
 
+    const beat = rhythm.get(mine.chainNo)!;
     const style = {
       "--amp": `${amp.toFixed(2)}px`,
       "--tilt": `${tilt.toFixed(2)}deg`,
       "--pivot": heldBelow ? "100%" : "-0.35rem",
+      "--period": `${beat.period.toFixed(2)}s`,
+      "--phase": `${beat.phase.toFixed(2)}s`,
     } as Record<string, string>;
     let className = "chain-piece";
 
