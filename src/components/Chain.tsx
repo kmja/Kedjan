@@ -1,6 +1,33 @@
-import { Fragment } from "react";
+import { Fragment, type CSSProperties } from "react";
 import type { Day } from "../types";
 import { JOINT_ZONE } from "../game/useChipDrag";
+
+/**
+ * How the chain hangs and moves.
+ *
+ * The chain is anchored at both ends — the start above, the target below —
+ * so at rest it does what a real chain fixed at both ends does: a standing
+ * wave, motionless at the anchors and widest in the middle. Amplitude is
+ * therefore a half sine over the chain's length, computed per piece rather
+ * than guessed, so adding a part reshapes the whole hang.
+ *
+ * A part clipping on sends a pulse out from where it landed: each piece
+ * swings a beat after its neighbour and less far, which is what makes the
+ * chain read as one connected thing rather than a stack of chips.
+ */
+/** Sideways travel at the widest point of the resting sway, in pixels. */
+const IDLE_AMPLITUDE = 2.6;
+/** How far the piece at the epicentre of a placement swings, in degrees. */
+const PULSE_DEGREES = 3.2;
+/** Each piece further from the epicentre swings e^-k as far. */
+const PULSE_FALLOFF = 0.45;
+/** …and a beat later, so the pulse travels rather than flashing. */
+const PULSE_STEP_MS = 55;
+/** Below this the swing is not worth an animation. */
+const PULSE_FLOOR = 0.06;
+
+const pulseAt = (distance: number) =>
+  PULSE_DEGREES * Math.exp(-PULSE_FALLOFF * distance);
 
 type ChipHandlers = Record<string, unknown>;
 
@@ -63,11 +90,28 @@ export function Chain({
   onJoint,
 }: Props) {
   const full = [day.start, ...chain, day.target];
-  // Two identical sway animations under alternating names: swapping the
-  // class restarts the swing when the same chip is re-hung, without
-  // remounting the button and losing keyboard focus.
-  const swayClass = (part: string) =>
-    settled?.part !== part ? "" : settled.nonce % 2 ? "node--sway-b" : "node--sway-a";
+
+  // Parts and joints alternate all the way down, so the chain is one run of
+  // pieces: part i sits at 2i, the joint after it at 2i + 1.
+  const pieces = 2 * full.length - 1;
+  const settledAt = settled ? chain.indexOf(settled.part) : -1;
+  const epicentre = settledAt < 0 ? null : 2 * (settledAt + 1);
+
+  const piece = (at: number) => {
+    const amp = IDLE_AMPLITUDE * Math.sin((Math.PI * at) / (pieces - 1));
+    const swing = epicentre === null ? 0 : pulseAt(Math.abs(at - epicentre));
+    const style = { "--amp": `${amp.toFixed(2)}px` } as Record<string, string>;
+    let className = "chain-piece";
+    if (swing > PULSE_FLOOR) {
+      style["--pulse"] = `${swing.toFixed(2)}deg`;
+      style["--pulse-delay"] = `${Math.abs(at - epicentre!) * PULSE_STEP_MS}ms`;
+      // Two identical pulses under alternating names: swapping the class
+      // restarts the swing when a part is re-hung, without remounting the
+      // piece and throwing away keyboard focus.
+      className += settled!.nonce % 2 ? " chain-piece--pulse-b" : " chain-piece--pulse-a";
+    }
+    return { className, style: style as CSSProperties };
+  };
   // A full chain still takes drops from its own parts: moving one around does
   // not lengthen it, and hiding every joint at the ceiling would force a
   // player to take a part out before they could reorder the rest.
@@ -155,9 +199,15 @@ export function Chain({
         <span className="sr-only">öppen länk</span>
       ) : null;
 
+    const hang = piece(2 * index + 1);
+
     if (!canGrow || forged) {
       return (
-        <li className="joint" aria-hidden={mark === null}>
+        <li
+          className={`joint ${hang.className}`}
+          style={hang.style}
+          aria-hidden={mark === null}
+        >
           {line}
           {verdict}
           {weld}
@@ -168,7 +218,10 @@ export function Chain({
     // Past the forged branch only an open link is left, judged or not yet.
     const said = mark ? `${full[index]} plus ${full[index + 1]} bildar inget ord. ` : "";
     return (
-      <li className={`joint ${open ? "joint--open" : ""}`}>
+      <li
+        className={`joint ${open ? "joint--open" : ""} ${hang.className}`}
+        style={hang.style}
+      >
         <button
           type="button"
           data-drop-zone={`${JOINT_ZONE}${index}`}
@@ -201,14 +254,14 @@ export function Chain({
 
   return (
     <ol className="chain" aria-label={`Kedjan: ${spoken}`}>
-      <li>
+      <li {...piece(0)}>
         <span className="node node--endpoint">{day.start}</span>
       </li>
 
       {chain.map((part, i) => (
         <Fragment key={part}>
           {joint(i)}
-          <li>
+          <li {...piece(2 * (i + 1))}>
             {solved ? (
               <span className="node">{part}</span>
             ) : (
@@ -217,7 +270,7 @@ export function Chain({
                 {...handlers(part, "chain")}
                 className={`node node--removable ${
                   liftedPart === part ? "chip--lifted" : ""
-                } ${swayClass(part)}`}
+                }`}
                 aria-label={`Länk ${i + 1}, ${part}. Ta bort den ur kedjan.`}
               >
                 {part}
@@ -228,7 +281,7 @@ export function Chain({
       ))}
 
       {joint(chain.length)}
-      <li>
+      <li {...piece(pieces - 1)}>
         <span
           className={`node node--endpoint ${solved ? "snap" : ""} ${
             marked === day.target ? "chip--marked" : ""

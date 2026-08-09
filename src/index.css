@@ -143,6 +143,24 @@ body {
     padding: 0.25rem 0;
     list-style: none;
   }
+  /* Every part and every joint is a piece of one chain, and hangs like one:
+     it drifts with the resting sway, and pivots from the link above it when
+     a pulse reaches it. */
+  .chain-piece {
+    transform-origin: 50% -0.35rem;
+    animation: chain-idle 5.4s ease-in-out infinite alternate;
+  }
+  .chain-piece--pulse-a {
+    animation:
+      chain-idle 5.4s ease-in-out infinite alternate,
+      chain-pulse-a 0.95s cubic-bezier(0.36, 0.07, 0.3, 1) var(--pulse-delay, 0ms) both;
+  }
+  .chain-piece--pulse-b {
+    animation:
+      chain-idle 5.4s ease-in-out infinite alternate,
+      chain-pulse-b 0.95s cubic-bezier(0.36, 0.07, 0.3, 1) var(--pulse-delay, 0ms) both;
+  }
+
   /* A joint is the run of chain between two parts. It takes a part when the
      chain can still grow, and carries that link's verdict once judged. */
   .joint {
@@ -503,19 +521,6 @@ body {
     border-color: var(--falu);
     transform: translateY(-1px);
   }
-  /* Just clipped on: the part swings a little on its new hook and settles.
-     The pivot sits above the chip, on the link it now hangs from, so the
-     swing reads as weight rather than as a wobble. Two identical animations
-     under two names — the chain alternates them so a part re-hung twice
-     swings twice without being remounted. */
-  .node--sway-a {
-    transform-origin: 50% -0.7rem;
-    animation: node-sway-a 1s cubic-bezier(0.36, 0.07, 0.3, 1) both;
-  }
-  .node--sway-b {
-    transform-origin: 50% -0.7rem;
-    animation: node-sway-b 1s cubic-bezier(0.36, 0.07, 0.3, 1) both;
-  }
   .node--removable:active {
     transform: translateY(1px);
   }
@@ -661,22 +666,37 @@ body {
   }
 }
 
-/* Hung on its hook: a swing that loses height each time, then stillness. */
-@keyframes node-sway-a {
-  0% { transform: rotate(0deg); }
-  18% { transform: rotate(2.6deg); }
-  38% { transform: rotate(-1.8deg); }
-  58% { transform: rotate(1.1deg); }
-  78% { transform: rotate(-0.5deg); }
-  100% { transform: rotate(0deg); }
+/* The chain never sits perfectly still. Every piece — part and joint alike —
+   drifts through the same slow standing wave, its amplitude set per piece by
+   the component: nothing at the anchors, widest in the middle, which is how a
+   chain fixed at both ends actually hangs.
+
+   The rest is a pulse that runs out from a part as it clips on, each piece
+   swinging a beat after its neighbour and less far.
+
+   Idle animates `translate` and the pulse animates `rotate` — the standalone
+   transform properties, which compose. Both on `transform` and the later
+   animation would simply overwrite the earlier, and the chain would either
+   stop breathing or stop reacting. */
+@keyframes chain-idle {
+  from { translate: calc(var(--amp, 0px) * -1); }
+  to { translate: var(--amp, 0px); }
 }
-@keyframes node-sway-b {
-  0% { transform: rotate(0deg); }
-  18% { transform: rotate(2.6deg); }
-  38% { transform: rotate(-1.8deg); }
-  58% { transform: rotate(1.1deg); }
-  78% { transform: rotate(-0.5deg); }
-  100% { transform: rotate(0deg); }
+@keyframes chain-pulse-a {
+  0% { rotate: 0deg; }
+  18% { rotate: var(--pulse, 0deg); }
+  40% { rotate: calc(var(--pulse, 0deg) * -0.62); }
+  62% { rotate: calc(var(--pulse, 0deg) * 0.34); }
+  82% { rotate: calc(var(--pulse, 0deg) * -0.14); }
+  100% { rotate: 0deg; }
+}
+@keyframes chain-pulse-b {
+  0% { rotate: 0deg; }
+  18% { rotate: var(--pulse, 0deg); }
+  40% { rotate: calc(var(--pulse, 0deg) * -0.62); }
+  62% { rotate: calc(var(--pulse, 0deg) * 0.34); }
+  82% { rotate: calc(var(--pulse, 0deg) * -0.14); }
+  100% { rotate: 0deg; }
 }
 
 @keyframes snap-in {
@@ -703,8 +723,9 @@ body {
   .life-shard--right,
   .chip--rejected-a,
   .chip--rejected-b,
-  .node--sway-a,
-  .node--sway-b {
+  .chain-piece,
+  .chain-piece--pulse-a,
+  .chain-piece--pulse-b {
     animation: none;
   }
   /* Without its animation the breaking heart would linger whole; it is
