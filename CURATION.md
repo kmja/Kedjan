@@ -210,6 +210,57 @@ hands you the answer without any deduction at all. Two rules guard this:
 Only five of twenty candidates had *zero* isolated chips, which is why the bar
 is one rather than none — at zero, tone cuts left four days, not five.
 
+## The difficulty is the false path
+
+A day of the trap-scored calendar, read back: every easy chain had **zero**
+false openings — 24 of 24 — and half the hard ones had none either. Every
+part that welded off the start was a winning move. The chains were not easy
+because they had too many solutions; they were easy because the first move
+asked nothing. A player does not count routes, they try a promising part and
+find out.
+
+So `false_paths` measures the two things that are actually asked of a player:
+
+- **false openings** — chips that weld off the start and can reach the target
+  from nowhere. A first move that is legal, inviting, and already lost.
+- **trap depth** — how many parts a doomed line lets a player lay down before
+  the board stops offering anything at all. A trap that springs on the next
+  weld costs nothing to escape.
+
+Requiring them was not enough on its own: pools are grown from winning routes
+and then filled with density decoys, so a cul-de-sac only ever appeared by
+accident. `build_day` now **recruits traps by name** before it fills — chips
+that weld off the start, cannot get home, and are not a doublet partner of
+anything already in — and the requirement is one for the easy chain, two for
+the hard one. It is the heaviest-weighted term in the sweep's score.
+
+`deception`, the older measurement, is the share of *all* welds that lie on no
+winning route, and it misses this entirely: a dead weld deep in the pool is a
+weld nobody was tempted by. Both are scored; they are not the same thing.
+
+## Attestation belongs to the route, not to the fabric
+
+"Only about 35% of any day's welds appear in SALDO, and that share barely
+varies between good days and bad" — true, and the reason it discriminates
+nothing is that it counts decoys. A marginal compound nobody has to make is
+fabric. One on the way through is a word the game vouches for: every weld
+word in play is a link out to svenska.se.
+
+Measured over the words on a winning route only, the same quantity spreads
+0.07 to 0.92, median 0.47 — half the words a median day asks a player to
+build are ones SALDO has never recorded. That is a real dial, and the sweep
+now scores it (`attested`). The calendar takes the well-attested candidates
+for its near dates and the rest for its tail; the tail is the part the next
+sweep replaces first.
+
+## The calendar is history in one direction only
+
+Dates up to and including today keep whatever they already carry — a chain a
+player has solved is not rewritten under them, whatever a later sweep would
+have chosen instead. Everything after today is rebuilt from the newest
+ranking each time the rules improve, endpoints kept distinct across the whole
+calendar, past and future together.
+
 ## Degree prefixes: how helfin got in
 
 `helfin` shipped, and its whole verification was presence in the hunspell list.
@@ -433,10 +484,11 @@ None of these would have been noticed by eye. All three were found because
 
 ## Known gaps
 
-- **SALDO absence is not a quality score.** Only about 35% of any day's welds
-  appear in SALDO, and that share barely varies between good days and bad, so
-  it discriminates nothing on its own. The individual `weak` list is still
-  worth reading; the percentage is not worth computing.
+- **SALDO absence is not a quality score over the whole pool.** About 35% of
+  any day's welds appear in SALDO and that share barely varies between good
+  days and bad — because it counts decoys nobody has to build. Narrowed to the
+  words on a winning route it spreads 0.07 to 0.92 and is now scored; see
+  *Attestation belongs to the route, not to the fabric*.
 - **Positional forms are not modelled.** `broder-` is right initially
   (broderskärlek) and wrong finally (farbroder → farbror). SALDO's *morphology*
   layer has this; the semantic lexicon shipped here does not. The `.dic`'s 2,545
@@ -468,11 +520,13 @@ None of these would have been noticed by eye. All three were found because
   structurally valid *because* of the gap (with tidslinje real, egen→tid→linje
   is under par). Hand-attested words go into `LEXICALIZED_SUPPLEMENT`, the
   mirror of `GHOST_WORDS`; the day was replaced.
-- **Route joins are not scored.** A player read `egen→linje`'s map as "one
-  correct way forward" per link — and a join count over the suffix-merged
-  route DAG confirms it: 2 joins, against 4 for same-scored days. Nodes where
-  routes flow back together should join the sweep's scorer alongside
-  cross-links; until then it is a curation-time check.
+- **Route joins are checked but not scored.** A player read `egen→linje`'s
+  map as "one correct way forward" per link — and a join count over the
+  suffix-merged route DAG confirms it: 2 joins, against 4 for same-scored
+  days. `route_shape` now blocks a day with fewer than three joins, or with a
+  run of more than two parts that decide nothing (the corridor a reveal draws
+  as a straight line). The sweep's score still does not read either number;
+  it only ever sees days that already passed.
 - **A concatenation can coincide with an unrelated word.** `skydd` + `svärd`
   spells *skyddsvärd*, which is real but parses as skydds+värd, "worthy of
   protection" — an adjective, not a compound of shield and sword. SALDO's POS
