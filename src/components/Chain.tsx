@@ -219,6 +219,30 @@ function useSettling(signature: string) {
   const before = useRef(new Map<string, number>());
 
   useLayoutEffect(() => {
+    /*
+     * A CSS animation starts when its element does, so a part added to a
+     * chain begins its sway from scratch while the chain it joined is
+     * halfway through one — and the chain stays broken until the page is
+     * reloaded and everything starts together again. Adding a pulse
+     * restarts a piece's sway for the same reason: changing the list of
+     * animations on an element rebuilds all of them.
+     *
+     * So the sway is pinned to the document's own clock rather than to any
+     * element's birthday. Every piece then reads its place in the cycle
+     * from the same source, and one added mid-swing arrives already in
+     * step. The pulse is left alone: it is a one-off, and belongs to the
+     * moment that set it off.
+     */
+    for (const el of root.current?.querySelectorAll<Element>(
+      ".chain-piece, .ring",
+    ) ?? []) {
+      if (typeof el.getAnimations !== "function") break;
+      for (const a of el.getAnimations()) {
+        const name = (a as CSSAnimation).animationName;
+        if (name === "chain-idle" || name === "ring-swing") a.startTime = 0;
+      }
+    }
+
     const rows = root.current?.querySelectorAll<HTMLElement>("[data-row]");
     if (!rows) return;
     const after = new Map<string, number>();
