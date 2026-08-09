@@ -208,7 +208,7 @@ body {
      holds. Sized to the ring geometry rather than to the joint, so the
      drawing never stretches with the box it sits in. */
   .joint-link {
-    color: var(--gran-ok);
+    color: var(--ink);
   }
   /* An unclosed link is two loose ends, not one line: a ring hanging off the
      chain above and a ring reaching up from the chain below, each open at
