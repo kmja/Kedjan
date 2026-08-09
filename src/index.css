@@ -195,6 +195,15 @@ body {
        neither has reached. */
     height: 6.75rem;
   }
+  /* Each link swings against the one it hangs from, a beat behind it. Nested
+     in the drawing, so the swings compose down the run and the tip moves
+     most — a run of links that all moved together would be wire, not chain. */
+  .ring {
+    transform-box: view-box;
+    animation: ring-swing var(--period, 1s) ease-in-out
+      calc(var(--phase, 0s) + var(--lag, 0ms)) infinite alternate;
+  }
+
   /* A forged link is two rings, interlocked, in the colour of a weld that
      holds. Sized to the ring geometry rather than to the joint, so the
      drawing never stretches with the box it sits in. */
@@ -702,6 +711,15 @@ body {
     rotate: calc(var(--tilt, 0deg) * -1);
   }
 }
+@keyframes ring-swing {
+  from {
+    rotate: var(--swing, 0deg);
+  }
+  to {
+    rotate: calc(var(--swing, 0deg) * -1);
+  }
+}
+
 @keyframes chain-pulse-a {
   0% { transform: rotate(0deg); }
   18% { transform: rotate(var(--pulse, 0deg)); }
@@ -745,7 +763,8 @@ body {
   .chip--rejected-b,
   .chain-piece,
   .chain-piece--pulse-a,
-  .chain-piece--pulse-b {
+  .chain-piece--pulse-b,
+  .ring {
     animation: none;
   }
   /* Without its animation the breaking heart would linger whole; it is

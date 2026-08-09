@@ -22,7 +22,7 @@ import { JOINT_ZONE } from "../game/useChipDrag";
  * chain read as one connected thing rather than a stack of chips.
  */
 /** Sideways travel at the widest point of the resting sway, in pixels. */
-const IDLE_AMPLITUDE = 5;
+const IDLE_AMPLITUDE = 2.4;
 /** A loose end is the free tip of its chain: it travels furthest… */
 const LOOSE_GAIN = 1;
 /**
@@ -32,9 +32,9 @@ const LOOSE_GAIN = 1;
  * carries its lower end the same way the chain is drifting. Matching signs
  * had the two cancelling, which is why the loose end barely moved.
  */
-const LOOSE_TILT = 12;
+const LOOSE_TILT = 6;
 /** A part is a rigid box hung on the chain; it barely tips. */
-const PART_TILT = 2.6;
+const PART_TILT = 1.1;
 /** How far the piece at the epicentre of a placement swings, in degrees. */
 const PULSE_DEGREES = 3.2;
 /** Each piece further from the epicentre swings e^-k as far. */
@@ -48,8 +48,8 @@ const pulseAt = (distance: number) =>
   PULSE_DEGREES * Math.exp(-PULSE_FALLOFF * distance);
 
 /** The range of resting periods a chain can take, in seconds. */
-const SWAY_SLOWEST = 3.2;
-const SWAY_QUICKEST = 2.2;
+const SWAY_SLOWEST = 1.15;
+const SWAY_QUICKEST = 0.8;
 
 /**
  * A number in [0, 1) from a word — stable, so a chain keeps the same rhythm
@@ -84,6 +84,10 @@ const RING_STROKE = 2.2;
 /** Centre to centre. Less than two radii, so consecutive rings interlock. */
 const RING_STEP = 9.4;
 const RING_W = 14;
+/** How far one link swings against the link it hangs from. */
+const RING_SWING = 2.4;
+/** …and how far behind it runs, so the motion travels down the run. */
+const RING_LAG_MS = 70;
 /** A dangling end is one whole link and then the open one at the tip. */
 const LOOSE_RINGS = 2;
 /** A weld is three whole links. */
@@ -110,39 +114,62 @@ function Links({
 }) {
   const height = RING_RY * 2 + (rings - 1) * RING_STEP + 2;
   const opened = gap === "top" ? 0 : gap === "bottom" ? rings - 1 : -1;
+
+  /*
+   * Each link is nested inside the one it hangs from, hinged at the point
+   * where they meet, so their swings compose the way a chain's do: the
+   * second link inherits whatever the first is doing and adds its own, and
+   * the last one at the tip moves most. Each also runs a beat behind the
+   * link above it, which is what stops a run of links reading as one rigid
+   * piece of wire.
+   */
+  const link = (i: number): ReactNode => {
+    const cy = RING_RY + 1 + i * RING_STEP;
+    const open = i === opened;
+    return (
+      <g
+        className="ring"
+        style={
+          {
+            transformOrigin: `${RING_W / 2}px ${cy - RING_RY}px`,
+            "--lag": `${i * RING_LAG_MS}ms`,
+          } as CSSProperties
+        }
+      >
+        {i > 0 && (
+          <path
+            d={ringPath(cy)}
+            fill="none"
+            stroke="var(--paper)"
+            strokeWidth={RING_STROKE + 2.4}
+          />
+        )}
+        <path
+          d={ringPath(cy)}
+          pathLength={100}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={RING_STROKE}
+          strokeLinecap="round"
+          strokeDasharray={open ? "72 28" : undefined}
+          strokeDashoffset={open ? (gap === "bottom" ? -64 : -14) : undefined}
+        />
+        {i + 1 < rings && link(i + 1)}
+      </g>
+    );
+  };
+
   return (
     <svg
       className={className}
       style={{ width: rem(RING_W), height: rem(height), ...style }}
       viewBox={`0 0 ${RING_W} ${height}`}
+      // The links swing past the box they are drawn in; nothing else is
+      // there, so let them.
+      overflow="visible"
       aria-hidden="true"
     >
-      {Array.from({ length: rings }, (_, i) => {
-        const cy = RING_RY + 1 + i * RING_STEP;
-        const open = i === opened;
-        return (
-          <Fragment key={i}>
-            {i > 0 && (
-              <path
-                d={ringPath(cy)}
-                fill="none"
-                stroke="var(--paper)"
-                strokeWidth={RING_STROKE + 2.4}
-              />
-            )}
-            <path
-              d={ringPath(cy)}
-              pathLength={100}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={RING_STROKE}
-              strokeLinecap="round"
-              strokeDasharray={open ? "72 28" : undefined}
-              strokeDashoffset={open ? (gap === "bottom" ? -64 : -14) : undefined}
-            />
-          </Fragment>
-        );
-      })}
+      {link(0)}
     </svg>
   );
 }
@@ -396,6 +423,7 @@ export function Chain({
       "--pivot": heldBelow ? "100%" : "-0.35rem",
       "--period": `${beat.period.toFixed(2)}s`,
       "--phase": `${beat.phase.toFixed(2)}s`,
+      "--swing": `${(heldBelow ? -RING_SWING : RING_SWING).toFixed(2)}deg`,
     } as Record<string, string>;
     let className = "chain-piece";
 
