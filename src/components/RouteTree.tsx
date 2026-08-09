@@ -117,6 +117,10 @@ const ROW = 46;
 const NODE_H = 28;
 const GAP = 10;
 const PAD = 6;
+/** Chips inside a folded corridor sit further apart, so the link reads. */
+const RUN_GAP = 18;
+/** A folded corridor may not grow wider than the map is allowed to be. */
+const MAX_RUN_WIDTH = 330;
 
 /**
  * Position the layers. Suffix merging guarantees every child sits on a lower
@@ -161,8 +165,54 @@ function layout(nodes: DagNode[]): { width: number; height: number } {
     }
   }
 
-  const width = Math.max(...layers.map((l) => place(l)));
-  return { width: width + PAD * 2, height: layers.length * ROW };
+  // Fold corridors. A run of layers holding one node each, chained parent to
+  // child, is a shared stretch every route walks — and one row per node
+  // spends a screenful on what reads as a single line. Lay it out
+  // horizontally instead: left to right is the flow's direction as much as
+  // downward is. The start and target stay on rows of their own — they
+  // anchor the map — and a run folds only as far as the width allows.
+  const rows: DagNode[][] = [];
+  const chainable: boolean[] = [];
+  const span = (row: DagNode[], gap: number) =>
+    row.reduce((w, n) => w + n.width, 0) + gap * (row.length - 1);
+  for (const layer of layers) {
+    const solo = layer.length === 1 ? layer[0]! : null;
+    const prev = rows[rows.length - 1];
+    const last = prev?.[prev.length - 1];
+    if (
+      solo &&
+      last &&
+      chainable[rows.length - 1] &&
+      last.children.length === 1 &&
+      last.children[0] === solo.id &&
+      solo.parents.length === 1 &&
+      last.parents.length > 0 &&
+      solo.children.length > 0 &&
+      span([...prev!, solo], RUN_GAP) <= MAX_RUN_WIDTH
+    ) {
+      prev!.push(solo);
+    } else {
+      rows.push([...layer]);
+      chainable.push(solo !== null);
+    }
+  }
+
+  const placeRun = (row: DagNode[]) => {
+    const total = span(row, RUN_GAP);
+    let x = -total / 2;
+    for (const n of row) {
+      n.x = x + n.width / 2;
+      x += n.width + RUN_GAP;
+    }
+    return total;
+  };
+  const width = Math.max(
+    ...rows.map((row, r) => {
+      for (const n of row) n.y = r;
+      return row.length > 1 && chainable[r] ? placeRun(row) : place(row);
+    }),
+  );
+  return { width: width + PAD * 2, height: rows.length * ROW };
 }
 
 /**
@@ -203,15 +253,23 @@ export function RouteTree({ day, mine, others }: Props) {
         }}
       >
         {edges.map(({ from, to, mine: onMine }) => {
-          const y1 = nodeY(from) + NODE_H / 2 + 1;
-          const y2 = nodeY(to) - NODE_H / 2 - 1;
-          const bend = Math.min(14, (y2 - y1) / 2);
+          // Inside a folded corridor the flow runs left to right: a short
+          // straight link from chip edge to chip edge, on the row's midline.
+          const d =
+            from.y === to.y
+              ? `M ${from.x + from.width / 2 + 1} ${nodeY(from)} L ${to.x - to.width / 2 - 1} ${nodeY(to)}`
+              : (() => {
+                  const y1 = nodeY(from) + NODE_H / 2 + 1;
+                  const y2 = nodeY(to) - NODE_H / 2 - 1;
+                  const bend = Math.min(14, (y2 - y1) / 2);
+                  return `M ${from.x} ${y1} C ${from.x} ${y1 + bend}, ${to.x} ${y2 - bend}, ${to.x} ${y2}`;
+                })();
           return (
             <path
               key={`${from.id}>${to.id}`}
               className="dag-edge"
               pathLength={1}
-              d={`M ${from.x} ${y1} C ${from.x} ${y1 + bend}, ${to.x} ${y2 - bend}, ${to.x} ${y2}`}
+              d={d}
               fill="none"
               stroke={onMine ? "var(--falu)" : "var(--edge)"}
               strokeWidth={onMine ? 3.5 : 2}

@@ -255,6 +255,39 @@ describe("the route map", () => {
     // Exactly the three edges of sten→mur→vägg→hus — not mur→hus.
     expect(mineEdges).toHaveLength(3);
   });
+
+  it("folds a corridor onto one row instead of a screenful of layers", async () => {
+    // Both routes funnel through port→gång→torn: a shared stretch every
+    // route walks earns one horizontal row, not one row per chip.
+    mockCalendar([{
+      ...testDay, date: "2026-08-06", no: 1, start: "sten", target: "hus",
+      par: 5, budget: 6,
+      pool: ["mur", "vägg", "port", "gång", "torn"],
+      pairs: {
+        "sten>mur": "stenmur", "sten>vägg": "stenvägg",
+        "mur>port": "murport", "vägg>port": "väggport",
+        "port>gång": "portgång", "gång>torn": "gångtorn", "torn>hus": "tornhus",
+      },
+    }]);
+    const u = user();
+    render(<App />);
+    await board();
+    for (const part of ["mur", "port", "gång", "torn"]) {
+      await u.click(screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") }));
+    }
+    const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
+    const tree = within(dialog).getByLabelText("Alla vägar till målet, som ett träd");
+
+    const y = (part: string) => within(tree).getByText(part).getAttribute("y");
+    expect(y("gång")).toBe(y("port"));
+    expect(y("torn")).toBe(y("port"));
+    expect(y("hus")).not.toBe(y("torn"));
+    // The corridor's links run left to right: straight horizontal segments.
+    const horizontal = [...tree.querySelectorAll("path")].filter((p) =>
+      p.getAttribute("d")?.includes(" L "),
+    );
+    expect(horizontal).toHaveLength(2);
+  });
 });
 
 describe("the ending dialog", () => {
