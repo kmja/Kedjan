@@ -63,11 +63,15 @@ def test_flags_a_chain_where_every_opening_wins():
     assert any("lead nowhere" in m for m in found)
 
 
-def test_a_trap_that_springs_at_once_is_only_a_warning():
-    """Better than none, but a part that dies immediately costs little."""
-    day = a_day()
-    assert any("deep" in m for m in warnings(curate.check_day(day)))
-    assert not any("deep" in m for m in errors(curate.check_day(day)))
+def test_finds_the_opening_that_goes_nowhere():
+    """`sump` welds off the start and reaches nothing: the day's trap."""
+    from kedjan import analysis
+
+    traps, depth = analysis.false_paths(a_day())
+    assert traps == ["sump"]
+    # Doomed lines run deeper than the trap itself here — a player can wander
+    # a long way through the pool before the board stops offering anything.
+    assert depth >= 3
 
 
 def test_flags_a_direct_start_to_target_weld():
