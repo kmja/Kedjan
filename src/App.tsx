@@ -227,33 +227,34 @@ export default function App() {
 
             {!game.solved && !game.failed && (
               <>
-                {/* Last in the flex column and pinned there, so the rack is
-                    on screen whatever the chain does above it. It stays here
-                    in the markup, ahead of the controls, because that is the
-                    order the game is played in. */}
-                <Pool
-                  parts={game.pool}
-                  marked={game.marked}
-                  liftedPart={drag?.part ?? null}
-                  incoming={drag?.over === POOL_ZONE}
-                  armedJoint={game.armedJoint}
-                  dimmed={game.dimmed}
-                  rejected={game.rejection}
-                  handlers={handlers}
-                />
-
-                <Controls
-                  day={day}
-                  status={game.status}
-                  announceKey={game.announceKey}
-                  placed={game.chain.length}
-                  hints={game.hints}
-                  parRevealed={game.parRevealed}
-                  onHint={game.hint}
-                  onReset={game.reset}
-                />
-
                 <ReportWord pair={game.lastMiss} day={day.date} />
+
+                {/* The rack and the buttons under it travel together and stay
+                    pinned to the foot of the screen, so the moves a player
+                    can make are always where they left them. */}
+                <div className="dock">
+                  <Pool
+                    parts={game.pool}
+                    marked={game.marked}
+                    liftedPart={drag?.part ?? null}
+                    incoming={drag?.over === POOL_ZONE}
+                    armedJoint={game.armedJoint}
+                    dimmed={game.dimmed}
+                    rejected={game.rejection}
+                    handlers={handlers}
+                  />
+
+                  <Controls
+                    day={day}
+                    status={game.status}
+                    announceKey={game.announceKey}
+                    placed={game.chain.length}
+                    hints={game.hints}
+                    parRevealed={game.parRevealed}
+                    onHint={game.hint}
+                    onReset={game.reset}
+                  />
+                </div>
               </>
             )}
 
