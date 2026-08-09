@@ -1,6 +1,7 @@
 import {
   Fragment,
   useLayoutEffect,
+  useState,
   useRef,
   type CSSProperties,
   type ReactNode,
@@ -51,6 +52,9 @@ const pulseAt = (distance: number) =>
 /** The range of resting periods a chain can take, in seconds. */
 const SWAY_SLOWEST = 1.15;
 const SWAY_QUICKEST = 0.8;
+
+/** The fractional part, for wrapping a seed back into [0, 1). */
+const frac = (x: number) => x - Math.floor(x);
 
 /**
  * A number in [0, 1) from a word — stable, so a chain keeps the same rhythm
@@ -359,6 +363,8 @@ export function Chain({
 }: Props) {
   const full = [day.start, ...chain, day.target];
   const forged = (index: number) => jointMarks[index] === "ok";
+  /** How this particular hanging of the chain differs from the last one. */
+  const [drift] = useState(Math.random);
   const settling = useSettling(
     `${full.join(">")}|${jointMarks.join(",")}|${solved}`,
   );
@@ -430,8 +436,6 @@ export function Chain({
     const last = seq[order[order.length - 1]!]!;
     const fromBottom = last.kind === "part" && last.at === full.length - 1;
 
-    // Held at both ends once the day is won: taut, and going nowhere.
-    const angle = fromTop && fromBottom ? 0 : SWAY_ANGLE;
     const heldBelow = fromBottom && !fromTop;
 
     // Walk out from the anchor, adding up what hangs between. The anchoring
@@ -455,8 +459,20 @@ export function Chain({
       : fromBottom
         ? day.target
         : full[seq[order[0]!]!.at]!;
-    const seed = seedOf(anchor);
+    // The word that holds a chain keeps chains apart from each other; the
+    // drift, drawn once when the board appears, keeps a chain from hanging
+    // the same way it did the last time the page was opened. Drawing it per
+    // board rather than per render is the point: a rhythm that changed
+    // under a chain mid-play would make it lurch.
+    const seed = frac(seedOf(anchor) + drift);
     const period = SWAY_QUICKEST + seed * (SWAY_SLOWEST - SWAY_QUICKEST);
+    // Held at both ends once the day is won: taut, and going nowhere.
+    // Otherwise chains differ in how far they swing as well as how fast,
+    // which is most of what keeps two of them from looking like one part.
+    const angle =
+      fromTop && fromBottom
+        ? 0
+        : SWAY_ANGLE * (0.8 + 0.4 * frac(seed + 0.37));
     // Under `alternate`, a delay of one whole period runs a chain backwards
     // against its neighbour. Which end holds a chain sets that coarse
     // offset — the two on screen are always held at opposite ends, so they
