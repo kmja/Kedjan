@@ -156,16 +156,16 @@ body {
      a pulse reaches it. */
   .chain-piece {
     transform-origin: 50% var(--pivot, -0.35rem);
-    animation: chain-idle 4.2s ease-in-out infinite alternate;
+    animation: chain-idle 2.6s ease-in-out infinite alternate;
   }
   .chain-piece--pulse-a {
     animation:
-      chain-idle 4.2s ease-in-out infinite alternate,
+      chain-idle 2.6s ease-in-out infinite alternate,
       chain-pulse-a 0.95s cubic-bezier(0.36, 0.07, 0.3, 1) var(--pulse-delay, 0ms) both;
   }
   .chain-piece--pulse-b {
     animation:
-      chain-idle 4.2s ease-in-out infinite alternate,
+      chain-idle 2.6s ease-in-out infinite alternate,
       chain-pulse-b 0.95s cubic-bezier(0.36, 0.07, 0.3, 1) var(--pulse-delay, 0ms) both;
   }
 
@@ -181,36 +181,31 @@ body {
     transition: height 0.16s ease;
   }
   /* An open joint is a long link with its chip-slot sitting on the line the
-     way a verdict badge sits on a judged one: centred, with the same length
-     of dashed stroke showing on either side as a judged link shows in full. */
+     way the forged link's rings sit on a closed one: centred, with the same
+     air showing above and below it. */
   .joint--open {
     height: 6rem;
   }
-  /* A link not yet forged is dashed; a forged one is solid. A weld that does
-     not hold gets no mark of its own — it simply leaves the link open, the
-     way an unclosed link hangs open on a real chain.
-     Drawn as a border, not a background, so the dash pattern comes free. */
-  .joint-line {
-    width: 0;
-    height: 100%;
-    border-left: 3px dashed var(--edge);
-    transition: border-color 0.2s ease;
+  /* A forged link is two rings, interlocked, in the colour of a weld that
+     holds. Sized to the ring geometry rather than to the joint, so the
+     drawing never stretches with the box it sits in. */
+  .joint-link {
+    width: 1.6rem;
+    height: 3.2rem;
+    color: var(--gran-ok);
   }
-  .joint-line--ok {
-    border-left-style: solid;
-    border-left-color: var(--gran-ok);
-  }
-  /* An unclosed link is two loose ends, not one line: a stub hanging off the
-     chain above and a stub reaching up from the chain below, with clear air
-     between them. They belong to different chains and swing separately —
-     which is the board saying, without words, that these are two chains. */
+  /* An unclosed link is two loose ends, not one line: a ring hanging off the
+     chain above and a ring reaching up from the chain below, each open at
+     the end facing the gap neither has closed. They belong to different
+     chains and swing separately — which is the board saying, without words,
+     that these are two chains. */
   .joint-stub {
     position: absolute;
     left: 50%;
-    margin-left: -1.5px;
-    width: 0;
-    height: 1.15rem;
-    border-left: 3px dashed var(--edge);
+    margin-left: -0.8rem;
+    width: 1.6rem;
+    height: 2.05rem;
+    color: var(--edge);
   }
   .joint-stub--below {
     top: 0;
@@ -263,37 +258,29 @@ body {
        the slot sliding out from under the chip being dragged onto it. */
     transform: translate(-50%, -50%) scale(1.03);
   }
-  .verdict {
-    position: absolute;
-    /* Centred by the box, not by its parent's layout: the verdict floats over
-       whichever form the joint currently takes, and takes no clicks. */
-    inset: 0;
-    margin: auto;
-    pointer-events: none;
-    display: grid;
-    place-items: center;
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 999px;
-    font-size: 1.05rem;
-    font-weight: 800;
-    line-height: 1;
-    animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
-  }
-  .verdict--ok {
-    background: var(--gran-ok);
-    color: var(--on-ok);
-  }
-  /* The word a holding weld spells, written beside its link — set like a
-     dictionary entry, and it IS a link, to the dictionary. */
-  .weld-word {
+  /* The word a holding weld spells, written beside its link, with the tick
+     that says the link holds. Both sit off the chain now that a forged link
+     is drawn as a closed ring — a mark over the drawing would only hide it. */
+  .weld-mark {
     position: absolute;
     /* Above the joint's full-width hit button, or every tap on the word
        lands on the button behind it and quietly arms the joint instead. */
     z-index: 1;
-    left: calc(50% + 1.25rem);
+    left: calc(50% + 1.1rem);
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    animation: verdict-pop 0.34s cubic-bezier(0.22, 1.2, 0.4, 1) both;
+  }
+  .weld-tick {
+    color: var(--gran-ok);
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .weld-word {
     /* Room to miss by a little: the text is small, thumbs are not. */
     padding: 0.45rem 0.3rem;
     white-space: nowrap;
@@ -700,11 +687,11 @@ body {
 @keyframes chain-idle {
   from {
     translate: calc(var(--amp, 0px) * -1);
-    rotate: calc(var(--tilt, 0deg) * -1);
+    rotate: var(--tilt, 0deg);
   }
   to {
     translate: var(--amp, 0px);
-    rotate: var(--tilt, 0deg);
+    rotate: calc(var(--tilt, 0deg) * -1);
   }
 }
 @keyframes chain-pulse-a {

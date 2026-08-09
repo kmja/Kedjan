@@ -22,13 +22,19 @@ import { JOINT_ZONE } from "../game/useChipDrag";
  * chain read as one connected thing rather than a stack of chips.
  */
 /** Sideways travel at the widest point of the resting sway, in pixels. */
-const IDLE_AMPLITUDE = 2.6;
+const IDLE_AMPLITUDE = 5;
 /** A loose end is the free tip of its chain: it travels furthest… */
-const LOOSE_GAIN = 1.6;
-/** …and swings, pivoting where it is attached, rather than only drifting. */
-const LOOSE_TILT = 9;
+const LOOSE_GAIN = 1;
+/**
+ * …and swings, pivoting where it is attached, rather than only drifting.
+ * The tilt runs opposite the drift in sign because CSS rotates clockwise on
+ * a y-down axis: with the pivot above a piece, a negative angle is what
+ * carries its lower end the same way the chain is drifting. Matching signs
+ * had the two cancelling, which is why the loose end barely moved.
+ */
+const LOOSE_TILT = 12;
 /** A part is a rigid box hung on the chain; it barely tips. */
-const PART_TILT = 1.4;
+const PART_TILT = 2.6;
 /** How far the piece at the epicentre of a placement swings, in degrees. */
 const PULSE_DEGREES = 3.2;
 /** Each piece further from the epicentre swings e^-k as far. */
@@ -40,6 +46,74 @@ const PULSE_FLOOR = 0.06;
 
 const pulseAt = (distance: number) =>
   PULSE_DEGREES * Math.exp(-PULSE_FALLOFF * distance);
+
+/**
+ * A link, drawn as the ring it is.
+ *
+ * Geometry in the viewBox is in pixels at the default text size: a ring is
+ * 24.8 tall, and two of them overlap by 4.8 so they read as interlocked
+ * rather than stacked. The ring in front is drawn twice — once fat in the
+ * paper colour — so it breaks the one behind where it passes through, which
+ * is the whole difference between a chain and a row of ovals.
+ *
+ * An open ring is the same path with a gap left in the stroke, facing the
+ * space it has not closed. `pathLength` normalises the outline to 100 so the
+ * gap can be placed as a plain percentage instead of by measuring an arc.
+ */
+const RING_RX = 6.6;
+const RING_RY = 12.4;
+const RING_STROKE = 3.2;
+
+const ringPath = (cy: number) =>
+  `M 10 ${cy - RING_RY}` +
+  ` A ${RING_RX} ${RING_RY} 0 0 1 10 ${cy + RING_RY}` +
+  ` A ${RING_RX} ${RING_RY} 0 0 1 10 ${cy - RING_RY}`;
+
+function Links({
+  rings,
+  gap,
+  className,
+  style,
+}: {
+  rings: 1 | 2;
+  /** Which end of the ring is left open, for a loose end. */
+  gap?: "top" | "bottom";
+  className: string;
+  style?: CSSProperties;
+}) {
+  const centres = rings === 2 ? [14, 34] : [14];
+  return (
+    <svg
+      className={className}
+      style={style}
+      viewBox={`0 0 20 ${rings === 2 ? 48 : 28}`}
+      aria-hidden="true"
+    >
+      {centres.map((cy, i) => (
+        <Fragment key={cy}>
+          {i > 0 && (
+            <path
+              d={ringPath(cy)}
+              fill="none"
+              stroke="var(--paper)"
+              strokeWidth={RING_STROKE + 3.6}
+            />
+          )}
+          <path
+            d={ringPath(cy)}
+            pathLength={100}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={RING_STROKE}
+            strokeLinecap="round"
+            strokeDasharray={gap ? "72 28" : undefined}
+            strokeDashoffset={gap === "bottom" ? -64 : gap === "top" ? -14 : undefined}
+          />
+        </Fragment>
+      ))}
+    </svg>
+  );
+}
 
 /** The beat a placed part is left where it was dropped, before the chain moves. */
 const SETTLE_HOLD_MS = 110;
@@ -278,10 +352,11 @@ export function Chain({
     );
     const { className, style } = piece(at);
     return (
-      <span
+      <Links
+        rings={1}
+        gap={side === "below" ? "bottom" : "top"}
         className={`joint-stub joint-stub--${side} ${className}`}
         style={style}
-        aria-hidden="true"
       />
     );
   };
@@ -331,7 +406,7 @@ export function Chain({
     // drawn at all: what shows is the loose end of the chain above and the
     // loose end of the chain below, with the gap they have not closed.
     const link = forged ? (
-      <span className="joint-line joint-line--ok" />
+      <Links rings={2} className="joint-link" />
     ) : (
       <>
         {loose(index, "below")}
@@ -349,15 +424,20 @@ export function Chain({
     // get caught. svenska.se/?q= is the site's own search form (SAOL, SO and
     // SAOB at once); the /saol/?sok= deep link looked right and did not work.
     const weld = word && !open && (
-      <a
-        className="weld-word"
-        href={`https://svenska.se/?q=${encodeURIComponent(word)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`${word} — slå upp i ordboken`}
-      >
-        {word}
-      </a>
+      <span key={jointStamps[index]} className="weld-mark">
+        <span className="weld-tick" aria-hidden="true">
+          ✓
+        </span>
+        <a
+          className="weld-word"
+          href={`https://svenska.se/?q=${encodeURIComponent(word)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${word} — slå upp i ordboken`}
+        >
+          {word}
+        </a>
+      </span>
     );
     /**
      * A forged link is marked; an open one is simply open. Nothing is drawn
@@ -372,12 +452,9 @@ export function Chain({
      */
     const verdict =
       mark === "ok" ? (
-        <span key={jointStamps[index]} className="verdict verdict--ok">
-          <span className="verdict-glyph" aria-hidden="true">
-            ✓
-          </span>
-          <span className="sr-only">länken håller</span>
-        </span>
+        // A forged link is green and closed, and carries the word it spells.
+        // Nothing needs to be drawn over it to say so.
+        <span className="sr-only">länken håller</span>
       ) : mark === "broken" ? (
         // Nothing to see; the words are for whoever cannot see the gap.
         <span className="sr-only">öppen länk</span>

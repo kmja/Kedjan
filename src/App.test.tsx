@@ -533,8 +533,8 @@ describe("judging the chain", () => {
     await u.click(joint("sten"));
     await u.click(chip("tak"));    // in front: sten+tak ✓, tak+vägg ✗
     const before = screen
-      .getAllByText("länken håller")
-      .map((el) => el.closest(".verdict"));
+      .getAllByRole("link", { name: /ordboken/i })
+      .map((el) => el.closest(".weld-mark"));
     expect(before).toHaveLength(2); // sten+tak and vägg+hus
 
     // Removing the FIRST chip shifts every index behind it, but vägg+hus is
@@ -543,8 +543,8 @@ describe("judging the chain", () => {
     await u.click(screen.getByRole("button", { name: /^länk 1, tak\./i }));
 
     const after = screen
-      .getAllByText("länken håller")
-      .map((el) => el.closest(".verdict"));
+      .getAllByRole("link", { name: /ordboken/i })
+      .map((el) => el.closest(".weld-mark"));
     expect(after).toContain(before[1]);   // vägg+hus untouched
     expect(after).not.toContain(before[0]); // sten+tak is gone with tak
   });
@@ -563,11 +563,13 @@ describe("judging the chain", () => {
     await u.click(chip("tak"));    // sten+tak ✓
     await u.click(chip("glas"));   // tak+glas ✓
     const stenTak = screen
-      .getAllByText("länken håller")[0]!
-      .closest(".verdict");
+      .getByRole("link", { name: /stentak.*ordboken/i })
+      .closest(".weld-mark");
 
     await u.click(screen.getByRole("button", { name: /^länk 1, tak\./i }));
-    const stenGlas = screen.getAllByText("länken håller")[0]!.closest(".verdict");
+    const stenGlas = screen
+      .getByRole("link", { name: /stenglas.*ordboken/i })
+      .closest(".weld-mark");
     expect(stenGlas).not.toBe(stenTak);
   });
 
@@ -599,10 +601,10 @@ describe("judging the chain", () => {
     await u.click(chip("vägg"));  // sten+vägg ✗, vägg+hus ✓
     // The open link says so in words for a screen reader and shows nothing
     // to anyone else: the gap is the message. Only the weld that holds is
-    // marked, so exactly one verdict is drawn on the whole chain.
+    // marked, so exactly one mark is drawn on the whole chain.
     expect(await screen.findAllByText("öppen länk")).toHaveLength(1);
-    expect(document.querySelectorAll(".verdict")).toHaveLength(1);
-    expect(document.querySelector(".verdict--ok")).toBeInTheDocument();
+    expect(document.querySelectorAll(".weld-mark")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /vägghus.*ordboken/i })).toBeInTheDocument();
   });
 
   it("withholds the final joint's verdict while the chain can still grow", async () => {
