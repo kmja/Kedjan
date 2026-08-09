@@ -256,10 +256,12 @@ describe("the route map", () => {
     expect(mineEdges).toHaveLength(3);
   });
 
-  it("draws each part once, even when routes use two chips in either order", async () => {
-    // liv→moder and moder→liv both weld: the old prefix tree drew liv and
-    // moder twice each on neighbouring rows. One chip per part now — the
-    // reverse weld becomes an arrowed arc instead of a duplicate row.
+  it("collapses duplicate chips where it cannot mislead, and only there", async () => {
+    // liv→moder and moder→liv both weld, so the prefix tree draws four
+    // chips for the pair. Merging a duplicate is allowed exactly when
+    // neither copy can reach the other — one of the pair collapses, the
+    // other stays duplicated because merging it would need a cycle. The
+    // downward-only picture survives: no arrows, no arcs.
     mockCalendar([{
       ...testDay, date: "2026-08-06", no: 1, start: "jord", target: "hus",
       par: 3, budget: 4,
@@ -279,11 +281,12 @@ describe("the route map", () => {
     const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
     const tree = within(dialog).getByLabelText("Alla vägar till målet, som ett träd");
 
-    expect(within(tree).getAllByText("liv")).toHaveLength(1);
-    expect(within(tree).getAllByText("moder")).toHaveLength(1);
-    // The weld running against the flow is drawn as an arrowed arc.
-    const arrowed = [...tree.querySelectorAll("path[marker-end]")];
-    expect(arrowed.length).toBeGreaterThanOrEqual(1);
+    const livs = within(tree).getAllByText("liv").length;
+    const moders = within(tree).getAllByText("moder").length;
+    expect(livs + moders).toBe(3);
+    expect(within(tree).getAllByText("tak")).toHaveLength(1);
+    // The hybrid never draws against the flow.
+    expect(tree.querySelectorAll("path[marker-end]")).toHaveLength(0);
   });
 
   it("wraps a deep map into two columns at a chip every route shares", async () => {
