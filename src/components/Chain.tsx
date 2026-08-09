@@ -60,14 +60,24 @@ const pulseAt = (distance: number) =>
  * space it has not closed. `pathLength` normalises the outline to 100 so the
  * gap can be placed as a plain percentage instead of by measuring an arc.
  */
-const RING_RX = 6.6;
-const RING_RY = 12.4;
-const RING_STROKE = 3.2;
+/** Ring geometry, in viewBox units that render one to one with pixels. */
+const RING_RX = 3.6;
+const RING_RY = 6;
+const RING_STROKE = 2.2;
+/** Centre to centre. Less than two radii, so consecutive rings interlock. */
+const RING_STEP = 9.4;
+const RING_W = 14;
+/** A dangling end is two whole links and then the open one at the tip. */
+const LOOSE_RINGS = 3;
+/** Enough small links to run the height of a forged joint. */
+const FORGED_RINGS = 4;
+
+const rem = (units: number) => `${units / 16}rem`;
 
 const ringPath = (cy: number) =>
-  `M 10 ${cy - RING_RY}` +
-  ` A ${RING_RX} ${RING_RY} 0 0 1 10 ${cy + RING_RY}` +
-  ` A ${RING_RX} ${RING_RY} 0 0 1 10 ${cy - RING_RY}`;
+  `M ${RING_W / 2} ${cy - RING_RY}` +
+  ` A ${RING_RX} ${RING_RY} 0 0 1 ${RING_W / 2} ${cy + RING_RY}` +
+  ` A ${RING_RX} ${RING_RY} 0 0 1 ${RING_W / 2} ${cy - RING_RY}`;
 
 function Links({
   rings,
@@ -75,42 +85,47 @@ function Links({
   className,
   style,
 }: {
-  rings: 1 | 2;
-  /** Which end of the ring is left open, for a loose end. */
+  rings: number;
+  /** Which end of the run is left open, on a dangling end. */
   gap?: "top" | "bottom";
   className: string;
   style?: CSSProperties;
 }) {
-  const centres = rings === 2 ? [14, 34] : [14];
+  const height = RING_RY * 2 + (rings - 1) * RING_STEP + 2;
+  const opened = gap === "top" ? 0 : gap === "bottom" ? rings - 1 : -1;
   return (
     <svg
       className={className}
-      style={style}
-      viewBox={`0 0 20 ${rings === 2 ? 48 : 28}`}
+      style={{ width: rem(RING_W), height: rem(height), ...style }}
+      viewBox={`0 0 ${RING_W} ${height}`}
       aria-hidden="true"
     >
-      {centres.map((cy, i) => (
-        <Fragment key={cy}>
-          {i > 0 && (
+      {Array.from({ length: rings }, (_, i) => {
+        const cy = RING_RY + 1 + i * RING_STEP;
+        const open = i === opened;
+        return (
+          <Fragment key={i}>
+            {i > 0 && (
+              <path
+                d={ringPath(cy)}
+                fill="none"
+                stroke="var(--paper)"
+                strokeWidth={RING_STROKE + 2.4}
+              />
+            )}
             <path
               d={ringPath(cy)}
+              pathLength={100}
               fill="none"
-              stroke="var(--paper)"
-              strokeWidth={RING_STROKE + 3.6}
+              stroke="currentColor"
+              strokeWidth={RING_STROKE}
+              strokeLinecap="round"
+              strokeDasharray={open ? "72 28" : undefined}
+              strokeDashoffset={open ? (gap === "bottom" ? -64 : -14) : undefined}
             />
-          )}
-          <path
-            d={ringPath(cy)}
-            pathLength={100}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={RING_STROKE}
-            strokeLinecap="round"
-            strokeDasharray={gap ? "72 28" : undefined}
-            strokeDashoffset={gap === "bottom" ? -64 : gap === "top" ? -14 : undefined}
-          />
-        </Fragment>
-      ))}
+          </Fragment>
+        );
+      })}
     </svg>
   );
 }
@@ -313,17 +328,20 @@ export function Chain({
     const share = restingSway(within, kin.length, anchoredTop, anchoredBottom);
     const dangling = mine.kind === "loose-below" || mine.kind === "loose-above";
     const amp = IDLE_AMPLITUDE * share * (dangling ? LOOSE_GAIN : 1);
-    const tilt = share * (dangling ? LOOSE_TILT : PART_TILT);
+    // A piece swings from where it is held: from the link above it, or — on
+    // a chain hanging off the target — from the one below. Which end holds
+    // it also flips the sign of its tilt, because a body below its pivot and
+    // a body above it swing opposite ways for the same angle. Getting that
+    // wrong reads exactly like a loose end pinned to the empty air above it.
+    const heldBelow =
+      mine.kind === "loose-above" || (anchoredBottom && !anchoredTop);
+    const tilt =
+      share * (dangling ? LOOSE_TILT : PART_TILT) * (heldBelow ? -1 : 1);
 
     const style = {
       "--amp": `${amp.toFixed(2)}px`,
       "--tilt": `${tilt.toFixed(2)}deg`,
-      // A piece swings from where it is held: from the link above it, or —
-      // on the chain hanging off the target — from the one below.
-      "--pivot":
-        mine.kind === "loose-above" || (anchoredBottom && !anchoredTop)
-          ? "100%"
-          : "-0.35rem",
+      "--pivot": heldBelow ? "100%" : "-0.35rem",
     } as Record<string, string>;
     let className = "chain-piece";
 
@@ -353,10 +371,10 @@ export function Chain({
     const { className, style } = piece(at);
     return (
       <Links
-        rings={1}
+        rings={LOOSE_RINGS}
         gap={side === "below" ? "bottom" : "top"}
         className={`joint-stub joint-stub--${side} ${className}`}
-        style={style}
+        style={{ ...style, marginLeft: rem(-RING_W / 2) }}
       />
     );
   };
@@ -406,7 +424,7 @@ export function Chain({
     // drawn at all: what shows is the loose end of the chain above and the
     // loose end of the chain below, with the gap they have not closed.
     const link = forged ? (
-      <Links rings={2} className="joint-link" />
+      <Links rings={FORGED_RINGS} className="joint-link" />
     ) : (
       <>
         {loose(index, "below")}

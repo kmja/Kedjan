@@ -184,14 +184,14 @@ body {
      way the forged link's rings sit on a closed one: centred, with the same
      air showing above and below it. */
   .joint--open {
-    height: 6rem;
+    /* Room for a whole dangling end above and below: two links and the open
+       one, on each side, with air before the slot they have not reached. */
+    height: 7.5rem;
   }
   /* A forged link is two rings, interlocked, in the colour of a weld that
      holds. Sized to the ring geometry rather than to the joint, so the
      drawing never stretches with the box it sits in. */
   .joint-link {
-    width: 1.6rem;
-    height: 3.2rem;
     color: var(--gran-ok);
   }
   /* An unclosed link is two loose ends, not one line: a ring hanging off the
@@ -202,9 +202,6 @@ body {
   .joint-stub {
     position: absolute;
     left: 50%;
-    margin-left: -0.8rem;
-    width: 1.6rem;
-    height: 2.05rem;
     color: var(--edge);
   }
   .joint-stub--below {
