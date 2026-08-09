@@ -160,7 +160,9 @@ body {
   .joint--open {
     height: 6rem;
   }
-  /* A link not yet forged is dashed; a judged one is solid and coloured.
+  /* A link not yet forged is dashed; a forged one is solid. A weld that does
+     not hold gets no mark of its own — it simply leaves the link open, the
+     way an unclosed link hangs open on a real chain.
      Drawn as a border, not a background, so the dash pattern comes free. */
   .joint-line {
     width: 0;
@@ -171,10 +173,6 @@ body {
   .joint-line--ok {
     border-left-style: solid;
     border-left-color: var(--gran-ok);
-  }
-  .joint-line--broken {
-    border-left-style: solid;
-    border-left-color: var(--falu);
   }
   /* The whole joint is the hit area — comfortably past the 44px touch
      minimum — so a judged link is still somewhere a part can be dropped. */
@@ -249,10 +247,6 @@ body {
   .verdict--ok {
     background: var(--gran-ok);
     color: var(--on-ok);
-  }
-  .verdict--broken {
-    background: var(--falu);
-    color: var(--on-falu);
   }
   /* The word a holding weld spells, written beside its link — set like a
      dictionary entry, and it IS a link, to the dictionary. */
@@ -509,6 +503,19 @@ body {
     border-color: var(--falu);
     transform: translateY(-1px);
   }
+  /* Just clipped on: the part swings a little on its new hook and settles.
+     The pivot sits above the chip, on the link it now hangs from, so the
+     swing reads as weight rather than as a wobble. Two identical animations
+     under two names — the chain alternates them so a part re-hung twice
+     swings twice without being remounted. */
+  .node--sway-a {
+    transform-origin: 50% -0.7rem;
+    animation: node-sway-a 1s cubic-bezier(0.36, 0.07, 0.3, 1) both;
+  }
+  .node--sway-b {
+    transform-origin: 50% -0.7rem;
+    animation: node-sway-b 1s cubic-bezier(0.36, 0.07, 0.3, 1) both;
+  }
   .node--removable:active {
     transform: translateY(1px);
   }
@@ -654,6 +661,24 @@ body {
   }
 }
 
+/* Hung on its hook: a swing that loses height each time, then stillness. */
+@keyframes node-sway-a {
+  0% { transform: rotate(0deg); }
+  18% { transform: rotate(2.6deg); }
+  38% { transform: rotate(-1.8deg); }
+  58% { transform: rotate(1.1deg); }
+  78% { transform: rotate(-0.5deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes node-sway-b {
+  0% { transform: rotate(0deg); }
+  18% { transform: rotate(2.6deg); }
+  38% { transform: rotate(-1.8deg); }
+  58% { transform: rotate(1.1deg); }
+  78% { transform: rotate(-0.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
 @keyframes snap-in {
   0% {
     transform: scale(0.85);
@@ -677,7 +702,9 @@ body {
   .life-shard--left,
   .life-shard--right,
   .chip--rejected-a,
-  .chip--rejected-b {
+  .chip--rejected-b,
+  .node--sway-a,
+  .node--sway-b {
     animation: none;
   }
   /* Without its animation the breaking heart would linger whole; it is

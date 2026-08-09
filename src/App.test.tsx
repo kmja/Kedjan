@@ -165,12 +165,39 @@ describe("building the chain", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));
+    await u.click(chip("tak"));    // sten+tak ✓
     expect(screen.getByText("2 länkar")).toBeInTheDocument();
-    await u.click(chip("bro"));   // vägg+bro fails, but bro+hus holds — free
-    expect(link(1, "vägg")).toBeInTheDocument();
-    expect(link(2, "bro")).toBeInTheDocument();
+    await u.click(chip("glas"));   // tak+glas ✓
+    expect(link(1, "tak")).toBeInTheDocument();
+    expect(link(2, "glas")).toBeInTheDocument();
     expect(screen.getByText("3 länkar")).toBeInTheDocument();
+  });
+
+  it("never offers a forged link as a place to put a part", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    // sten+vägg spells nothing, so that link stays open and keeps its slot;
+    // vägg+hus holds, and finished work is not a target.
+    await u.click(chip("vägg"));
+    expect(
+      screen.getByRole("button", { name: /lägg en del efter sten/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /lägg en del efter vägg/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("lands a part on the open link when the end of the chain is forged", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("vägg"));  // vägg+hus holds: the last link is finished
+    // Aimed at nothing in particular, so it would append — but appending
+    // would prise open a weld, so it goes to the link still hanging open.
+    await u.click(chip("tak"));   // sten+tak ✓
+    expect(link(1, "tak")).toBeInTheDocument();
+    expect(link(2, "vägg")).toBeInTheDocument();
   });
 
   it("inserts at the joint the player aimed at", async () => {
@@ -189,15 +216,14 @@ describe("building the chain", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));
-    await u.click(chip("bro"));
-    await u.click(joint("sten"));
-    await u.click(link(2, "bro"));   // out of the chain
-    await u.click(chip("bro"));      // back in, at the armed joint: sten+bro holds
-    expect(link(1, "bro")).toBeInTheDocument();
+    await u.click(chip("tak"));
+    await u.click(chip("glas"));
+    await u.click(link(2, "glas"));   // out of the chain
+    await u.click(chip("glas"));      // and back in
+    expect(link(2, "glas")).toBeInTheDocument();
     // Exactly one home: in the chain, and no longer in the pool.
-    expect(screen.queryByRole("button", { name: /^bro\./i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^länk 2, bro/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^glas\./i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^länk 3, glas/i })).not.toBeInTheDocument();
   });
 
   it("closes the chain up when a part is taken out", async () => {
@@ -503,28 +529,34 @@ describe("judging the chain", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("tak"));    // sten+tak ✓
-    await u.click(chip("glas"));   // tak+glas ✓
+    await u.click(chip("vägg"));   // sten+vägg ✗ open, vägg+hus ✓
     await u.click(joint("sten"));
-    await u.click(chip("mur"));    // in front: sten+mur ✓, mur+tak ✗
+    await u.click(chip("tak"));    // in front: sten+tak ✓, tak+vägg ✗
     const before = screen
       .getAllByText("länken håller")
       .map((el) => el.closest(".verdict"));
-    expect(before).toHaveLength(2); // sten+mur and tak+glas
+    expect(before).toHaveLength(2); // sten+tak and vägg+hus
 
-    // Removing the FIRST chip shifts every index behind it, but tak+glas is
+    // Removing the FIRST chip shifts every index behind it, but vägg+hus is
     // the same weld with the same verdict — it must keep the *same DOM node*,
     // or its pop animation replays on a joint the removal never touched.
-    await u.click(screen.getByRole("button", { name: /^länk 1, mur\./i }));
+    await u.click(screen.getByRole("button", { name: /^länk 1, tak\./i }));
 
     const after = screen
       .getAllByText("länken håller")
       .map((el) => el.closest(".verdict"));
-    expect(after).toContain(before[1]);   // tak+glas untouched
-    expect(after).not.toContain(before[0]); // sten+mur is gone with mur
+    expect(after).toContain(before[1]);   // vägg+hus untouched
+    expect(after).not.toContain(before[0]); // sten+tak is gone with tak
   });
 
   it("re-animates the joint whose weld the removal changed", async () => {
+    // sten welds to both tak and glas, so removing tak leaves the top joint
+    // holding a *different* weld that also holds — the case where position
+    // alone would wrongly carry a stamp across a change of pair.
+    mockCalendar([{
+      ...testDay, date: "2026-08-06", no: 1,
+      pairs: { "sten>tak": "stentak", "tak>glas": "takglas", "sten>glas": "stenglas" },
+    }]);
     const u = user();
     render(<App />);
     await board();
@@ -534,12 +566,8 @@ describe("judging the chain", () => {
       .getAllByText("länken håller")[0]!
       .closest(".verdict");
 
-    // Removing the FIRST chip closes the chain up: the top joint now judges
-    // sten+glas, a different weld with a different verdict. That joint must
-    // come back as a fresh node so its animation plays — position alone must
-    // not carry a stamp across a change of pair.
     await u.click(screen.getByRole("button", { name: /^länk 1, tak\./i }));
-    const stenGlas = (await screen.findByText("bruten länk")).closest(".verdict");
+    const stenGlas = screen.getAllByText("länken håller")[0]!.closest(".verdict");
     expect(stenGlas).not.toBe(stenTak);
   });
 
@@ -555,31 +583,39 @@ describe("judging the chain", () => {
     expect(word).toHaveAttribute("href", "https://svenska.se/?q=stenmur");
   });
 
-  it("writes no word beside a broken weld", async () => {
+  it("writes no word beside a link that does not hold", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("vägg"));  // sten+vägg ✗ — spells nothing
-    expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
+    expect(await screen.findAllByText("öppen länk")).toHaveLength(1);
     expect(screen.queryByText("stenvägg")).not.toBeInTheDocument();
   });
 
-  it("marks a joint that does not hold", async () => {
+  it("draws nothing at all on a link that does not hold", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("vägg"));  // sten+vägg ✗
-    expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
+    await u.click(chip("vägg"));  // sten+vägg ✗, vägg+hus ✓
+    // The open link says so in words for a screen reader and shows nothing
+    // to anyone else: the gap is the message. Only the weld that holds is
+    // marked, so exactly one verdict is drawn on the whole chain.
+    expect(await screen.findAllByText("öppen länk")).toHaveLength(1);
+    expect(document.querySelectorAll(".verdict")).toHaveLength(1);
+    expect(document.querySelector(".verdict--ok")).toBeInTheDocument();
   });
 
-  it("withholds the final joint's cross while slots remain", async () => {
+  it("withholds the final joint's verdict while the chain can still grow", async () => {
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("mur"));
-    // sten+mur holds; mur+hus does not, but with two slots free the honest
-    // answer is "not yet", not "wrong".
-    expect(screen.queryByText("bruten länk")).not.toBeInTheDocument();
+    // sten+mur holds; mur+hus does not, but with room to keep building the
+    // honest answer is "not yet", not "this link is open".
+    expect(screen.queryByText("öppen länk")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /lägg en del efter mur/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows the final joint's check the moment that weld holds", async () => {
@@ -587,30 +623,29 @@ describe("judging the chain", () => {
     render(<App />);
     await board();
     await u.click(chip("vägg"));
-    // sten+vägg is broken, but vägg+hus is a real word — that weld holding is
-    // information whichever way the rest of the chain is going.
-    expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
+    // sten+vägg does not hold, but vägg+hus is a real word — that weld
+    // holding is information whichever way the rest of the chain is going.
+    expect(await screen.findAllByText("öppen länk")).toHaveLength(1);
     expect(screen.getAllByText("länken håller")).toHaveLength(1);
     expect(screen.getByRole("link", { name: /vägghus.*ordboken/i })).toBeInTheDocument();
   });
 
   it("judges the final joint once the board is full", async () => {
+    // A two-part pool, so the board fills in two placements. Until it does,
+    // the last link's failure is "not yet"; once no part is left to play it
+    // is the answer, and the link is called open.
+    mockCalendar([{
+      ...testDay, date: "2026-08-06", no: 1,
+      pool: ["tak", "glas"],
+      pairs: { "sten>tak": "stentak", "tak>glas": "takglas" },
+    }]);
     const u = user();
     render(<App />);
     await board();
-    // Every placement holds on one side; the board fills to all five parts
-    // as bro, mur, vägg, tak, glas — and the final joint glas+hus, whose
-    // cross is withheld while moves remain, is judged with the rest.
     await u.click(chip("tak"));
+    expect(screen.queryByText("öppen länk")).not.toBeInTheDocument();
     await u.click(chip("glas"));
-    await u.click(joint("sten"));
-    await u.click(chip("mur"));
-    await u.click(joint("mur"));
-    await u.click(chip("vägg"));
-    await u.click(joint("sten"));
-    await u.click(chip("bro"));
-    // bro+mur, vägg+tak, and the final glas+hus.
-    expect(await screen.findAllByText("bruten länk")).toHaveLength(3);
+    expect(await screen.findAllByText("öppen länk")).toHaveLength(1);
   });
 
   it("re-judges after a part is taken back out", async () => {
@@ -618,10 +653,10 @@ describe("judging the chain", () => {
     render(<App />);
     await board();
     await u.click(chip("vägg"));
-    expect(await screen.findAllByText("bruten länk")).toHaveLength(1);
+    expect(await screen.findAllByText("öppen länk")).toHaveLength(1);
 
     await u.click(screen.getByRole("button", { name: /^länk 1, vägg\./i }));
-    expect(screen.queryByText("bruten länk")).not.toBeInTheDocument();
+    expect(screen.queryByText("öppen länk")).not.toBeInTheDocument();
   });
 
   it("finishes the day on the placement that completes the chain", async () => {
@@ -995,9 +1030,6 @@ describe("drag and drop", () => {
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
   const link = (n: number, part: string) =>
     screen.getByRole("button", { name: new RegExp(`^länk ${n}, ${part}\\.`, "i") });
-  const joint = (after: string) =>
-    screen.getByRole("button", { name: new RegExp(`lägg en del efter ${after}`, "i") });
-
   /** jsdom reports every rect as zero, so zones need real geometry to hit. */
   function placeZones(heightOf: (index: number) => number = () => 40) {
     Element.prototype.getBoundingClientRect = function (this: Element) {
@@ -1036,21 +1068,24 @@ describe("drag and drop", () => {
   // test context, which would arrive as the height function.
   beforeEach(() => placeZones());
 
+  // A chain with both its links open, so there are two joints to tell apart:
+  // build tak-glas, then take tak back out.
+  const twoOpenJoints = async (u: ReturnType<typeof user>) => {
+    await u.click(chip("tak"));
+    await u.click(chip("glas"));
+    await u.click(screen.getByRole("button", { name: /^länk 1, tak\./i }));
+  };
+
   it("drops a pool chip into the joint it was released over", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("tak"));
-    await u.click(chip("glas"));
-    await u.click(joint("sten"));
-    await u.click(chip("mur"));    // mur, tak, glas — joints 0 through 3 exist
+    await twoOpenJoints(u);
     // Deliberately joint 1, not joint 0: an index-0 drop cannot tell a working
-    // parser from one that returns zero for everything. vägg holds onto mur.
-    await dragTo(chip("vägg"), 100, 120);
-    expect(link(1, "mur")).toBeInTheDocument();
-    expect(link(2, "vägg")).toBeInTheDocument();
-    expect(link(3, "tak")).toBeInTheDocument();
-    expect(link(4, "glas")).toBeInTheDocument();
+    // parser from one that returns zero for everything. bro holds into hus.
+    await dragTo(chip("bro"), 100, 120);
+    expect(link(1, "glas")).toBeInTheDocument();
+    expect(link(2, "bro")).toBeInTheDocument();
   });
 
   it("returns a chain part to the pool when dropped there", async () => {
@@ -1077,32 +1112,30 @@ describe("drag and drop", () => {
   it("drops into the gap it is nearest, not the one whose centre is nearest", async () => {
     // The board grows whichever joint is open, so joints differ in height, and
     // centre distance stops being monotonic down the chain: this drop sits
-    // below joint 1 yet nearer joint 1's centre than joint 2's. Resolving by
-    // centre would send the chip backwards, up past a part the player had
-    // already dropped it below.
-    placeZones((i) => (i === 2 ? 80 : 40));
+    // below joint 0 and nearest joint 1's *edge*, yet nearer joint 0's
+    // centre. Resolving by centre would send the chip backwards, up past a
+    // part the player had already dropped it below.
+    placeZones((i) => (i === 1 ? 80 : 40));
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("tak"));
-    await u.click(chip("glas"));
-    await dragTo(chip("vägg"), 100, 175);   // vägg holds forward into hus
-    expect(link(3, "vägg")).toBeInTheDocument();
+    await twoOpenJoints(u);
+    await dragTo(chip("bro"), 100, 75);
+    expect(link(1, "glas")).toBeInTheDocument();
+    expect(link(2, "bro")).toBeInTheDocument();
   });
 
-  it("still takes drops from its own parts once the chain is full", async () => {
+  it("takes drops from its own parts, moving one onto an open link", async () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(chip("tak"));
-    await u.click(chip("glas"));
-    await u.click(chip("bro"));   // three parts is the budget — no room left
+    await twoOpenJoints(u);
+    await dragTo(chip("bro"), 100, 120);   // glas, bro
     // Moving a part already in the chain does not make it longer, so the
     // joints have to come back for it rather than demanding a removal first.
-    await dragTo(link(3, "bro"), 100, 0);
+    await dragTo(link(2, "bro"), 100, 20);
     expect(link(1, "bro")).toBeInTheDocument();
-    expect(link(2, "tak")).toBeInTheDocument();
-    expect(link(3, "glas")).toBeInTheDocument();
+    expect(link(2, "glas")).toBeInTheDocument();
   });
 
   it("does nothing when a pool chip is dropped back on the pool", async () => {

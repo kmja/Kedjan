@@ -33,6 +33,33 @@ const upper = (s: string) => s.toUpperCase();
  */
 export const MAX_LIVES = 3;
 
+/**
+ * Is this joint's link already forged? Joint `i` sits between `full[i]` and
+ * `full[i + 1]`, so a joint is forged exactly when that pair welds.
+ */
+export function isForged(day: Day, chain: readonly string[], index: number): boolean {
+  const full = fullChain(day, chain);
+  return index >= 0 && index + 1 < full.length && Boolean(weld(day, full[index]!, full[index + 1]!));
+}
+
+/**
+ * Where a chip aimed at joint `wanted` actually lands.
+ *
+ * A forged link is finished: prising it apart to insert a part is a move no
+ * player wants, so the board offers no target there. The default landing
+ * place is the end of the chain, which may itself be forged — the first part
+ * a player places often welds straight into the target — so the aim slides
+ * back to the nearest link still open.
+ */
+export function landingJoint(day: Day, chain: readonly string[], wanted: number): number {
+  if (!isForged(day, chain, wanted)) return wanted;
+  for (let step = 1; step <= chain.length + 1; step++) {
+    if (wanted - step >= 0 && !isForged(day, chain, wanted - step)) return wanted - step;
+    if (wanted + step <= chain.length && !isForged(day, chain, wanted + step)) return wanted + step;
+  }
+  return wanted;
+}
+
 export function useKedjan(day: Day | null) {
   const [save, setSave] = useState(loadSave);
   const [status, setStatus] = useState<Status | null>(null);
@@ -54,6 +81,8 @@ export function useKedjan(day: Day | null) {
    * The nonce restarts the animation when the same chip is refused twice.
    */
   const [rejection, setRejection] = useState<{ part: string; nonce: number } | null>(null);
+  /** The chip that just clipped onto the chain, for the chain to sway it. */
+  const [settled, setSettled] = useState<{ part: string; nonce: number } | null>(null);
   /**
    * The verdict per joint of [start, ...chain, target], recomputed on every
    * placement. `null` means the joint has not been judged yet.
@@ -224,7 +253,8 @@ export function useKedjan(day: Day | null) {
         say({ kind: "no", msg: "Kedjan kan inte bli längre — ta bort en del först." });
         return;
       }
-      const at = Math.min(index ?? armedJoint ?? withoutPart.length, withoutPart.length);
+      const wanted = Math.min(index ?? armedJoint ?? withoutPart.length, withoutPart.length);
+      const at = landingJoint(day, withoutPart, wanted);
       const next = [...withoutPart.slice(0, at), part, ...withoutPart.slice(at)];
 
       // A chip must stick to at least one of its neighbours. One that welds
@@ -259,6 +289,9 @@ export function useKedjan(day: Day | null) {
       setArmedJoint(null);
       setMarked(null);
       setDimmed(new Set());
+      // It clipped on: the chain gives it the little swing of something
+      // hung on a hook.
+      setSettled((s) => ({ part, nonce: (s?.nonce ?? 0) + 1 }));
 
       applyVerdicts(next);
 
@@ -286,10 +319,12 @@ export function useKedjan(day: Day | null) {
   /** Arm a joint so the next chip lands there, or disarm it. */
   const toggleJoint = useCallback(
     (index: number) => {
-      if (solved) return;
+      // A forged link is finished work; it is not a place to aim at. The
+      // board does not offer one, and neither does this.
+      if (solved || !day || isForged(day, chain, index)) return;
       setArmedJoint((a) => (a === index ? null : index));
     },
-    [solved],
+    [solved, day, chain],
   );
 
   /**
@@ -438,6 +473,7 @@ export function useKedjan(day: Day | null) {
     marked,
     dimmed,
     rejection,
+    settled,
     armedJoint,
     maxParts,
     jointMarks,

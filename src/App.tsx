@@ -211,8 +211,8 @@ export default function App() {
               maxParts={game.maxParts}
               jointMarks={game.jointMarks}
               jointStamps={game.jointStamps}
+              settled={game.settled}
               dragOver={drag?.over ?? null}
-              dragging={drag !== null}
               dragSource={drag?.source ?? null}
               liftedPart={drag?.part ?? null}
               handlers={handlers}

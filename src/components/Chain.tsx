@@ -24,9 +24,9 @@ interface Props {
    * and does not replay its animation when something elsewhere moves.
    */
   jointStamps: number[];
+  /** The chip that just clipped on, so it can swing on its new hook. */
+  settled: { part: string; nonce: number } | null;
   dragOver: string | null;
-  /** True while any chip is in flight, so every target can show itself. */
-  dragging: boolean;
   /** Where the chip in flight came from, or null when nothing is in flight. */
   dragSource: "pool" | "chain" | null;
   liftedPart: string | null;
@@ -55,14 +55,19 @@ export function Chain({
   maxParts,
   jointMarks,
   jointStamps,
+  settled,
   dragOver,
-  dragging,
   dragSource,
   liftedPart,
   handlers,
   onJoint,
 }: Props) {
   const full = [day.start, ...chain, day.target];
+  // Two identical sway animations under alternating names: swapping the
+  // class restarts the swing when the same chip is re-hung, without
+  // remounting the button and losing keyboard focus.
+  const swayClass = (part: string) =>
+    settled?.part !== part ? "" : settled.nonce % 2 ? "node--sway-b" : "node--sway-a";
   // A full chain still takes drops from its own parts: moving one around does
   // not lengthen it, and hiding every joint at the ceiling would force a
   // player to take a part out before they could reorder the rest.
@@ -95,9 +100,19 @@ export function Chain({
     const mark = jointMarks[index] ?? null;
     const armed = armedJoint === index;
     const over = dragOver === `${JOINT_ZONE}${index}`;
-    const open = canGrow && (dragging || armed || !mark);
+    // A forged link is finished work. Prising it apart to slip a part in is
+    // a move no player wants — the weld is the thing they were after — so it
+    // stops being a target at all: no slot, no hit area, no drop zone.
+    const forged = mark === "ok";
+    // Every link that is not forged is open, and an open link looks the same
+    // whether it has been tried or not: a weld that did not take leaves the
+    // space exactly as it found it, waiting for a part that fits.
+    const open = canGrow && !forged;
 
-    const line = <span className={`joint-line ${mark ? `joint-line--${mark}` : ""}`} />;
+    // Only a weld that holds changes the line. A weld that does not hold
+    // leaves the link exactly as it was before anyone tried: open, dashed,
+    // hanging in midair. There is nothing to mark, because nothing was made.
+    const line = <span className={`joint-line ${mark === "ok" ? "joint-line--ok" : ""}`} />;
     /** The compound this joint spells, shown the moment the weld holds. */
     const word = mark === "ok" ? day.pairs[`${full[index]}>${full[index + 1]}`] : undefined;
     // Hidden while the joint offers its drop slot — the two would overlap.
@@ -117,24 +132,30 @@ export function Chain({
       </a>
     );
     /**
+     * A forged link is marked; an open one is simply open. Nothing is drawn
+     * to say a weld failed — the gap says it, the way an unclosed link says
+     * it on a real chain.
+     *
      * The verdict is a sibling of the button, not a child. The joint's inner
      * shape changes with the game — a button while the chain can grow, plain
      * chain when it cannot — and a verdict nested inside would be remounted
      * by that flip and replay its animation. As a stable sibling it survives
      * every shape the joint takes, and only a new stamp re-animates it.
      */
-    const verdict = mark && (
-      <span key={jointStamps[index]} className={`verdict verdict--${mark}`}>
-        <span className="verdict-glyph" aria-hidden="true">
-          {mark === "ok" ? "✓" : "✗"}
+    const verdict =
+      mark === "ok" ? (
+        <span key={jointStamps[index]} className="verdict verdict--ok">
+          <span className="verdict-glyph" aria-hidden="true">
+            ✓
+          </span>
+          <span className="sr-only">länken håller</span>
         </span>
-        <span className="sr-only">
-          {mark === "ok" ? "länken håller" : "bruten länk"}
-        </span>
-      </span>
-    );
+      ) : mark === "broken" ? (
+        // Nothing to see; the words are for whoever cannot see the gap.
+        <span className="sr-only">öppen länk</span>
+      ) : null;
 
-    if (!canGrow) {
+    if (!canGrow || forged) {
       return (
         <li className="joint" aria-hidden={mark === null}>
           {line}
@@ -144,11 +165,8 @@ export function Chain({
       );
     }
 
-    const said = mark
-      ? mark === "ok"
-        ? `${full[index]} plus ${full[index + 1]} bildar ${word}. `
-        : `${full[index]} plus ${full[index + 1]} håller inte. `
-      : "";
+    // Past the forged branch only an open link is left, judged or not yet.
+    const said = mark ? `${full[index]} plus ${full[index + 1]} bildar inget ord. ` : "";
     return (
       <li className={`joint ${open ? "joint--open" : ""}`}>
         <button
@@ -171,7 +189,7 @@ export function Chain({
               }`}
               aria-hidden="true"
             >
-              {mark ? "" : "+"}
+              +
             </span>
           )}
         </button>
@@ -199,7 +217,7 @@ export function Chain({
                 {...handlers(part, "chain")}
                 className={`node node--removable ${
                   liftedPart === part ? "chip--lifted" : ""
-                }`}
+                } ${swayClass(part)}`}
                 aria-label={`Länk ${i + 1}, ${part}. Ta bort den ur kedjan.`}
               >
                 {part}
