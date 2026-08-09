@@ -289,6 +289,35 @@ describe("the route map", () => {
     expect(tree.querySelectorAll("path[marker-end]")).toHaveLength(0);
   });
 
+  it("leaves long detours undrawn and says how many it left out", async () => {
+    // A six-link victory lap around a par-3 day is a legal win, not
+    // structure. The map draws routes near par and admits the rest.
+    mockCalendar([{
+      ...testDay, date: "2026-08-06", no: 1, start: "sten", target: "hus",
+      par: 3, budget: 4,
+      pool: ["mur", "vägg", "tak", "glas", "port", "bok", "torn"],
+      pairs: {
+        "sten>mur": "stenmur", "mur>vägg": "murvägg", "vägg>hus": "vägghus",
+        "sten>tak": "stentak", "tak>glas": "takglas", "glas>port": "glasport",
+        "port>bok": "portbok", "bok>torn": "boktorn", "torn>hus": "tornhus",
+      },
+    }]);
+    const u = user();
+    render(<App />);
+    await board();
+    for (const part of ["mur", "vägg"]) {
+      await u.click(screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") }));
+    }
+    const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
+    const tree = within(dialog).getByLabelText("Alla vägar till målet, som ett träd");
+
+    expect(within(tree).getByText("mur")).toBeInTheDocument();
+    expect(within(tree).queryByText("torn")).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/och 1 längre omväg som inte ritas/),
+    ).toBeInTheDocument();
+  });
+
   it("wraps a deep map into two columns at a chip every route shares", async () => {
     // Nine rows of mostly corridor: the map cuts at hav — the shared chip
     // nearest the middle — and continues alongside, like wrapped text.

@@ -319,7 +319,15 @@ function wrap(nodes: DagNode[], day: Day, routes: string[][]) {
  * into the target. The route the player took runs through it in the accent.
  */
 export function RouteTree({ day, mine, others }: Props) {
-  const routes = mine ? [mine, ...others] : others;
+  // The map's height is the deepest drawn route, and a generous day's route
+  // census includes eleven-link victory laps around a par-3 course. Those
+  // wanderings are legal wins, not structure: the map draws routes near par
+  // and says how many longer ways round it left out. The player's own route
+  // is always drawn, however scenic.
+  const nearPar = (route: string[]) => route.length + 1 <= day.par + 2;
+  const shown = others.filter(nearPar);
+  const hidden = others.length - shown.length;
+  const routes = mine ? [mine, ...shown] : shown;
   const nodes = mergeDuplicates(buildDag(day, routes));
   const walked = mine ? markMine(nodes, day, mine) : new Set<string>();
   const laid = layout(nodes);
@@ -432,10 +440,15 @@ export function RouteTree({ day, mine, others }: Props) {
           </g>
         )}
       </svg>
+      {hidden > 0 && (
+        <p className="dag-note">
+          … och {hidden} längre {hidden === 1 ? "omväg" : "omvägar"} som inte ritas.
+        </p>
+      )}
       {/* The same routes as plain text, for screen readers — an SVG map is a
           picture, and the picture is not the only way to read it. */}
       <ul className="sr-only">
-        {(mine ? [mine, ...others] : others).map((route) => (
+        {routes.map((route) => (
           <li key={route.join(">")}>
             {[day.start, ...route, day.target].join(", ")}
             {route === mine ? " — din väg" : ""}

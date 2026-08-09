@@ -409,6 +409,14 @@ body {
     letter-spacing: 0.02em;
   }
 
+  /* The map's admission that some longer ways round were left undrawn. */
+  .dag-note {
+    margin-top: 0.4rem;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+
   .node {
     display: inline-flex;
     align-items: center;
