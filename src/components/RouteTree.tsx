@@ -8,140 +8,191 @@ interface Props {
   others: string[][];
 }
 
-interface DagNode {
+interface PartNode {
   id: number;
   part: string;
-  /** Layer: the longest distance from the start. */
+  /** Row index, assigned by layering. */
   y: number;
   mine: boolean;
-  children: number[];
+  /** Neighbours in the layout orientation, for layering and untangling. */
   parents: number[];
+  children: number[];
   x: number;
   width: number;
 }
 
-interface TrieNode {
-  part: string;
-  depth: number;
-  children: Map<string, TrieNode>;
+interface PartEdge {
+  from: number;
+  to: number;
+  /** Reversed for layout: a real weld that runs against the drawing's flow. */
+  back: boolean;
+  mine: boolean;
 }
 
 /**
- * Merge the routes into a DAG that branches out and joins back.
+ * One node per part, edges drawn from the routes — the Sugiyama way, not the
+ * unrolled way.
  *
- * First a prefix tree, so routes diverge where the choices did. Then suffix
- * merging: two nodes collapse into one exactly when they carry the same part
- * and their entire continuation is identical. That rule is what makes the
- * joins safe — any path through a merged node is some real route's prefix
- * glued to some real route's suffix through that node, and because the
- * suffixes are identical both halves came from real routes. Nothing the
- * picture shows is a way to win that does not exist.
+ * An earlier version drew a prefix tree with merged suffixes, which
+ * duplicated a part every time routes used the same chips in different
+ * orders: liv and moder twice on neighbouring rows, mål beside mål. The
+ * duplication bought a guarantee the game no longer needs. Any chain that
+ * holds now wins, so every edge here is a real weld and every simple path
+ * from start to target is a real winning chain — the graph of parts IS the
+ * solution graph, and each part earns exactly one chip.
  *
- * The target always merges to a single node (every leaf carries the same part
- * and an empty continuation), so every branch funnels back into it.
+ * Routes that use two chips in either order make the graph cyclic. The
+ * standard treatment (greedy cycle removal, Eades–Lin–Smyth) picks a small
+ * set of edges to treat as reversed during layering; they are drawn as
+ * arrowed arcs against the flow, because they are real welds a player may
+ * genuinely use.
  */
-function buildDag(day: Day, routes: string[][]): DagNode[] {
-  const root: TrieNode = { part: day.start, depth: 0, children: new Map() };
-  for (const route of routes) {
-    let node = root;
-    for (const part of [...route, day.target]) {
-      let next = node.children.get(part);
-      if (!next) {
-        next = { part, depth: node.depth + 1, children: new Map() };
-        node.children.set(part, next);
-      }
-      node = next;
+function buildGraph(day: Day, routes: string[][]) {
+  const index = new Map<string, number>();
+  const nodes: PartNode[] = [];
+  const idOf = (part: string) => {
+    let id = index.get(part);
+    if (id === undefined) {
+      id = nodes.length;
+      index.set(part, id);
+      nodes.push({ id, part, y: 0, mine: false, parents: [], children: [], x: 0, width: 0 });
     }
-  }
-
-  const nodes: DagNode[] = [];
-  const bySignature = new Map<string, number>();
-
-  const merge = (t: TrieNode): number => {
-    const childIds = [...t.children.values()].map(merge).sort((a, b) => a - b);
-    const signature = `${t.part}|${childIds.join(",")}`;
-    const known = bySignature.get(signature);
-    if (known !== undefined) {
-      const node = nodes[known]!;
-      node.y = Math.max(node.y, t.depth);
-      return known;
-    }
-    const id = nodes.length;
-    nodes.push({
-      id,
-      part: t.part,
-      y: t.depth,
-      mine: false,
-      children: childIds,
-      parents: [],
-      x: 0,
-      width: 0,
-    });
-    bySignature.set(signature, id);
     return id;
   };
-  merge(root);
 
-  for (const node of nodes) {
-    for (const child of node.children) nodes[child]!.parents.push(node.id);
+  const seen = new Set<string>();
+  const edges: PartEdge[] = [];
+  for (const route of routes) {
+    const full = [day.start, ...route, day.target];
+    for (let i = 0; i + 1 < full.length; i++) {
+      const key = `${full[i]}>${full[i + 1]}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      edges.push({ from: idOf(full[i]!), to: idOf(full[i + 1]!), back: false, mine: false });
+    }
   }
-  return nodes;
+  return { nodes, edges };
 }
 
 /**
- * Walk the player's own route through the DAG and mark what it touches.
- * Returns the edges of the walk itself: an edge is theirs only if they
- * travelled it, not merely because both its ends lie on their route — a
- * shortcut between two visited nodes is somebody else's road.
+ * Greedy cycle removal: order the nodes so that few edges point backwards.
+ * Sinks go to the tail, sources to the head, and ties break on outdegree
+ * minus indegree — the Eades–Lin–Smyth heuristic, linear time and good
+ * enough at this size to reverse only what genuinely tangles.
  */
-function markMine(nodes: DagNode[], day: Day, mine: string[]): Set<string> {
-  const walked = new Set<string>();
-  let node = nodes.find((n) => n.parents.length === 0)!;
-  node.mine = true;
-  for (const part of [...mine, day.target]) {
-    const next = nodes[node.children.find((c) => nodes[c]!.part === part)!]!;
-    walked.add(`${node.id}>${next.id}`);
-    next.mine = true;
-    node = next;
+function orderForLayout(nodes: PartNode[], edges: PartEdge[]): number[] {
+  const outs = nodes.map(() => new Set<number>());
+  const ins = nodes.map(() => new Set<number>());
+  for (const e of edges) {
+    outs[e.from]!.add(e.to);
+    ins[e.to]!.add(e.from);
   }
-  return walked;
+  const alive = new Set(nodes.map((n) => n.id));
+  const head: number[] = [];
+  const tail: number[] = [];
+  const drop = (id: number) => {
+    alive.delete(id);
+    for (const other of outs[id]!) ins[other]!.delete(id);
+    for (const other of ins[id]!) outs[other]!.delete(id);
+  };
+  while (alive.size) {
+    let moved = true;
+    while (moved) {
+      moved = false;
+      for (const id of [...alive]) {
+        if (outs[id]!.size === 0) {
+          tail.unshift(id);
+          drop(id);
+          moved = true;
+        } else if (ins[id]!.size === 0) {
+          head.push(id);
+          drop(id);
+          moved = true;
+        }
+      }
+    }
+    if (alive.size) {
+      const pick = [...alive].reduce((a, b) =>
+        outs[a]!.size - ins[a]!.size >= outs[b]!.size - ins[b]!.size ? a : b,
+      );
+      head.push(pick);
+      drop(pick);
+    }
+  }
+  const pos = nodes.map(() => 0);
+  [...head, ...tail].forEach((id, i) => (pos[id] = i));
+  return pos;
 }
 
 /**
- * The map cannot lose layers — one per link of the longest route — so compact
+ * Walk the player's own route and mark what it touches. An edge is theirs
+ * only if they travelled it — a weld between two visited chips that they
+ * never used is somebody else's road.
+ */
+function markMine(nodes: PartNode[], edges: PartEdge[], day: Day, mine: string[]) {
+  const chain = [day.start, ...mine, day.target];
+  const on = new Set(chain);
+  for (const n of nodes) n.mine = on.has(n.part);
+  const walked = new Set(chain.slice(0, -1).map((p, i) => `${p}>${chain[i + 1]}`));
+  for (const e of edges) {
+    e.mine = walked.has(`${nodes[e.from]!.part}>${nodes[e.to]!.part}`);
+  }
+}
+
+/**
+ * The map cannot lose rows — one per link of the deepest chain — so compact
  * means a tight pitch: chips of NODE_H with just enough line between rows to
- * read as a connection. A long day already fills a phone screen; every empty
- * pixel per row multiplies by the route length.
+ * read as a connection.
  */
 const ROW = 46;
 const NODE_H = 28;
 const GAP = 10;
 const PAD = 6;
+/** How far a reversed weld's arc bows out beside the column. */
+const BOW = 26;
 /** A map this many rows tall wraps into two columns, like text. */
 const WRAP_MIN_ROWS = 9;
 /** Space between the wrapped columns. */
 const GUTTER = 34;
 
 /**
- * Position the layers. Suffix merging guarantees every child sits on a lower
- * layer than its parent, so layers are simply the y-ranks. Within a layer,
- * nodes chase the mean position of their neighbours for a few sweeps — a
- * small barycentre pass that untangles most crossings at this size.
+ * Layer on the cycle-removed orientation, then untangle. Longest-path
+ * layering from the start; within a row, nodes chase the mean position of
+ * their neighbours for a few sweeps — a small barycentre pass that resolves
+ * most crossings at this size.
  */
-function layout(nodes: DagNode[]): { width: number; height: number } {
+function layout(nodes: PartNode[], edges: PartEdge[], day: Day) {
   for (const n of nodes) n.width = n.part.length * 8.4 + 26;
 
-  const byRank: DagNode[][] = [];
+  const pos = orderForLayout(nodes, edges);
+  for (const e of edges) e.back = pos[e.from]! > pos[e.to]!;
+  for (const e of edges) {
+    const [up, down] = e.back ? [e.to, e.from] : [e.from, e.to];
+    nodes[up]!.children.push(down);
+    nodes[down]!.parents.push(up);
+  }
+
+  // Longest path, in the layout order (a topological order of the forward
+  // orientation). The start anchors the top; the target is pushed to the
+  // bottom row even when cycle removal left it shallower.
+  const byPos = [...nodes].sort((a, b) => pos[a.id]! - pos[b.id]!);
+  for (const n of byPos) {
+    n.y = n.part === day.start ? 0 : Math.max(1, ...n.parents.map((p) => nodes[p]!.y + 1));
+  }
+  const target = nodes.find((n) => n.part === day.target)!;
+  const deepestOther = Math.max(
+    ...nodes.filter((n) => n !== target).map((n) => n.y),
+  );
+  if (target.y <= deepestOther) target.y = deepestOther + 1;
+
+  const byRank: PartNode[][] = [];
   for (const n of nodes) (byRank[n.y] ??= []).push(n);
-  // Merging pulls nodes down to their deepest occurrence, which can leave a
-  // rank with nothing on it. Close the gap: renumbering ranks consecutively
-  // keeps every child below its parent while dropping the blank rows.
   const layers = byRank.filter((l) => l !== undefined);
   layers.forEach((layer, rank) => {
     for (const n of layer) n.y = rank;
   });
 
-  const place = (layer: DagNode[]) => {
+  const place = (layer: PartNode[]) => {
     const total = layer.reduce((w, n) => w + n.width, 0) + GAP * (layer.length - 1);
     let x = -total / 2;
     for (const n of layer) {
@@ -166,18 +217,7 @@ function layout(nodes: DagNode[]): { width: number; height: number } {
   }
 
   const width = Math.max(...layers.map((l) => place(l)));
-  return { width: width + PAD * 2, height: layers.length * ROW };
-}
-
-/** The DAG nodes a route walks, in order, excluding the start. */
-function nodePath(nodes: DagNode[], day: Day, route: string[]): number[] {
-  const ids: number[] = [];
-  let node = nodes.find((n) => n.parents.length === 0)!;
-  for (const part of [...route, day.target]) {
-    node = nodes[node.children.find((c) => nodes[c]!.part === part)!]!;
-    ids.push(node.id);
-  }
-  return ids;
+  return { width: width + PAD * 2 + BOW, height: layers.length * ROW };
 }
 
 /**
@@ -185,79 +225,88 @@ function nodePath(nodes: DagNode[], day: Day, route: string[]): number[] {
  *
  * A deep day is a narrow strip many rows tall — most of the box it is shown
  * in goes unused, and no per-row compaction can fix that, because depth is
- * the route's own length. What can fix it is the same move a newspaper makes:
- * cut near the middle and continue alongside. The cut happens at a chip every
- * route passes through — the suffix-merged DAG guarantees no edge jumps past
- * such a chip, so each edge lands wholly in one column — and the chip is
- * drawn again, dashed, where the second column resumes.
+ * the route's own length. So past WRAP_MIN_ROWS the map cuts at a chip every
+ * route passes through and continues alongside, the cut chip drawn again,
+ * dashed, where the second column resumes. Only a cut no edge jumps across
+ * qualifies, so each edge lands wholly in one column.
  */
-function wrap(nodes: DagNode[], day: Day, routes: string[][]) {
+function wrap(nodes: PartNode[], edges: PartEdge[], routes: string[][]) {
   const rows = Math.max(...nodes.map((n) => n.y)) + 1;
   if (rows < WRAP_MIN_ROWS) return null;
 
-  let shared: Set<number> | null = null;
+  let shared: Set<string> | null = null;
   for (const route of routes) {
-    const ids = new Set(nodePath(nodes, day, route));
-    const kept: number[] = shared ? [...shared].filter((i) => ids.has(i)) : [...ids];
+    const parts = new Set(route);
+    const kept: string[] = shared ? [...shared].filter((p) => parts.has(p)) : [...parts];
     shared = new Set(kept);
   }
+  const spansAcross = (row: number) =>
+    edges.some((e) => {
+      const lo = Math.min(nodes[e.from]!.y, nodes[e.to]!.y);
+      const hi = Math.max(nodes[e.from]!.y, nodes[e.to]!.y);
+      return lo < row && row < hi;
+    });
   const middle = (rows - 1) / 2;
   const cut = [...(shared ?? [])]
-    .map((i) => nodes[i]!)
-    .filter((n) => n.y >= 2 && n.y <= rows - 3)
+    .map((p) => nodes.find((n) => n.part === p)!)
+    .filter((n) => n.y >= 2 && n.y <= rows - 3 && !spansAcross(n.y))
     .sort((a, b) => Math.abs(a.y - middle) - Math.abs(b.y - middle))[0];
   if (!cut) return null;
 
   const first = nodes.filter((n) => n.y <= cut.y);
   const second = nodes.filter((n) => n.y > cut.y);
-  const widthOf = (column: DagNode[]) =>
+  const widthOf = (column: PartNode[]) =>
     Math.max(...column.map((n) => Math.abs(n.x) * 2 + n.width));
-  const wFirst = widthOf(first);
-  const wSecond = Math.max(widthOf(second), cut.width);
+  const wFirst = widthOf(first) + BOW;
+  const wSecond = Math.max(widthOf(second), cut.width) + BOW;
   const total = wFirst + GUTTER + wSecond;
   const dxFirst = -total / 2 + wFirst / 2;
   const dxSecond = total / 2 - wSecond / 2;
   for (const n of first) n.x += dxFirst;
+  const inSecond = new Set<number>();
   for (const n of second) {
     n.x += dxSecond;
     n.y -= cut.y;
+    inSecond.add(n.id);
   }
   return {
     width: total + PAD * 2,
     height: Math.max(cut.y + 1, rows - cut.y) * ROW,
     cut,
+    inSecond,
     copy: { x: dxSecond, y: 0 },
   };
 }
 
 /**
- * Every way the day could be won, drawn as one map: branching out from the
- * start, joining back wherever the rest of the way is shared, and funnelling
- * into the target. The route the player took runs through it in the accent.
+ * Every way the day could be won, drawn as one map: each part exactly once,
+ * welds branching out from the start and funnelling into the target, the
+ * player's route running through it in the accent. Welds that run against
+ * the drawing's flow — the same chips usable in the other order — bow out
+ * beside the column, arrowed.
  */
 export function RouteTree({ day, mine, others }: Props) {
   const routes = mine ? [mine, ...others] : others;
-  const nodes = buildDag(day, routes);
-  const walked = mine ? markMine(nodes, day, mine) : new Set<string>();
-  const laid = layout(nodes);
-  const wrapped = wrap(nodes, day, routes);
+  const { nodes, edges } = buildGraph(day, routes);
+  if (mine) markMine(nodes, edges, day, mine);
+  const laid = layout(nodes, edges, day);
+  const wrapped = wrap(nodes, edges, routes);
   const { width, height } = wrapped ?? laid;
 
   const nodeY = (n: { y: number }) => n.y * ROW + ROW / 2;
-  // Edges out of the cut chip leave from its dashed twin at the top of the
-  // second column; edges into it arrive at the original, closing column one.
-  const outOf = (n: DagNode) =>
-    wrapped && n.id === wrapped.cut.id
-      ? { x: wrapped.copy.x, y: wrapped.copy.y }
-      : n;
-  const edges = nodes.flatMap((from) =>
-    from.children.map((c) => {
-      const to = nodes[c]!;
-      return { from, to, mine: walked.has(`${from.id}>${to.id}`) };
-    }),
-  );
-  // Green edges last, so a join the player passed through stays visibly green.
-  edges.sort((a, b) => Number(a.mine) - Number(b.mine));
+  // Around the cut, an edge endpoint that IS the cut chip renders at the
+  // dashed twin whenever the edge's other end lives in the second column.
+  const at = (end: PartNode, other: PartNode) =>
+    wrapped && end.id === wrapped.cut.id && wrapped.inSecond.has(other.id)
+      ? { x: wrapped.copy.x, y: wrapped.copy.y, width: end.width }
+      : end;
+  const drawn = edges.map((e) => {
+    const from = nodes[e.from]!;
+    const to = nodes[e.to]!;
+    return { ...e, a: at(from, to), b: at(to, from) };
+  });
+  // The player's edges last, so a join they passed through stays visible.
+  drawn.sort((a, b) => Number(a.mine) - Number(b.mine));
 
   return (
     <div aria-label="Alla vägar till målet, som ett träd">
@@ -276,20 +325,42 @@ export function RouteTree({ day, mine, others }: Props) {
           margin: "0 auto",
         }}
       >
-        {edges.map(({ from, to, mine: onMine }) => {
-          const a = outOf(from);
-          const y1 = nodeY(a) + NODE_H / 2 + 1;
-          const y2 = nodeY(to) - NODE_H / 2 - 1;
-          const bend = Math.min(14, (y2 - y1) / 2);
+        <defs>
+          <marker id="dag-arrow" viewBox="0 0 8 8" refX="6.5" refY="4"
+                  markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--edge)" />
+          </marker>
+          <marker id="dag-arrow-mine" viewBox="0 0 8 8" refX="6.5" refY="4"
+                  markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--falu)" />
+          </marker>
+        </defs>
+        {drawn.map(({ a, b, back, mine: onMine, from, to }) => {
+          let d: string;
+          if (!back && b.y > a.y) {
+            const y1 = nodeY(a) + NODE_H / 2 + 1;
+            const y2 = nodeY(b) - NODE_H / 2 - 1;
+            const bend = Math.min(14, (y2 - y1) / 2);
+            d = `M ${a.x} ${y1} C ${a.x} ${y1 + bend}, ${b.x} ${y2 - bend}, ${b.x} ${y2}`;
+          } else {
+            // A weld against the flow: out of the chip's side, bowing past
+            // the column's edge, arrowing into its goal from the side.
+            const side = (a.x + b.x) / 2 >= 0 ? 1 : -1;
+            const x1 = a.x + side * (a.width / 2 + 1);
+            const x2 = b.x + side * (b.width / 2 + 2);
+            const bow = side * (Math.max(side * x1, side * x2) + BOW);
+            d = `M ${x1} ${nodeY(a)} C ${bow} ${nodeY(a)}, ${bow} ${nodeY(b)}, ${x2} ${nodeY(b)}`;
+          }
           return (
             <path
-              key={`${from.id}>${to.id}`}
+              key={`${from}>${to}`}
               className="dag-edge"
               pathLength={1}
-              d={`M ${a.x} ${y1} C ${a.x} ${y1 + bend}, ${to.x} ${y2 - bend}, ${to.x} ${y2}`}
+              d={d}
               fill="none"
               stroke={onMine ? "var(--falu)" : "var(--edge)"}
               strokeWidth={onMine ? 3.5 : 2}
+              markerEnd={back ? `url(#dag-arrow${onMine ? "-mine" : ""})` : undefined}
             />
           );
         })}
@@ -352,7 +423,7 @@ export function RouteTree({ day, mine, others }: Props) {
       {/* The same routes as plain text, for screen readers — an SVG map is a
           picture, and the picture is not the only way to read it. */}
       <ul className="sr-only">
-        {(mine ? [mine, ...others] : others).map((route) => (
+        {routes.map((route) => (
           <li key={route.join(">")}>
             {[day.start, ...route, day.target].join(", ")}
             {route === mine ? " — din väg" : ""}

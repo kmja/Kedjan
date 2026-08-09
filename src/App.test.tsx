@@ -256,6 +256,36 @@ describe("the route map", () => {
     expect(mineEdges).toHaveLength(3);
   });
 
+  it("draws each part once, even when routes use two chips in either order", async () => {
+    // liv→moder and moder→liv both weld: the old prefix tree drew liv and
+    // moder twice each on neighbouring rows. One chip per part now — the
+    // reverse weld becomes an arrowed arc instead of a duplicate row.
+    mockCalendar([{
+      ...testDay, date: "2026-08-06", no: 1, start: "jord", target: "hus",
+      par: 3, budget: 4,
+      pool: ["liv", "moder", "tak"],
+      pairs: {
+        "jord>liv": "jordliv", "jord>moder": "jordmoder",
+        "liv>moder": "livmoder", "moder>liv": "moderliv",
+        "liv>tak": "livtak", "moder>tak": "modertak", "tak>hus": "takhus",
+      },
+    }]);
+    const u = user();
+    render(<App />);
+    await board();
+    for (const part of ["liv", "tak"]) {
+      await u.click(screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") }));
+    }
+    const dialog = await screen.findByRole("dialog", {}, { timeout: 2000 });
+    const tree = within(dialog).getByLabelText("Alla vägar till målet, som ett träd");
+
+    expect(within(tree).getAllByText("liv")).toHaveLength(1);
+    expect(within(tree).getAllByText("moder")).toHaveLength(1);
+    // The weld running against the flow is drawn as an arrowed arc.
+    const arrowed = [...tree.querySelectorAll("path[marker-end]")];
+    expect(arrowed.length).toBeGreaterThanOrEqual(1);
+  });
+
   it("wraps a deep map into two columns at a chip every route shares", async () => {
     // Nine rows of mostly corridor: the map cuts at hav — the shared chip
     // nearest the middle — and continues alongside, like wrapped text.
