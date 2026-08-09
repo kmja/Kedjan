@@ -11,6 +11,7 @@ the hard tier just demands it.
 from __future__ import annotations
 
 from collections import deque
+from typing import Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
@@ -28,7 +29,18 @@ CORE_SIZE = 8
 #: deduction — the archive taught us that at this length even eight is a
 #: walkover. Difficulty lives in the ratio: many welds, few of them a way out.
 EASY_SOLUTION_BAND = range(3, 13)
-HARD_SOLUTION_BAND = range(2, 7)
+#: The hard tier's ceiling used to be six routes, counted however long. That
+#: was the difficulty dial, and it was the wrong one: the cheapest way for a
+#: chain to have few routes is to be a single line, so the band selected for
+#: corridors — hard chains ran 4.3 of 8.2 parts with nothing to decide on
+#: them against the easy tier's 1.9 of 9.0. Asked for few routes AND real
+#: structure AND traps, the whole graph offered nothing at all: the sweep
+#: came back with zero hard candidates.
+#:
+#: Difficulty is false paths now, which pulls with density rather than
+#: against it. The ceiling stays only to keep out a chain that wins every
+#: way at once.
+HARD_SOLUTION_BAND = range(2, 13)
 EASY_PAR = 3
 
 
@@ -222,6 +234,40 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
     )[:200]
 
     pool = list(core)
+
+    # Recruit the traps before the decoys, because they are the scarce thing.
+    #
+    # A pool grown out of winning routes and then padded for density is a pool
+    # where nearly everything reaches the target — measured on the calendar
+    # this replaced, not one easy chain had a single opening that went
+    # nowhere. Traps do not arrive by accident, so they are asked for by name:
+    # parts that weld off the start and, once in, still cannot get home.
+    def gets_home(head: str, parts: Sequence[str]) -> bool:
+        seen, stack = {head}, [head]
+        while stack:
+            part = stack.pop()
+            if graph.welds(part, target):
+                return True
+            for nxt in parts:
+                if nxt not in seen and graph.welds(part, nxt):
+                    seen.add(nxt)
+                    stack.append(nxt)
+        return False
+
+    wanted_traps = MIN_FALSE_OPENINGS.get(par, 1)
+    for candidate in list(candidates):
+        if len(pool) >= POOL_SIZE or wanted_traps <= 0:
+            break
+        if not graph.welds(start, candidate):
+            continue
+        if gets_home(candidate, [*pool, candidate]):
+            continue
+        if doublet_partner(candidate) in with_endpoints(pool):
+            continue
+        pool.append(candidate)
+        candidates.remove(candidate)
+        wanted_traps -= 1
+
     while len(pool) < POOL_SIZE and candidates:
         scored = []
         for candidate in candidates:
