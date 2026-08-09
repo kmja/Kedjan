@@ -451,18 +451,22 @@ export function Chain({
     const angle = hang.still.has(at) ? 0 : hang.angle;
     const travel = hang.reach.get(at)! * Math.tan((angle * Math.PI) / 180);
 
+    // A piece swings from the end that holds it, and the sign follows: a
+    // body below its pivot and a body above it swing opposite ways for the
+    // same angle. Getting that wrong reads exactly like a loose end pinned
+    // to the empty air above it. Which end holds a piece is usually which
+    // end holds its chain — except for a loose end that reaches upward,
+    // which is held at its foot by the part beneath it whatever the rest of
+    // the chain is doing.
+    const heldBelow = hang.heldBelow || mine.kind === "loose-above";
     const style = {
       "--amp": `${travel.toFixed(2)}px`,
-      // A piece swings from the end that holds it, and the sign follows:
-      // a body below its pivot and a body above it swing opposite ways for
-      // the same angle. Getting that wrong reads exactly like a loose end
-      // pinned to the empty air above it.
-      "--tilt": `${(hang.heldBelow ? -angle : angle).toFixed(2)}deg`,
-      "--pivot": hang.heldBelow ? "100%" : "0%",
+      "--tilt": `${(heldBelow ? -angle : angle).toFixed(2)}deg`,
+      "--pivot": heldBelow ? "100%" : "0%",
       "--period": `${hang.period.toFixed(2)}s`,
       "--phase": `${hang.phase.toFixed(2)}s`,
       // A chain held from below bends the other way, for the same reason.
-      "--lean": hang.heldBelow ? "-1" : "1",
+      "--lean": heldBelow ? "-1" : "1",
     } as Record<string, string>;
     let className = "chain-piece";
 
