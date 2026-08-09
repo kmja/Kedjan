@@ -147,7 +147,7 @@ body {
      it drifts with the resting sway, and pivots from the link above it when
      a pulse reaches it. */
   .chain-piece {
-    transform-origin: 50% -0.35rem;
+    transform-origin: 50% var(--pivot, -0.35rem);
     animation: chain-idle 5.4s ease-in-out infinite alternate;
   }
   .chain-piece--pulse-a {
@@ -192,6 +192,24 @@ body {
     border-left-style: solid;
     border-left-color: var(--gran-ok);
   }
+  /* An unclosed link is two loose ends, not one line: a stub hanging off the
+     chain above and a stub reaching up from the chain below, with clear air
+     between them. They belong to different chains and swing separately —
+     which is the board saying, without words, that these are two chains. */
+  .joint-stub {
+    position: absolute;
+    left: 50%;
+    margin-left: -1.5px;
+    width: 0;
+    height: 1.15rem;
+    border-left: 3px dashed var(--edge);
+  }
+  .joint-stub--below {
+    top: 0;
+  }
+  .joint-stub--above {
+    bottom: 0;
+  }
   /* The whole joint is the hit area — comfortably past the 44px touch
      minimum — so a judged link is still somewhere a part can be dropped. */
   .joint-hit {
@@ -203,14 +221,6 @@ body {
     background: none;
     padding: 0;
     cursor: pointer;
-  }
-  /* The button overflows the joint by 0.4rem so thumbs can hit it — but the
-     line must not follow it into the chips above and below. */
-  .joint-hit .joint-line {
-    position: absolute;
-    top: 0.4rem;
-    bottom: 0.4rem;
-    height: auto;
   }
   .joint-slot {
     position: absolute;

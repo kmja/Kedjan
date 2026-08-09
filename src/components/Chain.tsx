@@ -90,27 +90,96 @@ export function Chain({
   onJoint,
 }: Props) {
   const full = [day.start, ...chain, day.target];
+  const forged = (index: number) => jointMarks[index] === "ok";
 
-  // Parts and joints alternate all the way down, so the chain is one run of
-  // pieces: part i sits at 2i, the joint after it at 2i + 1.
-  const pieces = 2 * full.length - 1;
+  /*
+   * The board is not one chain until it is finished. Every link that has not
+   * been forged is a break, and what hangs on either side of it is a chain of
+   * its own with a loose end — which is the whole point of the game, so the
+   * board says so: separate chains, each swinging by itself, each pulsing
+   * only when a part clips onto *it*.
+   *
+   * Pieces run top to bottom. A forged joint is one piece, a real link. An
+   * open joint is two: a loose end hanging off the chain above, and another
+   * reaching up from the chain below, with the gap between them.
+   */
+  type Kind = "part" | "link" | "loose-below" | "loose-above";
+  const seq: { kind: Kind; at: number; chainNo: number }[] = [];
+  let chainNo = 0;
+  for (let i = 0; i < full.length; i++) {
+    if (i > 0) {
+      if (forged(i - 1)) {
+        seq.push({ kind: "link", at: i - 1, chainNo });
+      } else {
+        seq.push({ kind: "loose-below", at: i - 1, chainNo });
+        chainNo += 1;
+        seq.push({ kind: "loose-above", at: i - 1, chainNo });
+      }
+    }
+    seq.push({ kind: "part", at: i, chainNo });
+  }
+
+  const partPiece = (i: number) => seq.findIndex((s) => s.kind === "part" && s.at === i);
   const settledAt = settled ? chain.indexOf(settled.part) : -1;
-  const epicentre = settledAt < 0 ? null : 2 * (settledAt + 1);
+  const epicentre = settledAt < 0 ? null : partPiece(settledAt + 1);
+
+  /**
+   * How far each piece of one chain travels at rest, as a share of the full
+   * sway. A chain pinned at one end swings furthest at its loose end; pinned
+   * at both — which only happens once the day is won — it stands still at the
+   * ends and swings in the middle; pinned at neither, it drifts as one.
+   */
+  const restingSway = (within: number, of: number, top: boolean, bottom: boolean) => {
+    if (of < 2) return top || bottom ? 0 : 1;
+    const t = within / (of - 1);
+    if (top && bottom) return Math.sin(Math.PI * t);
+    if (top) return Math.sin((Math.PI / 2) * t);
+    if (bottom) return Math.sin((Math.PI / 2) * (1 - t));
+    return 1;
+  };
 
   const piece = (at: number) => {
-    const amp = IDLE_AMPLITUDE * Math.sin((Math.PI * at) / (pieces - 1));
-    const swing = epicentre === null ? 0 : pulseAt(Math.abs(at - epicentre));
-    const style = { "--amp": `${amp.toFixed(2)}px` } as Record<string, string>;
+    const mine = seq[at]!;
+    const kin = seq.filter((s) => s.chainNo === mine.chainNo);
+    const within = kin.indexOf(mine);
+    const anchoredTop = kin.some((s) => s.kind === "part" && s.at === 0);
+    const anchoredBottom = kin.some((s) => s.kind === "part" && s.at === full.length - 1);
+    const amp = IDLE_AMPLITUDE * restingSway(within, kin.length, anchoredTop, anchoredBottom);
+
+    const style = {
+      "--amp": `${amp.toFixed(2)}px`,
+      // A piece swings from where it is held: from the link above it, or —
+      // on the chain hanging off the target — from the one below.
+      "--pivot":
+        mine.kind === "loose-above" || (anchoredBottom && !anchoredTop) ? "100%" : "-0.35rem",
+    } as Record<string, string>;
     let className = "chain-piece";
+
+    // A pulse runs along the chain the part landed on, and stops at the break.
+    const sameChain = epicentre !== null && seq[epicentre]!.chainNo === mine.chainNo;
+    const away = sameChain ? Math.abs(within - kin.indexOf(seq[epicentre!]!)) : 0;
+    const swing = sameChain ? pulseAt(away) : 0;
     if (swing > PULSE_FLOOR) {
       style["--pulse"] = `${swing.toFixed(2)}deg`;
-      style["--pulse-delay"] = `${Math.abs(at - epicentre!) * PULSE_STEP_MS}ms`;
+      style["--pulse-delay"] = `${away * PULSE_STEP_MS}ms`;
       // Two identical pulses under alternating names: swapping the class
       // restarts the swing when a part is re-hung, without remounting the
       // piece and throwing away keyboard focus.
       className += settled!.nonce % 2 ? " chain-piece--pulse-b" : " chain-piece--pulse-a";
     }
     return { className, style: style as CSSProperties };
+  };
+
+  const loose = (index: number, side: "below" | "above") => {
+    const at = seq.findIndex((s) => s.kind === `loose-${side}` && s.at === index);
+    const { className, style } = piece(at);
+    return (
+      <span
+        className={`joint-stub joint-stub--${side} ${className}`}
+        style={style}
+        aria-hidden="true"
+      />
+    );
   };
   // A full chain still takes drops from its own parts: moving one around does
   // not lengthen it, and hiding every joint at the ceiling would force a
@@ -153,10 +222,17 @@ export function Chain({
     // space exactly as it found it, waiting for a part that fits.
     const open = canGrow && !forged;
 
-    // Only a weld that holds changes the line. A weld that does not hold
-    // leaves the link exactly as it was before anyone tried: open, dashed,
-    // hanging in midair. There is nothing to mark, because nothing was made.
-    const line = <span className={`joint-line ${mark === "ok" ? "joint-line--ok" : ""}`} />;
+    // A forged link is drawn as one unbroken run of chain. An open one is not
+    // drawn at all: what shows is the loose end of the chain above and the
+    // loose end of the chain below, with the gap they have not closed.
+    const link = forged ? (
+      <span className="joint-line joint-line--ok" />
+    ) : (
+      <>
+        {loose(index, "below")}
+        {loose(index, "above")}
+      </>
+    );
     /** The compound this joint spells, shown the moment the weld holds. */
     const word = mark === "ok" ? day.pairs[`${full[index]}>${full[index + 1]}`] : undefined;
     // Hidden while the joint offers its drop slot — the two would overlap.
@@ -199,16 +275,19 @@ export function Chain({
         <span className="sr-only">öppen länk</span>
       ) : null;
 
-    const hang = piece(2 * index + 1);
+    // A forged joint is a piece of chain and hangs like one. An open joint is
+    // the gap between two chains: it holds still, and the loose ends inside
+    // it swing with whichever chain each belongs to.
+    const hang = forged ? piece(seq.findIndex((x) => x.kind === "link" && x.at === index)) : null;
 
     if (!canGrow || forged) {
       return (
         <li
-          className={`joint ${hang.className}`}
-          style={hang.style}
+          className={`joint ${hang?.className ?? ""}`}
+          style={hang?.style}
           aria-hidden={mark === null}
         >
-          {line}
+          {link}
           {verdict}
           {weld}
         </li>
@@ -218,10 +297,8 @@ export function Chain({
     // Past the forged branch only an open link is left, judged or not yet.
     const said = mark ? `${full[index]} plus ${full[index + 1]} bildar inget ord. ` : "";
     return (
-      <li
-        className={`joint ${open ? "joint--open" : ""} ${hang.className}`}
-        style={hang.style}
-      >
+      <li className={`joint ${open ? "joint--open" : ""}`}>
+        {link}
         <button
           type="button"
           data-drop-zone={`${JOINT_ZONE}${index}`}
@@ -234,7 +311,6 @@ export function Chain({
               : `Lägg en del efter ${full[index]}.`)
           }
         >
-          {line}
           {open && (
             <span
               className={`joint-slot ${armed ? "joint-slot--armed" : ""} ${
@@ -254,14 +330,14 @@ export function Chain({
 
   return (
     <ol className="chain" aria-label={`Kedjan: ${spoken}`}>
-      <li {...piece(0)}>
+      <li {...piece(partPiece(0))}>
         <span className="node node--endpoint">{day.start}</span>
       </li>
 
       {chain.map((part, i) => (
         <Fragment key={part}>
           {joint(i)}
-          <li {...piece(2 * (i + 1))}>
+          <li {...piece(partPiece(i + 1))}>
             {solved ? (
               <span className="node">{part}</span>
             ) : (
@@ -281,7 +357,7 @@ export function Chain({
       ))}
 
       {joint(chain.length)}
-      <li {...piece(pieces - 1)}>
+      <li {...piece(partPiece(full.length - 1))}>
         <span
           className={`node node--endpoint ${solved ? "snap" : ""} ${
             marked === day.target ? "chip--marked" : ""
