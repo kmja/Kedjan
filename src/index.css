@@ -592,18 +592,27 @@ body {
     gap: 0.6rem;
   }
   .board-chain {
+    display: flex;
     flex: 1 1 auto;
+    /* `safe` so that when the reserved gutter is wider than the column has
+       to give, the chain backs onto the left edge instead of off it. */
+    justify-content: safe center;
     /* Without this the chain's own width sets the floor and the pool is
        squeezed off the right edge of a narrow phone. */
     min-width: 0;
   }
-  /* The chain is narrow and sits at the left of its column, because every
-     weld word hangs off its right side and that gutter is the room they get. */
+  /* The chain is narrow, and every weld word hangs off its right side. What
+     is centred in the column is therefore the chain *plus* that gutter — the
+     margin reserves the words' room, and the centring counts it. */
   .board-chain .chain {
     width: 7rem;
+    /* Sized to a typical weld word rather than the longest one: reserving
+       room for all thirteen letters of familjemedlem would push the chain
+       off-centre on every ordinary day. */
+    margin-right: min(5.5rem, 30%);
   }
   /* Once the day is over there is no pool, and the chain takes the whole
-     width back rather than hugging the left edge on its own. */
+     width back rather than standing in a column of its own. */
   .board:not(:has(.board-pool)) .chain {
     width: auto;
     margin-inline: auto;
