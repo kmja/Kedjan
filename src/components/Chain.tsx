@@ -67,10 +67,10 @@ const RING_STROKE = 2.2;
 /** Centre to centre. Less than two radii, so consecutive rings interlock. */
 const RING_STEP = 9.4;
 const RING_W = 14;
-/** A dangling end is the open link at the tip, and nothing more. */
-const LOOSE_RINGS = 1;
-/** A weld is two whole links. */
-const FORGED_RINGS = 2;
+/** A dangling end is one whole link and then the open one at the tip. */
+const LOOSE_RINGS = 2;
+/** A weld is three whole links. */
+const FORGED_RINGS = 3;
 
 const rem = (units: number) => `${units / 16}rem`;
 

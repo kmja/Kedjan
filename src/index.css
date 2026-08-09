@@ -178,7 +178,7 @@ body {
     justify-content: center;
     /* Close enough that the two links of a weld reach both parts: the art
        is sized by its rings, so the box has to be sized by them too. */
-    height: 2.25rem;
+    height: 2.5rem;
     width: 100%;
     transition: height 0.16s ease;
   }
@@ -188,7 +188,7 @@ body {
   .joint--open {
     /* Room for a dangling end above and below, with air before the slot
        neither has reached. */
-    height: 5.5rem;
+    height: 6.75rem;
   }
   /* A forged link is two rings, interlocked, in the colour of a weld that
      holds. Sized to the ring geometry rather than to the joint, so the
