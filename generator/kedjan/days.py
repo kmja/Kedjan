@@ -14,7 +14,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from .analysis import cross_links, largest_disjoint_set
+from .analysis import cross_links, largest_disjoint_set, route_shape
 from .graph import PartGraph, doublet_partner
 from .lexicon import Lexicon
 from .split import PREFIX_SET
@@ -68,6 +68,13 @@ def min_disjoint_routes(par: int) -> int:
 #: ben and böj join nothing else and elimination hands you the answer. Each
 #: route must reach at least this many chips outside itself.
 MIN_ROUTE_CROSS_LINKS = 2
+#: Mirrors curate.py: a run of parts with nothing to decide on them is a
+#: corridor, and routes that never meet again are separate lines rather than a
+#: structure. Both are ways to have few winning routes without being any
+#: harder to solve, so both have to be refused where days are made, not only
+#: where they are checked.
+MAX_FORCED_RUN = 2
+MIN_JOINS = 3
 #: At most one chip may weld solely within its own route; beyond that the pool
 #: reads as separate groups and elimination replaces deduction.
 MAX_ISOLATED_CHIPS = 1
@@ -268,6 +275,10 @@ def build_day(graph: PartGraph, lex: Lexicon, start: str, target: str, par: int)
     # Par names the shortest route. If the pool cannot deliver one that short,
     # the label is a lie and no player can ever make par.
     if min(len(s) for s in found) + 1 != par:
+        return None
+
+    joins, forced_run = route_shape(day_view, found)
+    if forced_run > MAX_FORCED_RUN or joins < MIN_JOINS:
         return None
 
     independent = largest_disjoint_set(found)

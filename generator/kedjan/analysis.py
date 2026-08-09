@@ -187,6 +187,41 @@ def report(day: DayLike, saldo: Saldo | None = None) -> DayReport:
     )
 
 
+def route_shape(day: DayLike, routes: Sequence[Sequence[str]]) -> tuple[int, int]:
+    """How much of a day is choice, and how much is corridor.
+
+    Returns (joins, longest forced run) over the routes drawn as one map — the
+    map a winner is shown. A *join* is a part that routes arrive at from more
+    than one direction: the place where a choice made earlier turns out not to
+    have shut anything off. A *forced* part is one the map enters one way and
+    leaves one way, so a player standing on it has nothing to decide, and a
+    run of them is a corridor.
+
+    This is what catches a day whose route count is low for the wrong reason.
+    Many welds and few escapes is the design; one line and no alternatives
+    meets the same count with none of the puzzle, and is the cheaper way to
+    meet it, so it is what an unguarded search will find.
+    """
+    start, target = str(day["start"]), str(day["target"])
+    outs: dict[str, set[str]] = {}
+    ins: dict[str, set[str]] = {}
+    for route in routes:
+        full = [start, *route, target]
+        for a, b in zip(full, full[1:]):
+            outs.setdefault(a, set()).add(b)
+            ins.setdefault(b, set()).add(a)
+
+    joins = sum(1 for part, came in ins.items() if len(came) >= 2)
+    longest = 0
+    for route in routes:
+        run = 0
+        for part in route:
+            forced = len(outs.get(part, ())) == 1 and len(ins.get(part, ())) == 1
+            run = run + 1 if forced else 0
+            longest = max(longest, run)
+    return joins, longest
+
+
 def largest_disjoint_set(routes: Sequence[Sequence[str]]) -> list[list[str]]:
     """The largest set of routes that pairwise share no intermediate chip.
 

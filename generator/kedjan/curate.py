@@ -25,6 +25,7 @@ from .graph import (
     has_common_verb_twin,
     head_pos_consistent,
 )
+from . import analysis
 from .analysis import report as analyse
 from .days import EASY_PAR, solution_band
 from .lexicon import Lexicon
@@ -41,6 +42,19 @@ MIN_BRANCHING = 2
 #: Mirrors days.py — the floor scales with par because routes consume pool.
 MIN_DISJOINT_BY_PAR = {3: 3}
 MIN_DISJOINT_FALLBACK = 2
+#: A run of parts the map enters one way and leaves one way is a corridor:
+#: nothing to decide standing on any of them, and a reveal that draws a
+#: straight line. Two in a row is a step of the puzzle; three is a passage.
+#: Measured when this went in: every easy chain on the calendar already sat
+#: at two or under, and five hard ones did not. The hard band asks for few
+#: winning routes, and a single line is the cheapest way to give it that —
+#: so the band was selecting for exactly what it was meant to rule out.
+MAX_FORCED_RUN = 2
+#: Places where routes arrive at one part from different directions. Without
+#: them a day is separate lines rather than a structure, and none of the
+#: choices it offered turn out to have mattered.
+MIN_JOINS = 3
+
 #: Each independent route must reach this many chips outside itself, or it is
 #: an island a player can find by elimination rather than deduction.
 MIN_ROUTE_CROSS_LINKS = 2
@@ -209,6 +223,17 @@ def check_day(
         err(
             f"an independent route reaches only {r.min_cross_links} chip(s) outside "
             f"itself (cross-links {r.route_cross_links}) — it is an island"
+        )
+    joins, forced_run = analysis.route_shape(day, r.solutions)
+    if forced_run > MAX_FORCED_RUN:
+        err(
+            f"{forced_run} parts in a row with nothing to decide on them — a "
+            "corridor, which the reveal draws as the straight line it is"
+        )
+    if joins < MIN_JOINS:
+        err(
+            f"routes meet again at only {joins} part(s), needs {MIN_JOINS} — "
+            "separate lines rather than a structure"
         )
     if r.bottlenecks:
         warn(f"every solution passes through {', '.join(r.bottlenecks)}")
