@@ -37,19 +37,20 @@ export function Pool({
     armedJoint === null ? "sist i kedjan" : `plats ${armedJoint + 1} i kedjan`;
 
   return (
-    <div
-      data-drop-zone={POOL_ZONE}
-      className={`pool-box ${incoming ? "pool-box--armed" : ""}`}
-      role="group"
-      aria-label={`Delar att välja bland, ${parts.length} kvar`}
-    >
-      {/* The group already names itself to a screen reader; this is that
-          same word again, for eyes. */}
+    <div className="pool-tray">
+      {/* The group below already names itself to a screen reader; this is
+          that same word again, for eyes, standing above the border rather
+          than inside it. */}
       <p className="pool-label" aria-hidden="true">
         Delar
       </p>
 
-      <div className="pool-rack">
+      <div
+        data-drop-zone={POOL_ZONE}
+        className={`pool-box ${incoming ? "pool-box--armed" : ""}`}
+        role="group"
+        aria-label={`Delar att välja bland, ${parts.length} kvar`}
+      >
         {parts.map((part) => (
           <button
             key={part}

@@ -103,7 +103,7 @@ export default function App() {
   };
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-8 pb-16">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-8">
       <header className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h1
@@ -168,13 +168,13 @@ export default function App() {
       )}
 
       {day && (
-        <main className="flex flex-col gap-5">
+        <main className="flex flex-1 flex-col gap-5">
           <section
             role="tabpanel"
             id="panel-spel"
             aria-labelledby="tab-spel"
             hidden={view !== "spel"}
-            className="flex flex-col gap-5"
+            className="flex flex-1 flex-col gap-5"
           >
             <p className="text-center text-xs font-semibold" style={{ color: "var(--ink-soft)" }}>
               #{day.no} · {formatSwedishDate(day.date)}
@@ -206,49 +206,42 @@ export default function App() {
               ))}
             </div>
 
-            {/* Chain and pool stand side by side, both reading downwards, so
-                the chain grows in place instead of pushing the pool off the
-                bottom of the screen. */}
-            <div className="board">
-              <div className="board-chain">
-                <Chain
-                  day={day}
-                  chain={game.chain}
-                  solved={game.solved}
-                  marked={game.marked}
-                  armedJoint={game.armedJoint}
-                  maxParts={game.maxParts}
-                  jointMarks={game.jointMarks}
-                  jointStamps={game.jointStamps}
-                  settled={game.settled}
-                  dragOver={drag?.over ?? null}
-                  dragSource={drag?.source ?? null}
-                  liftedPart={drag?.part ?? null}
-                  handlers={handlers}
-                  onJoint={game.toggleJoint}
-                />
-              </div>
-
-              {!game.solved && !game.failed && (
-                <div className="board-pool">
-                  <Pool
-                    parts={game.pool}
-                    marked={game.marked}
-                    liftedPart={drag?.part ?? null}
-                    incoming={drag?.over === POOL_ZONE}
-                    armedJoint={game.armedJoint}
-                    dimmed={game.dimmed}
-                    rejected={game.rejection}
-                    handlers={handlers}
-                  />
-                </div>
-              )}
-            </div>
+            <Chain
+              day={day}
+              chain={game.chain}
+              solved={game.solved}
+              marked={game.marked}
+              armedJoint={game.armedJoint}
+              maxParts={game.maxParts}
+              jointMarks={game.jointMarks}
+              jointStamps={game.jointStamps}
+              settled={game.settled}
+              dragOver={drag?.over ?? null}
+              dragSource={drag?.source ?? null}
+              liftedPart={drag?.part ?? null}
+              handlers={handlers}
+              onJoint={game.toggleJoint}
+            />
 
             {!game.solved && <Lives left={game.livesLeft} />}
 
             {!game.solved && !game.failed && (
               <>
+                {/* Last in the flex column and pinned there, so the rack is
+                    on screen whatever the chain does above it. It stays here
+                    in the markup, ahead of the controls, because that is the
+                    order the game is played in. */}
+                <Pool
+                  parts={game.pool}
+                  marked={game.marked}
+                  liftedPart={drag?.part ?? null}
+                  incoming={drag?.over === POOL_ZONE}
+                  armedJoint={game.armedJoint}
+                  dimmed={game.dimmed}
+                  rejected={game.rejection}
+                  handlers={handlers}
+                />
+
                 <Controls
                   day={day}
                   status={game.status}
@@ -312,6 +305,7 @@ export default function App() {
             id="panel-arkiv"
             aria-labelledby="tab-arkiv"
             hidden={view !== "arkiv"}
+            className="pb-10"
           >
             <Archive
               days={released}
@@ -327,6 +321,7 @@ export default function App() {
             id="panel-statistik"
             aria-labelledby="tab-statistik"
             hidden={view !== "statistik"}
+            className="pb-10"
           >
             <StatsPanel stats={game.stats} streak={game.streak} />
           </section>

@@ -301,7 +301,7 @@ body {
     padding: 0.45rem 0.3rem;
     white-space: nowrap;
     font-family: var(--font-dictionary);
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 400;
     letter-spacing: 0.01em;
     color: var(--ink);
@@ -585,74 +585,24 @@ body {
     font-weight: 700;
     padding-inline: 0.1rem;
   }
-  /* ── the board: chain and pool side by side ────────────────── */
-  .board {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-  }
-  .board-chain {
-    display: flex;
-    flex: 1 1 auto;
-    /* `safe` so that when the reserved gutter is wider than the column has
-       to give, the chain backs onto the left edge instead of off it. */
-    justify-content: safe center;
-    /* Without this the chain's own width sets the floor and the pool is
-       squeezed off the right edge of a narrow phone. */
-    min-width: 0;
-  }
-  /* The chain is narrow, and every weld word hangs off its right side. What
-     is centred in the column is therefore the chain *plus* that gutter — the
-     margin reserves the words' room, and the centring counts it. */
-  .board-chain .chain {
-    width: 7rem;
-    /* Sized to a typical weld word rather than the longest one: reserving
-       room for all thirteen letters of familjemedlem would push the chain
-       off-centre on every ordinary day. */
-    margin-right: min(5.5rem, 30%);
-  }
-  /* Once the day is over there is no pool, and the chain takes the whole
-     width back rather than standing in a column of its own. */
-  .board:not(:has(.board-pool)) .chain {
-    width: auto;
-    margin-inline: auto;
-  }
-  /* The pool holds its place while a long chain scrolls past it. */
-  .board-pool {
-    flex: 0 0 6.25rem;
+  /* ── the pool, a tray at the foot of the screen ────────────── */
+  /* Last in the column and pinned there: `margin-top: auto` drops it to the
+     bottom when the chain is short, `sticky` holds it there when the chain
+     is long enough to scroll. The paper background is what the chain slides
+     under. */
+  .pool-tray {
+    order: 9;
     position: sticky;
-    top: 0.75rem;
-  }
-  /* On the narrowest phones the gutter cannot hold a thirteen-letter
-     compound at full size, so chain, pool and word each give a little. */
-  @media (max-width: 379px) {
-    .board-chain .chain {
-      width: 6.25rem;
-    }
-    .board-pool {
-      flex-basis: 5.75rem;
-    }
-    .weld-word {
-      font-size: 0.85rem;
-    }
-  }
-
-  /* ── the pool ──────────────────────────────────────────────── */
-  /* The pool is also the drop zone for a part on its way back out of the
-     chain, so its border doubles as the target: dashed at rest, honey when
-     a chip is over it. */
-  .pool-box {
-    border: 2px dashed var(--edge);
-    border-radius: 0.9rem;
-    padding: 0.5rem 0.45rem 0.55rem;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .pool-box--armed {
-    border-color: var(--honey);
-    background: var(--panel);
+    bottom: 0;
+    z-index: 10;
+    margin-top: auto;
+    padding-bottom: 0.6rem;
+    background: var(--paper);
   }
   .pool-label {
-    margin-bottom: 0.45rem;
+    /* Outside the border, over the tray's own background — a caption on the
+       box rather than a heading inside it. */
+    margin-bottom: 0.3rem;
     text-align: center;
     font-size: 0.62rem;
     font-weight: 800;
@@ -660,19 +610,24 @@ body {
     text-transform: uppercase;
     color: var(--ink-soft);
   }
-  .pool-rack {
+  /* The pool is also the drop zone for a part on its way back out of the
+     chain, so its border doubles as the target: dashed at rest, honey when
+     a chip is over it. */
+  .pool-box {
     display: flex;
-    min-height: 3rem;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-  /* Stacked and full width, the chips read as a rack of parts waiting their
-     turn rather than a heap. */
-  .pool-rack .chip {
-    width: 100%;
+    min-height: 3.5rem;
+    flex-wrap: wrap;
+    align-content: flex-start;
     justify-content: center;
-    padding-inline: 0.45rem;
-    font-size: 0.82rem;
+    gap: 0.45rem;
+    border: 2px dashed var(--edge);
+    border-radius: 0.9rem;
+    padding: 0.55rem 0.5rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .pool-box--armed {
+    border-color: var(--honey);
+    background: var(--panel);
   }
 
   /* ── buttons ───────────────────────────────────────────────── */
