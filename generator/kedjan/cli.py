@@ -95,7 +95,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     )
     print(f"{len(ranked)} days ranked, written to {args.out}", file=sys.stderr)
 
-    head = f"{'day':22} {'par':>3} {'score':>6}  {'goldi':>5} {'dens':>5} {'lur':>5} {'dubb':>5}  {'sols':>4} {'ind':>3} {'prs':>3}  double meanings"
+    head = f"{'day':22} {'par':>3} {'score':>6}  {'goldi':>5} {'dens':>5} {'lur':>5} {'dubb':>5} {'fall':>5} {'ordb':>5}  {'sols':>4} {'ind':>3} {'prs':>3}  double meanings"
     print(head)
     print("-" * len(head))
     for d in ranked[: args.top]:
@@ -104,7 +104,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         print(
             f"{d['start'] + '→' + d['target']:22} {d['par']:>3} {d['_score']:>6.3f}  "
             f"{sub['goldilocks']:>5.2f} {sub['density']:>5.2f} {sub['deception']:>5.2f} "
-            f"{sub['doubleness']:>5.2f}  "
+            f"{sub['doubleness']:>5.2f} {sub['traps']:>5.2f} {sub['attested']:>5.2f}  "
             f"{d['_metrics']['solutions']:>4} {d['_metrics']['disjoint_routes']:>3} "
             f"{d['_metrics']['valid_pairs']:>3}  {homs}"
         )

@@ -5,13 +5,13 @@ the graph is never looked at — it finds *acceptable* days near the top of the
 degree list, not the best days anywhere. The sweep builds every day every
 usable start can carry, at both pars, and ranks them.
 
-The score makes explicit four judgements curation has been applying by hand:
+The score makes explicit five judgements curation has been applying by hand:
 
   goldilocks   solution count in its tier's sweet spot — the middle of the
-               3-12 band for the easy par-3 chain, two to four routes for the
-               hard par-4/5 chain — still genuinely independent of each
+               3-12 band for either tier — still genuinely independent of each
                other. The first archive proved that at short par a generous
-               solution count makes walkover days
+               solution count makes walkover days, and the second proved that
+               starving the hard tier of routes makes corridors
   density      many welds among the pool chips, entangled across routes, no
                chip stranded inside its own route — the pool should read as one
                fabric, not as islands
@@ -22,6 +22,14 @@ The score makes explicit four judgements curation has been applying by hand:
                choir against kör the drive — which is where the game's best
                misdirection lives, because a player who has priced a chip under
                one reading has not priced it at all
+  attested     the share of the words on a winning route that SALDO holds
+               as headwords, rather than only SFOL — the weld word is a link
+               out to the dictionary, so a route built of words svenska.se
+               cannot show is a promise the game does not keep
+  traps        false paths: first moves off the start that weld, invite, and
+               reach the target from nowhere — and how deep a player can walk
+               one before the board stops offering anything. The archive's
+               easy chains had none at all, which is what made them walkovers
 
 Days that fail a blocking curation check are dropped before ranking, so the
 list only ever contains days that `accept` would take. Taste — tone, register,
@@ -34,7 +42,7 @@ import os
 from dataclasses import dataclass
 from multiprocessing import Pool
 
-from . import curate
+from . import analysis, curate
 from .analysis import DayReport, report
 from .days import EASY_PAR, Day, build_day, distances_from, usable_endpoint
 from .graph import PartGraph
@@ -42,10 +50,12 @@ from .lexicon import Lexicon
 from .saldo import Saldo
 
 #: Sweet solution counts by tier. The easy chain (par 3) keeps the launch
-#: shape: the middle of its 3-12 band. The hard chain (par 4-5) wants the
-#: bottom of its 2-6 band — past four, escapes multiply faster than deduction.
+#: shape: the middle of its 3-12 band. The hard chain wants a middle of its
+#: own: a handful of ways through, not two. Scoring the hard tier down to two
+#: routes is what produced the corridors — a chain with one way through is not
+#: hard, it is narrow, and the difficulty belongs in the traps instead.
 SWEET_SOLUTIONS_EASY = range(6, 10)
-SWEET_SOLUTIONS_HARD = range(2, 5)
+SWEET_SOLUTIONS_HARD = range(3, 9)
 #: Independent routes saturate here — routes consume pool, and the longer the
 #: par the fewer truly disjoint routes a pool this size can carry.
 INDEP_CAP = {3: 4, 4: 3, 5: 2}
@@ -56,16 +66,33 @@ CROSS_CAP = 5
 #: A fifth double-reading chip stops adding misdirection the fourth had.
 HOMOGRAPH_CAP = 4
 
+#: How many false openings are worth rewarding. Two wrong turns off the start
+#: is a chain a player has to read; a third adds little the second did not.
+TRAP_CAP = 2
+#: How deep a doomed line has to run before the trap has done its work: a
+#: player who has laid three parts down has committed to the wrong reading.
+TRAP_DEPTH_CAP = 3
+
 #: Deception is the share of valid welds on no winning route: full marks when
 #: three quarters of the fabric leads nowhere, nothing below two fifths.
 DECEPTION_FLOOR = 0.4
 DECEPTION_CEILING = 0.75
 
+#: Attestation is the share of the words on a winning route that SALDO holds
+#: as headwords. SFOL witnesses far more compounds than SALDO records, and the
+#: ones only SFOL has are the marginal ones — the median day in the first
+#: trap-scored sweep had SALDO for under half the words it asked a player to
+#: build, and every weld word is a link out to svenska.se.
+ATTESTED_FLOOR = 0.35
+ATTESTED_CEILING = 0.8
+
 WEIGHTS = {
-    "goldilocks": 0.30,
-    "density": 0.25,
-    "deception": 0.25,
-    "doubleness": 0.20,
+    "goldilocks": 0.20,
+    "density": 0.14,
+    "deception": 0.14,
+    "doubleness": 0.12,
+    "traps": 0.22,
+    "attested": 0.18,
 }
 
 
@@ -102,14 +129,15 @@ class Scored:
 def score_day(day: Day, rep: DayReport, saldo: Saldo) -> Scored:
     cap = INDEP_CAP[day.par]
     easy = day.par <= EASY_PAR
+    payload = day.to_json()
     # The game accepts any chain that holds, so the hard tier is judged on
     # every winning route, however long — the within-budget count flattered
     # days whose escapes were merely longer than par.
-    all_routes = curate.solutions_unlimited(day.to_json())
+    all_routes = curate.solutions_unlimited(payload)
     sols_band = (
         _band(len(rep.solutions), 2, SWEET_SOLUTIONS_EASY, 13)
         if easy
-        else _band(len(all_routes), 1, SWEET_SOLUTIONS_HARD, 7)
+        else _band(len(all_routes), 1, SWEET_SOLUTIONS_HARD, 14)
     )
     goldilocks = (sols_band + min(rep.disjoint_routes, cap) / cap) / 2
 
@@ -139,6 +167,33 @@ def score_day(day: Day, rep: DayReport, saldo: Saldo) -> Scored:
     }
     doubleness = min(len(homographs), HOMOGRAPH_CAP) / HOMOGRAPH_CAP
 
+    # The traps, weighted heaviest of the four difficulty terms: how many
+    # first moves off the start look like a way in and are not, and how far a
+    # player can walk one before the board runs out. A chain whose every
+    # opening wins is a chain with nothing to find out — deception measured
+    # over the whole fabric missed that, because dead welds deep in the pool
+    # are welds nobody was tempted by.
+    # The words a winner actually builds, and how many of them SALDO knows.
+    # Not every weld in the pool: a marginal compound nobody has to make is
+    # a decoy, one on the only way through is a word the game vouches for.
+    on_route_words = {
+        payload["pairs"][key]
+        for route in all_routes
+        for a, b in zip([day.start, *route], [*route, day.target])
+        if (key := f"{a}>{b}") in payload["pairs"]
+    }
+    share = 1 - len(rep.weak_welds) / len(on_route_words) if on_route_words else 0.0
+    attested = min(
+        1.0,
+        max(0.0, (share - ATTESTED_FLOOR) / (ATTESTED_CEILING - ATTESTED_FLOOR)),
+    )
+
+    false_openings, trap_depth = analysis.false_paths(payload)
+    traps = (
+        min(len(false_openings), TRAP_CAP) / TRAP_CAP
+        + min(trap_depth, TRAP_DEPTH_CAP) / TRAP_DEPTH_CAP
+    ) / 2
+
     return Scored(
         day=day,
         report=rep,
@@ -147,6 +202,8 @@ def score_day(day: Day, rep: DayReport, saldo: Saldo) -> Scored:
             "density": max(0.0, density),
             "deception": deception,
             "doubleness": doubleness,
+            "traps": traps,
+            "attested": attested,
         },
         homographs=homographs,
     )
