@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dayForDate, releasedDays } from "./days";
 import { daysBetween, formatShortDate, formatSwedishDate, todayISO } from "./dates";
 import { day } from "./testDay";
-import { allSolutions } from "./graph";
+import { allSolutions, isDeadEnd, weld } from "./graph";
 import calendar from "../../public/days.json" with { type: "json" };
 import type { Day } from "../types";
 
@@ -86,7 +86,7 @@ describe("the shipped calendar", () => {
         // accepts, however long — a day with three tight routes and twenty
         // long ways round is not hard.
         expect(solutions.length).toBeGreaterThanOrEqual(2);
-        expect(solutions.length).toBeLessThanOrEqual(6);
+        expect(solutions.length).toBeLessThanOrEqual(12);
       }
       // A day with a direct start→target compound has no puzzle in it.
       expect(d.pairs[`${d.start}>${d.target}`]).toBeUndefined();
@@ -100,6 +100,20 @@ describe("the shipped calendar", () => {
       expect(d.pool).not.toContain(d.start);
       expect(d.pool).not.toContain(d.target);
       expect(new Set(d.pool).size).toBe(d.pool.length);
+    },
+  );
+
+  it.each(days.map((d) => [`#${d.no} ${d.start}→${d.target}`, d] as const))(
+    "%s offers a first move that goes nowhere",
+    (_label, d) => {
+      // The thing that makes a chain hard: a part that welds off the start,
+      // looks like the way in, and can reach the target from nowhere. A day
+      // whose every opening wins asks the player nothing, however few ways
+      // to win it has — which is what the whole calendar used to be.
+      const traps = d.pool.filter(
+        (part) => weld(d, d.start, part) && isDeadEnd(d, [part], part),
+      );
+      expect(traps.length).toBeGreaterThanOrEqual(d.par <= 3 ? 1 : 2);
     },
   );
 
