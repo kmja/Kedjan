@@ -55,6 +55,8 @@ export function Pool({
           <button
             key={part}
             type="button"
+            data-chip={part}
+            data-chip-zone="pool"
             {...handlers(part, "pool")}
             className={`chip ${marked === part ? "chip--marked" : ""} ${
               liftedPart === part ? "chip--lifted" : ""

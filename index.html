@@ -9,8 +9,11 @@
       name="description"
       content="Kedjan är ett svenskt dagligt ordpussel. Bygg en bro från start till mål där varje par av grannar bildar ett riktigt sammansatt ord."
     />
-    <meta name="theme-color" content="#FAF7F0" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#171C19" media="(prefers-color-scheme: dark)" />
+    <!-- The bare one first: a browser that does not read the media
+         attribute takes this rather than painting its own white. -->
+    <meta name="theme-color" content="#faf7f0" />
+    <meta name="theme-color" content="#faf7f0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171c19" media="(prefers-color-scheme: dark)" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

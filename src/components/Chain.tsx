@@ -750,10 +750,14 @@ export function Chain({
           {row(
             i + 1,
             solved ? (
-              <span className="node">{part}</span>
+              <span className="node" data-chip={part} data-chip-zone="chain">
+                {part}
+              </span>
             ) : (
               <button
                 type="button"
+                data-chip={part}
+                data-chip-zone="chain"
                 {...handlers(part, "chain")}
                 className={`node node--removable ${
                   liftedPart === part ? "chip--lifted" : ""

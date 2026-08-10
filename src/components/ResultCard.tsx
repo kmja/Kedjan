@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Day, DayProgress } from "../types";
 import { shareResult, shareText } from "../game/share";
-import { plural } from "../game/plural";
 import { chainOf } from "../game/storage";
 import { RouteTree } from "./RouteTree";
 
@@ -9,25 +8,19 @@ interface Props {
   day: Day;
   progress: DayProgress;
   otherSolutions: string[][];
-  streak: number;
   /** Put this day back on the table. The result above it stays counted. */
   onReplay: () => void;
 }
-
-const parVerdict = (links: number, par: number) =>
-  links < par ? "Under par — briljant!" : links === par ? "På par!" : "I mål!";
 
 export function ResultCard({
   day,
   progress,
   otherSolutions,
-  streak,
   onReplay,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
   const [showRoutes, setShowRoutes] = useState(false);
   const chain = chainOf(progress);
-  const links = chain.length + 1;
 
   const onShare = async () => {
     const outcome = await shareResult(shareText(day, progress, window.location.origin));
@@ -43,19 +36,6 @@ export function ResultCard({
 
   return (
     <div className="snap flex flex-col gap-4">
-      <div className="card text-center">
-        {/* The welds are written on the chain itself now — repeating them
-            here said the same thing twice. */}
-        <p className="text-sm font-semibold" style={{ color: "var(--honey-ink)" }}>
-          {plural(links, "ord", "ord")} — {parVerdict(links, day.par)}
-        </p>
-        <p className="mt-1 text-xs" style={{ color: "var(--ink-soft)" }}>
-          {progress.hints > 0 && `${plural(progress.hints, "ledtråd", "ledtrådar")} · `}
-          {progress.misses > 0 && `${plural(progress.misses, "felförsök", "felförsök")} · `}
-          {streak > 0 && `${plural(streak, "dag", "dagar")} i rad`}
-        </p>
-      </div>
-
       {otherSolutions.length > 0 && (
         <div className="card">
           <button

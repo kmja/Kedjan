@@ -185,7 +185,12 @@ body {
        is sized by its rings, so the box has to be sized by them too. */
     height: 2.5rem;
     width: 100%;
-    transition: height 0.16s ease;
+    /* No transition on the height. The chain settles its own rows by
+       measuring them before and after a change, and a height that is still
+       travelling when that measurement is taken is a measurement of nowhere:
+       the end word was remembering a position 68px — one joint's worth of
+       opening — from where it actually stood, and leapt that far before
+       animating back. One mechanism owns the motion now. */
   }
   /* An open joint is a long link with its chip-slot sitting on the line the
      way the forged link's rings sit on a closed one: centred, with the same
@@ -596,9 +601,9 @@ body {
     z-index: 10;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 0.5rem;
     margin-top: auto;
-    padding-bottom: 0.7rem;
+    padding-bottom: 0.35rem;
     background: var(--paper);
   }
   .pool-label {
@@ -675,26 +680,6 @@ body {
   }
   .btn--major:hover {
     background: color-mix(in srgb, var(--falu) 10%, transparent);
-  }
-
-  /* A side view, as a link in the header. Quiet until it is the view you
-     are in, when it takes the ink and the underline. */
-  .navlink {
-    padding: 0.2rem 0.1rem;
-    background: none;
-    border: 0;
-    color: var(--ink-soft);
-    font-family: inherit;
-    font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    cursor: pointer;
-  }
-  .navlink[aria-pressed="true"] {
-    color: var(--falu-ink);
-    text-decoration: underline;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 4px;
   }
 
   .tab {

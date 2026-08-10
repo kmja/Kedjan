@@ -9,16 +9,15 @@ import {
   type Tier,
 } from "./game/days";
 import { formatSwedishDate, todayISO } from "./game/dates";
-import { plural } from "./game/plural";
 import { useKedjan } from "./game/useKedjan";
 import { clearSave, markWelcomed, wasWelcomed } from "./game/storage";
 import { POOL_ZONE, useChipDrag } from "./game/useChipDrag";
+import { useChipFlip } from "./game/useChipFlip";
 import { Chain } from "./components/Chain";
 import { Pool } from "./components/Pool";
 import { Announcer } from "./components/Announcer";
 import { ResultCard } from "./components/ResultCard";
 import { HowToPlay } from "./components/HowToPlay";
-import { StatsPanel } from "./components/StatsPanel";
 import { Archive } from "./components/Archive";
 import { ReportWord } from "./components/ReportWord";
 import { DevPanel } from "./components/DevPanel";
@@ -28,14 +27,7 @@ import { OutcomeDialog } from "./components/OutcomeDialog";
 import { WelcomeDialog } from "./components/WelcomeDialog";
 import { isDevMode } from "./game/dev";
 
-type View = "spel" | "arkiv" | "statistik";
-
-/** The two views that sit beside the day, as links in the header. The day
-    itself needs no link: every one of these is a toggle back to it. */
-const SIDE_VIEWS: [Exclude<View, "spel">, string][] = [
-  ["arkiv", "Arkiv"],
-  ["statistik", "Statistik"],
-];
+type View = "spel" | "arkiv";
 
 export default function App() {
   const today = useMemo(todayISO, []);
@@ -71,6 +63,9 @@ export default function App() {
   }, [calendar, released, pickedDate, today, tier]);
 
   const game = useKedjan(day);
+  // A chip that is clicked rather than dragged still has to be seen to
+  // travel: this animates every one that has moved since the last render.
+  useChipFlip();
   // Chips travel both ways and land in a specific slot. Nothing is validated
   // on the way down — the chain is judged only when it is closed.
   const { drag, handlers } = useChipDrag({
@@ -119,29 +114,22 @@ export default function App() {
           >
             Kedjan
           </h1>
-          <p className="mt-1 text-sm font-medium" style={{ color: "var(--ink-soft)" }}>
-            Bygg kedjan — varje par bildar ett ord.
-          </p>
         </div>
 
-        {/* The side views and the rules share one cluster in the header.
-            A tab bar of its own was a row of chrome above every board, for
-            two places a player goes once a day at most. */}
+        {/* The archive and the rules, in one cluster. The archive link is
+            the way out and the way back: in the archive it says Dagens and
+            returns to today, not to whichever old day was last opened. */}
         <nav className="flex flex-wrap items-center justify-end gap-2" aria-label="Vyer">
-          {SIDE_VIEWS.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className="navlink"
-              aria-pressed={view === id}
-              onClick={() => setView(view === id ? "spel" : id)}
-            >
-              {label}
-              {id === "statistik" && game.streak > 0 && (
-                <span aria-label={`${plural(game.streak, "dag", "dagar")} i rad`}> 🔥{game.streak}</span>
-              )}
-            </button>
-          ))}
+          <button
+            type="button"
+            className="howto-toggle"
+            onClick={() => {
+              if (view === "arkiv") setPickedDate(null);
+              setView(view === "arkiv" ? "spel" : "arkiv");
+            }}
+          >
+            {view === "arkiv" ? "Dagens" : "Arkiv"}
+          </button>
 
           <HowToPlay />
         </nav>
@@ -232,6 +220,8 @@ export default function App() {
                 {/* The rack and what the board has to say about it travel
                     together, pinned to the foot of the screen. */}
                 <div className="dock">
+                  <Announcer status={game.status} announceKey={game.announceKey} />
+
                   <Pool
                     parts={game.pool}
                     marked={game.marked}
@@ -242,8 +232,6 @@ export default function App() {
                     rejected={game.rejection}
                     handlers={handlers}
                   />
-
-                  <Announcer status={game.status} announceKey={game.announceKey} />
                 </div>
               </>
             )}
@@ -275,7 +263,6 @@ export default function App() {
                 day={day}
                 progress={game.progress}
                 otherSolutions={game.otherSolutions}
-                streak={game.streak}
                 onReplay={game.replay}
               />
             )}
@@ -305,13 +292,6 @@ export default function App() {
             />
           </section>
 
-          <section
-            id="panel-statistik"
-            hidden={view !== "statistik"}
-            className="pb-10"
-          >
-            <StatsPanel stats={game.stats} streak={game.streak} />
-          </section>
         </main>
       )}
 

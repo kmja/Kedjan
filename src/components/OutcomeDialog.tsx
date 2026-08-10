@@ -1,5 +1,6 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import type { Day } from "../types";
+import { praise } from "../game/praise";
 import { RouteTree } from "./RouteTree";
 import { useModal } from "./useModal";
 
@@ -25,14 +26,17 @@ export function OutcomeDialog({ kind, day, chain, others, onClose, onReplay }: P
   const ref = useRef<HTMLDialogElement>(null);
   const close = useModal(ref);
   const dismiss = () => close(onClose);
+  // Picked once, when the dialog opens: a heading that changed under a
+  // re-render would be a heading nobody could quote.
+  const cheer = useMemo(praise, []);
 
   return (
     <dialog ref={ref} className="outcome" onClose={onClose} aria-label={
-      kind === "win" ? "Kedjan håller" : "Kedjan brast"
+      kind === "win" ? cheer : "Kedjan brast"
     }>
       {kind === "win" ? (
         <>
-          <h2 className="outcome-title">Kedjan håller!</h2>
+          <h2 className="outcome-title">{cheer}</h2>
           <p className="outcome-sub">
             Här är alla vägar som fanns — din lyser.
           </p>

@@ -22,6 +22,7 @@ import {
 import { dayKey } from "./days";
 import { todayISO } from "./dates";
 import { plural } from "./plural";
+import { praise } from "./praise";
 
 export type Status = { kind: "ok" | "no" | "info"; msg: string };
 
@@ -233,7 +234,7 @@ export function useKedjan(day: Day | null) {
           ? undefined
           : (s) => recordSolve(s, day.date, next.length + 1, day.par),
       );
-      say({ kind: "ok", msg: "Kedjan håller — klart!" });
+      say({ kind: "ok", msg: praise() });
       return true;
     },
     [day, progress.solvedAt, patch, say],
