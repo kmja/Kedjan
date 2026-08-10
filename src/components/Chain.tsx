@@ -120,8 +120,14 @@ const RING_STROKE = 2.2;
 /** Centre to centre. Less than two radii, so consecutive rings interlock. */
 const RING_STEP = 9.4;
 const RING_W = 14;
-/** How far each link of a loose end leans past the one holding it. */
-const RING_SWING = 5;
+/**
+ * How far each link of a loose end leans past the one holding it. The
+ * leans compose down the run, so the open ring at the tip waves at twice
+ * this. Scaled to the resting sway, not to the reaction: the dangling end
+ * is part of the settled chain, and at 5 it kept waving hard over an idle
+ * that had long since calmed to half a degree.
+ */
+const RING_SWING = 2;
 
 /**
  * How far each link of a run leans from upright, as a share of RING_SWING.
@@ -477,13 +483,17 @@ export function Chain({
     const depth = new Map<number, number>();
     const still = new Set<number>();
     let far = 0;
-    (heldBelow ? [...order].reverse() : order).forEach((at, i) => {
+    (heldBelow ? [...order].reverse() : order).forEach((at, i, walk) => {
       depth.set(at, i);
       if (i === 0 && (fromTop || fromBottom)) {
         reach.set(at, 0);
         still.add(at);
         return;
       }
+      // Held at both ends: the far end is anchored too. Without this the
+      // target word was only spared by the taut chain's zero angle — and
+      // the placement pulse does not read the angle, so it swung.
+      if (i === walk.length - 1 && fromTop && fromBottom) still.add(at);
       reach.set(at, far);
       far += HEIGHT_OF[seq[at]!.kind];
     });
@@ -567,7 +577,9 @@ export function Chain({
       epicentre !== null && seq[epicentre]!.chainNo === mine.chainNo;
     const away = sameChain ? Math.abs(within - hang.order.indexOf(epicentre!)) : 0;
     const swing = sameChain ? pulseAt(away) : 0;
-    if (swing > PULSE_FLOOR) {
+    // An anchor is held by the world, not by the chain: whatever lands on
+    // the chain, the ends it hangs from do not move.
+    if (swing > PULSE_FLOOR && !hang.still.has(at)) {
       style["--pulse"] = `${swing.toFixed(2)}deg`;
       style["--pulse-delay"] = `${away * PULSE_STEP_MS}ms`;
       // Two identical pulses under alternating names: swapping the class
