@@ -23,7 +23,11 @@ const statusMark = (kind: Status["kind"]) => (kind === "no" ? "✗" : kind === "
 export function Announcer({ status, announceKey }: Props) {
   return (
     <p
-      className="min-h-6 text-sm font-medium"
+      // Floating above the dock rather than standing in it: an empty line
+      // that reserved its height was an opaque strip that clipped the board
+      // a whole row early. Now the dock's top edge is the rack's, and a
+      // verdict overlays the board only while there is one to read.
+      className="dock-say text-sm font-medium"
       role="status"
       aria-live="polite"
       aria-atomic="true"
@@ -34,7 +38,7 @@ export function Announcer({ status, announceKey }: Props) {
           // A placement is visible as motion — the chip travels — so eyes
           // need no caption for it. A screen reader still gets every word:
           // for its users the announcement IS the move.
-          className={status.kind === "info" ? "sr-only" : undefined}
+          className={status.kind === "info" ? "sr-only" : "dock-say-note"}
           style={{ color: statusColor(status.kind) }}
         >
           <span aria-hidden="true">{statusMark(status.kind)} </span>
