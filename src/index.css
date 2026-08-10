@@ -472,26 +472,44 @@ body {
   }
 
   /* The day's two chains, side by side. Pressed = the chain on the board. */
-  .tier-row {
+  /* The two chains, off to the side. A row of pills across the board cost
+     a whole line of height for a switch pressed once a day; as tabs on the
+     left edge they cost none, and they read as what they are — two chains
+     filed side by side, the one you are on pulled out. Pinned to the
+     container's left edge, which on a phone is the screen's. */
+  .tier-rail {
+    position: fixed;
+    left: max(0rem, calc((100vw - 28rem) / 2));
+    top: 45%;
+    z-index: 20;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     gap: 0.4rem;
-    margin-top: -0.5rem;
+    transform: translateY(-50%);
   }
   .tier-pill {
-    padding: 0.3rem 1.1rem;
-    border-radius: 999px;
+    /* Text down the tab, so the rail is a thumb's width and no more. */
+    writing-mode: vertical-rl;
+    /* Wide enough for a thumb, which at a screen edge needs less width
+       than it would in open board. */
+    padding: 1.05rem 0.6rem 1.05rem 0.75rem;
     border: 1.5px solid var(--edge);
+    border-left: 0;
+    border-radius: 0 999px 999px 0;
     background: var(--panel);
     color: var(--ink-soft);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 800;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
+    /* Tucked in until it is the one you are on, and then pulled out. */
+    transform: translateX(-0.35rem);
+    transition: transform 0.15s ease, background 0.15s ease;
   }
   .tier-pill[aria-pressed="true"] {
     background: var(--falu);
     border-color: var(--falu-deep);
     color: var(--on-falu);
+    transform: translateX(0);
   }
 
   .dag-part {

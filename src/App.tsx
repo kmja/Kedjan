@@ -170,12 +170,10 @@ export default function App() {
             </p>
 
             {/* Every date carries two chains. The toggle never resets the
-                other chain — each keeps its own saved progress. */}
-            <div
-              className="tier-row"
-              role="group"
-              aria-label="Välj kedja"
-            >
+                other chain — each keeps its own saved progress. It lives on
+                the left edge rather than across the board: a line of height
+                is worth more than a line of chrome. */}
+            <div className="tier-rail" role="group" aria-label="Välj kedja">
               {(
                 [
                   ["easy", "Lätt"],
