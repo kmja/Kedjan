@@ -9,14 +9,23 @@ from kedjan import cli, curate, svenska
 from kedjan.curate import Level
 
 ARTICLE = '<div class="artikel"><span class="def">mur av sten</span></div>'
+#: The same article with the class keeping company, which is the shape that
+#: broke the first live run.
+ARTICLE_WITH_COMPANY = (
+    '<div class="artikel so lang"><span class="def ordklass">mur av sten</span></div>'
+)
 NO_HIT = "<p>Sökningen gav inga svar</p>"
+#: Neither one: a redirect stub, a cookie wall, a rewritten site.
+UNREADABLE = "<html><body><script>location.href='/'</script></body></html>"
 
 
-def fake_fetch(so: set[str], saol: set[str]):
+def fake_fetch(so: set[str], saol: set[str], article: str = ARTICLE):
+    """A site that knows the canaries, plus whatever the test says."""
+
     def _fetch(self, dictionary, word):
         _fetch.calls.append((dictionary, word))
-        vocab = so if dictionary == "so" else saol
-        return ARTICLE if word in vocab else NO_HIT
+        vocab = (so | set(svenska.CANARIES)) if dictionary == "so" else saol
+        return article if word in vocab else NO_HIT
 
     _fetch.calls = []
     return _fetch
@@ -27,6 +36,36 @@ def make_client(tmp_path, monkeypatch, so, saol):
     client = svenska.Svenska(verdicts_path=tmp_path / "verdicts.json")
     client.delay = 0
     return client
+
+
+def test_an_article_is_recognised_however_its_class_keeps_company():
+    assert svenska.reading(ARTICLE) is True
+    assert svenska.reading(ARTICLE_WITH_COMPANY) is True
+    assert svenska.reading(NO_HIT) is False
+
+
+def test_a_page_that_is_neither_is_no_verdict_at_all():
+    """The bug that condemned a calendar: absence of a hit is not a miss."""
+    assert svenska.reading(UNREADABLE) is None
+
+
+def test_an_unreadable_answer_is_never_cached_as_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(svenska.Svenska, "_fetch", lambda self, d, w: UNREADABLE)
+    client = svenska.Svenska(verdicts_path=tmp_path / "verdicts.json")
+    client.delay = 0
+    assert client.lookup("stenmur") is None
+    assert "unreadable" in (client.last_error or "")
+    assert not (tmp_path / "verdicts.json").exists()
+
+
+def test_verdicts_from_an_older_probe_are_discarded(tmp_path):
+    path = tmp_path / "verdicts.json"
+    path.write_text(
+        json.dumps({"stenmur": {"so": False, "saol": False}}), encoding="utf-8"
+    )
+    client = svenska.Svenska(verdicts_path=path)
+    assert client.verdicts == {}
+    assert client.discarded == 1
 
 
 def test_lookup_answers_per_dictionary(tmp_path, monkeypatch):
@@ -113,6 +152,26 @@ def svenskacheck(tmp_path, monkeypatch, so, saol):
     )
 
 
+def test_the_run_refuses_to_start_when_the_canaries_do_not_answer(
+    tmp_path, monkeypatch, capsys
+):
+    """Five hundred missing words is a broken parser, not a broken calendar."""
+    monkeypatch.setattr(svenska.Svenska, "_fetch", lambda self, d, w: UNREADABLE)
+    days = write_days(tmp_path, {"a>b": "stenmur"})
+    code = cli.main(
+        [
+            "svenskacheck",
+            "--days", str(days),
+            "--verdicts", str(tmp_path / "verdicts.json"),
+            "--delay", "0",
+        ]
+    )
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "cannot read svenska.se" in err
+    assert "MISSING" not in capsys.readouterr().out
+
+
 def test_svenskacheck_passes_when_so_carries_every_weld(tmp_path, monkeypatch, capsys):
     code = svenskacheck(tmp_path, monkeypatch, so={"stenmur", "murvägg"}, saol=set())
     assert code == 0
@@ -137,6 +196,28 @@ def test_svenskacheck_marks_saol_only_welds_without_failing(tmp_path, monkeypatc
     assert "SAOL ONLY  murvägg" in capsys.readouterr().out
 
 
+def test_lint_ignores_verdicts_an_older_probe_wrote(tmp_path, capsys):
+    """The file the broken run left behind must not condemn the calendar."""
+    from test_curate import a_day
+
+    days = tmp_path / "days.json"
+    days.write_text(json.dumps([a_day()]), encoding="utf-8")
+    verdicts = tmp_path / "verdicts.json"
+    verdicts.write_text(
+        json.dumps({"stenmur": {"so": False, "saol": False}}), encoding="utf-8"
+    )
+    code = cli.main(
+        [
+            "lint", str(days),
+            "--no-lexicon",
+            "--saldo", str(tmp_path / "absent"),
+            "--svenska-verdicts", str(verdicts),
+        ]
+    )
+    assert code == 0
+    assert "written by an older probe" in capsys.readouterr().err
+
+
 def test_lint_reads_the_committed_verdicts(tmp_path, monkeypatch, capsys):
     """A verdict written on one machine blocks the lint on every machine."""
     from test_curate import a_day
@@ -145,7 +226,13 @@ def test_lint_reads_the_committed_verdicts(tmp_path, monkeypatch, capsys):
     days.write_text(json.dumps([a_day()]), encoding="utf-8")
     verdicts = tmp_path / "verdicts.json"
     verdicts.write_text(
-        json.dumps({"stenmur": {"so": False, "saol": False}}), encoding="utf-8"
+        json.dumps(
+            {
+                "_probe": svenska.PROBE_VERSION,
+                "stenmur": {"so": False, "saol": False},
+            }
+        ),
+        encoding="utf-8",
     )
     code = cli.main(
         [

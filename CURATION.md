@@ -482,6 +482,34 @@ pass, each caught by the lint refusing to write:
 None of these would have been noticed by eye. All three were found because
 `accept` re-lints its own picks and writes nothing when anything blocks.
 
+## A check that condemns everything is checking itself
+
+The first live run of `svenskacheck` came back **0 of 560 welds in SO**, with
+`badrum`, `dagbok`, `ordbok`, `grundskola` and `modersmål` among the words it
+called missing. Every one of those is in Svensk ordbok. The verdict was not
+about the calendar at all: the probe recognised a hit by the exact string
+`class="artikel"`, the site does not serve that exact string, and *absence of
+a hit was being read as a miss*.
+
+Three changes, because the fault is a shape of fault and not a typo:
+
+- **A miss is recognised on its own evidence.** An article is an element whose
+  class list contains `artikel`, whatever else it contains; a no-hit page says
+  so in words. A page that is neither returns `None` — the parser has lost the
+  site, which is a thing that happens, and it is not a verdict about a word.
+- **Canaries run first.** Before asking about five hundred unknown words, the
+  check asks about three known ones. If SO does not answer for `ordbok`, the
+  run stops and says the probe is broken rather than printing five hundred
+  confident lies.
+- **Verdicts carry the probe that took them.** A verdict file stamped with an
+  older `PROBE_VERSION` is discarded on load, by the check and by the lint
+  both. The file the broken run wrote would otherwise have blocked every day
+  in the calendar.
+
+The `--probe WORD` flag prints what the site actually served, and now says how
+the parser read it. That is the way to recalibrate: look at the markup first,
+then write the rule.
+
 ## Known gaps
 
 - **SALDO absence is not a quality score over the whole pool.** About 35% of

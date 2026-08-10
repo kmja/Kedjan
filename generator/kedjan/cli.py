@@ -148,8 +148,46 @@ def cmd_svenskacheck(args: argparse.Namespace) -> int:
         if html is None:
             print(client.last_error, file=sys.stderr)
             return 2
+        said = {True: "article", False: "no-hit page", None: "UNREADABLE"}[
+            sv_mod.reading(html)
+        ]
+        print(f"# f_{args.dictionary} {args.probe}: {len(html)} bytes, read as {said}")
         print(html[:3000])
         return 0
+
+    if client.discarded:
+        print(
+            f"{client.discarded} verdict(s) in {args.verdicts} came from an older "
+            "probe and were discarded — they are evidence about that probe, not "
+            "about the words. They will be asked again.",
+            file=sys.stderr,
+            flush=True,
+        )
+
+    # Before asking about five hundred unknown words, ask about three known
+    # ones. The first live run of this check reported every weld missing,
+    # badrum and ordbok among them, because the parser had lost the site —
+    # and nothing in the output said so.
+    if not args.no_selftest:
+        failed = client.selftest()
+        if failed:
+            print(
+                "the probe cannot read svenska.se: "
+                f"{', '.join(failed)} came back as anything but an article, and "
+                "SO certainly has them. Every verdict from this run would be "
+                f"noise. Run `--probe {failed[0]}` to see what the site is "
+                "serving, fix the reading in svenska.py, and try again.",
+                file=sys.stderr,
+            )
+            if client.last_error:
+                print(f"last error: {client.last_error}", file=sys.stderr)
+            return 2
+        print(
+            f"probe checked against {', '.join(sv_mod.CANARIES)} — the site "
+            "still reads.",
+            file=sys.stderr,
+            flush=True,
+        )
 
     words = _weld_words(args)
     cached = [w for w in words if w in client.verdicts]
@@ -526,7 +564,20 @@ def _svenska_findings(payload: list[dict], path_str: str) -> list[curate.Finding
             file=sys.stderr,
         )
         return []
-    verdicts = json.loads(path.read_text(encoding="utf-8"))
+    from . import svenska as sv_mod
+
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    if stored.get("_probe") != sv_mod.PROBE_VERSION:
+        # A verdict is only as good as the probe that took it, and one of
+        # those has already condemned every weld in the calendar over a
+        # parser fault. An older file is ignored, loudly.
+        print(
+            f"note: {path} was written by an older probe and says nothing "
+            "about these welds. Re-run svenskacheck where the network is open.",
+            file=sys.stderr,
+        )
+        return []
+    verdicts = {k: v for k, v in stored.items() if not k.startswith("_")}
     return curate.check_svenska(payload, verdicts)
 
 
@@ -601,6 +652,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="check a plain word list (one per line) instead of the calendar")
     sv.add_argument("--verdicts", default="svenska-verdicts.json",
                     help="verdict file, committed so lint can read it everywhere")
+    sv.add_argument("--no-selftest", action="store_true",
+                    help="skip the canary words that prove the parser still "
+                         "reads the site")
     sv.add_argument("--probe", default=None, metavar="WORD",
                     help="print the raw fragment for one word, to calibrate the parser")
     sv.add_argument("--dictionary", default="so", choices=("so", "saol", "saob"),
