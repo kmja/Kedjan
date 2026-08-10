@@ -17,6 +17,14 @@ ARTICLE_WITH_COMPANY = (
 NO_HIT = "<p>Sökningen gav inga svar</p>"
 #: Neither one: a redirect stub, a cookie wall, a rewritten site.
 UNREADABLE = "<html><body><script>location.href='/'</script></body></html>"
+#: What svenska.se actually serves now — a client-rendered app, whatever
+#: word is asked for.
+APP_SHELL = (
+    '<!DOCTYPE html><html lang="sv"><head>'
+    '<link rel="stylesheet" href="/_nuxt/entry.B_I1Lyzb.css">'
+    '<script id="__NUXT_DATA__" type="application/json">[]</script>'
+    "</head><body><div id=\"__nuxt\"></div></body></html>"
+)
 
 
 def fake_fetch(so: set[str], saol: set[str], article: str = ARTICLE):
@@ -47,6 +55,16 @@ def test_an_article_is_recognised_however_its_class_keeps_company():
 def test_a_page_that_is_neither_is_no_verdict_at_all():
     """The bug that condemned a calendar: absence of a hit is not a miss."""
     assert svenska.reading(UNREADABLE) is None
+
+
+def test_the_app_shell_is_named_for_what_it_is(tmp_path, monkeypatch):
+    """The endpoint is gone, which is not the same as the word being gone."""
+    monkeypatch.setattr(svenska.Svenska, "_fetch", lambda self, d, w: APP_SHELL)
+    client = svenska.Svenska(verdicts_path=tmp_path / "verdicts.json")
+    client.delay = 0
+    assert client.lookup("ordbok") is None
+    assert "app shell" in (client.last_error or "")
+    assert "client-rendered" in (client.last_error or "")
 
 
 def test_an_unreadable_answer_is_never_cached_as_missing(tmp_path, monkeypatch):
@@ -244,3 +262,38 @@ def test_lint_reads_the_committed_verdicts(tmp_path, monkeypatch, capsys):
     )
     assert code == 1
     assert "stenmur has no svenska.se entry" in capsys.readouterr().err
+
+
+def test_discover_reports_what_each_candidate_answered(tmp_path, monkeypatch):
+    """Evidence, not a guess: every plausible URL, and what came back."""
+    answers = {
+        "https://svenska.se/tri/f_so.php?sok=ordbok": (APP_SHELL, 200, None),
+        "https://svenska.se/api/so?sok=ordbok": ('{"artikel": 1}', 200, None),
+    }
+    monkeypatch.setattr(
+        svenska.Svenska,
+        "_raw",
+        lambda self, url: answers.get(url, (None, 404, None)),
+    )
+    client = svenska.Svenska(verdicts_path=tmp_path / "verdicts.json")
+    client.delay = 0
+    rows = {r["url"]: r for r in client.discover("ordbok")}
+
+    shell = rows["https://svenska.se/tri/f_so.php?sok=ordbok"]
+    assert shell["app_shell"] and shell["reads_as"] == "neither"
+    api = rows["https://svenska.se/api/so?sok=ordbok"]
+    assert api["json"] and not api["app_shell"]
+    assert rows["https://svenska.se/so/ordbok"]["status"] == 404
+
+
+def test_sniff_api_reads_the_paths_the_app_names(tmp_path, monkeypatch):
+    page = '<link rel="modulepreload" as="script" href="/_nuxt/entry.js">'
+    js = 'fetch("/api/artikel/so",{}) // and "/tri/legacy.php"'
+    monkeypatch.setattr(
+        svenska.Svenska,
+        "_raw",
+        lambda self, url: ((js, 200, None) if url.endswith(".js") else (page, 200, None)),
+    )
+    client = svenska.Svenska(verdicts_path=tmp_path / "verdicts.json")
+    client.delay = 0
+    assert client.sniff_api("ordbok") == ["/api/artikel/so", "/tri/legacy.php"]

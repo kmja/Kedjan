@@ -508,7 +508,29 @@ Three changes, because the fault is a shape of fault and not a typo:
 
 The `--probe WORD` flag prints what the site actually served, and now says how
 the parser read it. That is the way to recalibrate: look at the markup first,
-then write the rule.
+then write the rule — and doing exactly that is what turned up the real cause.
+
+### The endpoint is gone, not the words
+
+`--probe ordbok` came back with fourteen kilobytes of Nuxt: `/_nuxt/entry.js`,
+`id="__NUXT_DATA__"`, an empty root element and no article anywhere.
+svenska.se has been rebuilt as a client-rendered application, and
+`f_so.php` now answers the app shell for every word alike. There was never a
+verdict in those responses to misread; the endpoint this check was built on
+no longer exists.
+
+So the check refuses to guess. It names the shell for what it is, and
+`--discover WORD` asks every plausible URL — the old fragment paths, the
+per-dictionary pages, the obvious API shapes — reports what each answered,
+and then reads the `/api/` paths the site's own JavaScript names. Where the
+words live now is a question to be answered with evidence from a machine
+that can reach the site.
+
+Two ways forward once that lands: the endpoint the app itself calls, or
+Karp's `salex`, which holds SO and SAOL behind a Språkbanken API key. The
+player-facing link is a separate URL — `svenska.se/?q=`, the site's own
+search form — and is not affected by the fragment endpoints going away,
+though it is worth a tap to confirm the rebuilt site still honours it.
 
 ## Known gaps
 

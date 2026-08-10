@@ -11,10 +11,19 @@ SAOL witnesses spelling and inflection. A weld in SO is right; a weld only
 in SAOL keeps the link alive but shows no meaning; a weld in neither is a
 ghost and must not ship.
 
-The site serves per-dictionary article fragments:
+The site *served* per-dictionary article fragments:
 
     GET https://svenska.se/tri/f_so.php?sok=<word>
     GET https://svenska.se/tri/f_saol.php?sok=<word>
+
+It does not any more. svenska.se has been rebuilt as a client-rendered
+application: those URLs answer 200 with fourteen kilobytes of scripts and
+an empty root element, identically for every word, so there is nothing in
+the response to read. Until the endpoint the app itself calls is known —
+`--discover` asks every plausible URL and reads the paths the app's own
+JavaScript names — this module can verify nothing, and it says so rather
+than answering. The alternative is Karp's `salex` resource, which holds the
+same material behind a Språkbanken API key.
 
 A hit answers with article markup — an element whose class list holds
 `artikel` — and a miss with a short no-hit message. Both are recognised
@@ -49,6 +58,28 @@ HIT_RE = re.compile(r'class=["\'][^"\']*\bartikel\b', re.I)
 MISS_RE = re.compile(
     r"(gav inga svar|gav ingen träff|inga träffar|ingen träff|hittades inte)", re.I
 )
+
+#: The rebuilt site's app shell. svenska.se is a client-rendered Nuxt app
+#: now: `f_so.php` answers 200 with fourteen kilobytes of scripts and no
+#: article in it, whatever word is asked for. Recognising this is how the
+#: check says "the endpoint is gone" instead of "the word is gone".
+SHELL_RE = re.compile(r'id="__NUXT_DATA__"|/_nuxt/|__nuxt\b', re.I)
+
+#: Where a word might live on the rebuilt site. Tried in order by
+#: `discover`, which reports what each one answers rather than guessing.
+CANDIDATE_URLS = (
+    "{base}/tri/f_so.php?sok={word}",
+    "{base}/tri/f_saol.php?sok={word}",
+    "{base}/so/?sok={word}",
+    "{base}/saol/?sok={word}",
+    "{base}/so/{word}",
+    "{base}/saol/{word}",
+    "{base}/api/so?sok={word}",
+    "{base}/api/search?q={word}",
+)
+
+#: Strings in the app's own JavaScript that would name the endpoint it calls.
+API_RE = re.compile(r'["\'](/(?:api|tri)/[A-Za-z0-9_\-./{}$]{2,60})["\']')
 
 #: Words SO certainly holds, asked live before a run to prove the parser
 #: still recognises the site. If these come back missing, everything else
@@ -105,6 +136,9 @@ class Svenska:
         trace=None,
     ):
         self.base = base.rstrip("/")
+        #: The site itself, for the candidate URLs — `base` is the old
+        #: fragment prefix and the rebuilt site does not live under it.
+        self.base_site = self.base.rsplit("/tri", 1)[0]
         self.delay = COURTESY_DELAY
         #: Called with one line per HTTP request — timing, size, outcome.
         #: A run over a thousand welds takes half an hour, and silence that
@@ -183,7 +217,12 @@ class Svenska:
                 # here is how a whole calendar gets condemned by a typo in a
                 # regex, so it says nothing instead.
                 self.last_error = (
-                    f"unreadable answer from f_{dictionary} for {word} "
+                    f"f_{dictionary} served the app shell for {word} "
+                    f"({len(html)} bytes) — svenska.se is client-rendered now "
+                    "and this endpoint answers with scripts, not an article. "
+                    "Run --discover to find where the words live."
+                    if SHELL_RE.search(html)
+                    else f"unreadable answer from f_{dictionary} for {word} "
                     f"({len(html)} bytes) — neither an article nor a no-hit "
                     "page. Run --probe to see what the site is serving."
                 )
@@ -220,3 +259,69 @@ class Svenska:
             if html is None or reading(html) is not True:
                 failed.append(word)
         return failed
+
+    def discover(self, word: str) -> list[dict]:
+        """What each candidate URL answers for one word, as evidence.
+
+        The fragment endpoints this module was built on are gone, and
+        guessing their replacement from a terminal that cannot reach the
+        site is how the last bug happened. So: ask every plausible URL, say
+        exactly what came back, and let the shape of the answers decide.
+        """
+        found = []
+        for template in CANDIDATE_URLS:
+            url = template.format(base=self.base_site, word=urllib.parse.quote(word))
+            time.sleep(self.delay)
+            html, status, error = self._raw(url)
+            found.append(
+                {
+                    "url": url,
+                    "status": status,
+                    "error": error,
+                    "bytes": len(html or ""),
+                    "reads_as": {True: "article", False: "no-hit", None: "neither"}[
+                        reading(html)
+                    ]
+                    if html
+                    else "-",
+                    "app_shell": bool(html and SHELL_RE.search(html)),
+                    "json": bool(html and html.lstrip()[:1] in "[{"),
+                    "word_in_body": bool(html and word.lower() in html.lower()),
+                }
+            )
+        return found
+
+    def sniff_api(self, word: str, chunks: int = 4) -> list[str]:
+        """Paths the app's own JavaScript mentions — where its data comes from.
+
+        A client-rendered site fetches its words from somewhere, and it has
+        to name that somewhere in a script it ships.
+        """
+        page, _, _ = self._raw(f"{self.base_site}/so/{urllib.parse.quote(word)}")
+        if not page:
+            return []
+        scripts = re.findall(r'href="(/_nuxt/[^"]+\.js)"|src="(/_nuxt/[^"]+\.js)"', page)
+        paths: list[str] = []
+        seen: set[str] = set()
+        for pair in scripts[:chunks]:
+            src = pair[0] or pair[1]
+            time.sleep(self.delay)
+            js, _, _ = self._raw(f"{self.base_site}{src}")
+            for hit in API_RE.findall(js or ""):
+                if hit not in seen:
+                    seen.add(hit)
+                    paths.append(hit)
+        return paths
+
+    def _raw(self, url: str) -> tuple[str | None, int | None, str | None]:
+        """One GET, reported rather than judged."""
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "kedjan-curation/1.0 (word-game weld check)"}
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return resp.read().decode("utf-8", "replace"), resp.status, None
+        except urllib.error.HTTPError as e:
+            return None, e.code, None
+        except Exception as e:
+            return None, None, f"{type(e).__name__}: {e}"
