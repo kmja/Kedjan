@@ -78,8 +78,25 @@ CANDIDATE_URLS = (
     "{base}/api/search?q={word}",
 )
 
-#: Strings in the app's own JavaScript that would name the endpoint it calls.
-API_RE = re.compile(r'["\'](/(?:api|tri)/[A-Za-z0-9_\-./{}$]{2,60})["\']')
+#: A server-rendered Nuxt page carries its data in this script tag. If the
+#: article is anywhere in the response, it is in here.
+PAYLOAD_RE = re.compile(
+    r'<script[^>]+id="__NUXT_DATA__"[^>]*>(.*?)</script>', re.S | re.I
+)
+
+#: Any quoted URL or absolute path in the app's own JavaScript. Filtered by
+#: `interesting_paths` rather than by the pattern, because the first attempt
+#: at this looked only for `/api/` and `/tri/` and found nothing — the app is
+#: free to call another host entirely.
+URL_RE = re.compile(r'["\'`](https?://[^"\'`\s]{6,140}|/[A-Za-z0-9_\-./]{2,90})["\'`]')
+#: What makes a path worth reporting: it might be where words come from.
+API_WORDS = ("api", "sok", "search", "artikel", "saol", "/so", "ord", "lemma", "tri")
+#: …and what makes one noise.
+ASSET_SUFFIXES = (".js", ".css", ".png", ".svg", ".jpg", ".woff", ".woff2", ".ico")
+
+#: A word the dictionaries certainly do not hold, for telling a page that
+#: carries an article apart from a page that carries none.
+CONTROL_WORD = "qzzxwvq"
 
 #: Words SO certainly holds, asked live before a run to prove the parser
 #: still recognises the site. If these come back missing, everything else
@@ -95,6 +112,14 @@ PROBE_VERSION = 2
 #: Committed, unlike the corpora — these are facts about words, not
 #: dictionary content.
 DEFAULT_VERDICTS = "svenska-verdicts.json"
+
+
+def interesting_path(path: str) -> bool:
+    """Whether a string out of the app's JavaScript might be where words live."""
+    low = path.lower()
+    if "/_nuxt/" in low or low.endswith(ASSET_SUFFIXES):
+        return False
+    return any(word in low for word in API_WORDS)
 
 
 def reading(html: str) -> bool | None:
@@ -260,6 +285,10 @@ class Svenska:
                 failed.append(word)
         return failed
 
+    def _payload(self, html: str | None) -> str:
+        m = PAYLOAD_RE.search(html or "")
+        return m.group(1) if m else ""
+
     def discover(self, word: str) -> list[dict]:
         """What each candidate URL answers for one word, as evidence.
 
@@ -273,12 +302,25 @@ class Svenska:
             url = template.format(base=self.base_site, word=urllib.parse.quote(word))
             time.sleep(self.delay)
             html, status, error = self._raw(url)
+            # The same URL asked about a word no dictionary holds. What the
+            # two answers do *not* share is the article: a page that is
+            # bigger for ordbok than for qzzxwvq is carrying one.
+            time.sleep(self.delay)
+            control, _, _ = self._raw(
+                template.format(base=self.base_site, word=CONTROL_WORD)
+            )
+            payload = self._payload(html)
             found.append(
                 {
                     "url": url,
                     "status": status,
                     "error": error,
                     "bytes": len(html or ""),
+                    "control_bytes": len(control or ""),
+                    "delta": len(html or "") - len(control or ""),
+                    "payload_bytes": len(payload),
+                    "payload": payload,
+                    "word_in_payload": word.lower() in payload.lower(),
                     "reads_as": {True: "article", False: "no-hit", None: "neither"}[
                         reading(html)
                     ]
@@ -297,20 +339,20 @@ class Svenska:
         A client-rendered site fetches its words from somewhere, and it has
         to name that somewhere in a script it ships.
         """
-        page, _, _ = self._raw(f"{self.base_site}/so/{urllib.parse.quote(word)}")
+        page, _, _ = self._raw(f"{self.base_site}/so/?sok={urllib.parse.quote(word)}")
         if not page:
             return []
-        scripts = re.findall(r'href="(/_nuxt/[^"]+\.js)"|src="(/_nuxt/[^"]+\.js)"', page)
+        scripts = re.findall(r'(?:href|src)="(/_nuxt/[^"]+\.js)"', page)
         paths: list[str] = []
         seen: set[str] = set()
-        for pair in scripts[:chunks]:
-            src = pair[0] or pair[1]
+        for src in scripts[:chunks]:
             time.sleep(self.delay)
             js, _, _ = self._raw(f"{self.base_site}{src}")
-            for hit in API_RE.findall(js or ""):
-                if hit not in seen:
-                    seen.add(hit)
-                    paths.append(hit)
+            for hit in URL_RE.findall(js or ""):
+                if hit in seen or not interesting_path(hit):
+                    continue
+                seen.add(hit)
+                paths.append(hit)
         return paths
 
     def _raw(self, url: str) -> tuple[str | None, int | None, str | None]:

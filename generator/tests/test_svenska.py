@@ -264,6 +264,14 @@ def test_lint_reads_the_committed_verdicts(tmp_path, monkeypatch, capsys):
     assert "stenmur has no svenska.se entry" in capsys.readouterr().err
 
 
+SSR_PAGE = (
+    APP_SHELL[: APP_SHELL.index("<script")]
+    + '<script id="__NUXT_DATA__" type="application/json">'
+    + '["Reactive",{"ord":1},"ordbok"]'
+    + "</script></head><body></body></html>"
+)
+
+
 def test_discover_reports_what_each_candidate_answered(tmp_path, monkeypatch):
     """Evidence, not a guess: every plausible URL, and what came back."""
     answers = {
@@ -297,3 +305,32 @@ def test_sniff_api_reads_the_paths_the_app_names(tmp_path, monkeypatch):
     client = svenska.Svenska(verdicts_path=tmp_path / "verdicts.json")
     client.delay = 0
     assert client.sniff_api("ordbok") == ["/api/artikel/so", "/tri/legacy.php"]
+
+
+def test_discover_measures_a_page_against_a_word_no_dictionary_holds(
+    tmp_path, monkeypatch
+):
+    """A page that grows when asked about ordbok is carrying an article."""
+
+    def raw(self, url):
+        if "sok=" not in url:
+            return APP_SHELL, 200, None
+        return (SSR_PAGE if "ordbok" in url else APP_SHELL), 200, None
+
+    monkeypatch.setattr(svenska.Svenska, "_raw", raw)
+    client = svenska.Svenska(verdicts_path=tmp_path / "verdicts.json")
+    client.delay = 0
+    rows = {r["url"]: r for r in client.discover("ordbok")}
+
+    grew = rows["https://svenska.se/so/?sok=ordbok"]
+    assert grew["delta"] > 0
+    assert grew["word_in_payload"]
+    # The path form carries no query, so it answers the same shell either way.
+    assert rows["https://svenska.se/so/ordbok"]["delta"] == 0
+
+
+def test_interesting_path_keeps_endpoints_and_drops_assets():
+    assert svenska.interesting_path("/api/artikel/so")
+    assert svenska.interesting_path("https://api.example.se/v1/sok")
+    assert not svenska.interesting_path("/_nuxt/entry.B_I1Lyzb.js")
+    assert not svenska.interesting_path("/img/saol.png")

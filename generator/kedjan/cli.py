@@ -146,15 +146,25 @@ def cmd_svenskacheck(args: argparse.Namespace) -> int:
     if args.discover:
         word = args.discover
         print(f"# what svenska.se answers for {word!r}\n")
-        print(f"{'url':52} {'status':>6} {'bytes':>7}  {'reads as':9} shell json word")
-        for row in client.discover(word):
+        print(
+            f"{'url':46} {'status':>6} {'bytes':>7} {'vs control':>10} "
+            f"{'payload':>7}  shell in-payload"
+        )
+        rows = client.discover(word)
+        for row in rows:
             print(
-                f"{row['url'][:52]:52} {str(row['status'] or row['error'])[:6]:>6} "
-                f"{row['bytes']:>7}  {row['reads_as']:9} "
+                f"{row['url'][:46]:46} {str(row['status'] or row['error'])[:6]:>6} "
+                f"{row['bytes']:>7} {row['delta']:>+10} {row['payload_bytes']:>7}  "
                 f"{'yes' if row['app_shell'] else '  -':5} "
-                f"{'yes' if row['json'] else '  -':4} "
-                f"{'yes' if row['word_in_body'] else '  -'}"
+                f"{'yes' if row['word_in_payload'] else '  -'}"
             )
+        # The page that grew most when asked about a real word is the one
+        # carrying the article. Print its payload: whatever parses these
+        # welds next has to be written against it.
+        best = max(rows, key=lambda r: (r["word_in_payload"], r["delta"]))
+        if best["payload_bytes"]:
+            print(f"\n# __NUXT_DATA__ from {best['url']} ({best['payload_bytes']} bytes)")
+            print(best["payload"][: args.payload_chars])
         paths = client.sniff_api(word)
         print("\n# paths the site's own scripts name:")
         for path in paths[:40] or ["(none found)"]:
@@ -673,6 +683,9 @@ def main(argv: list[str] | None = None) -> int:
     sv.add_argument("--discover", default=None, metavar="WORD",
                     help="ask every plausible URL about one word and report "
                          "what each answers — for when the site is rebuilt")
+    sv.add_argument("--payload-chars", type=int, default=2500,
+                    help="how much of the server-rendered payload --discover "
+                         "prints")
     sv.add_argument("--no-selftest", action="store_true",
                     help="skip the canary words that prove the parser still "
                          "reads the site")
