@@ -15,7 +15,7 @@ import { clearSave, markWelcomed, wasWelcomed } from "./game/storage";
 import { POOL_ZONE, useChipDrag } from "./game/useChipDrag";
 import { Chain } from "./components/Chain";
 import { Pool } from "./components/Pool";
-import { Controls } from "./components/Controls";
+import { Announcer } from "./components/Announcer";
 import { ResultCard } from "./components/ResultCard";
 import { HowToPlay } from "./components/HowToPlay";
 import { StatsPanel } from "./components/StatsPanel";
@@ -30,8 +30,9 @@ import { isDevMode } from "./game/dev";
 
 type View = "spel" | "arkiv" | "statistik";
 
-const VIEWS: [View, string][] = [
-  ["spel", "Dagens"],
+/** The two views that sit beside the day, as links in the header. The day
+    itself needs no link: every one of these is a toggle back to it. */
+const SIDE_VIEWS: [Exclude<View, "spel">, string][] = [
   ["arkiv", "Arkiv"],
   ["statistik", "Statistik"],
 ];
@@ -103,8 +104,8 @@ export default function App() {
   };
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-8">
-      <header className="mb-4 flex items-start justify-between gap-3">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-4">
+      <header className="mb-5 flex items-start justify-between gap-3">
         <div>
           <h1
             style={{
@@ -123,28 +124,28 @@ export default function App() {
           </p>
         </div>
 
-        <HowToPlay />
-      </header>
+        {/* The side views and the rules share one cluster in the header.
+            A tab bar of its own was a row of chrome above every board, for
+            two places a player goes once a day at most. */}
+        <nav className="flex flex-wrap items-center justify-end gap-2" aria-label="Vyer">
+          {SIDE_VIEWS.map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className="navlink"
+              aria-pressed={view === id}
+              onClick={() => setView(view === id ? "spel" : id)}
+            >
+              {label}
+              {id === "statistik" && game.streak > 0 && (
+                <span aria-label={`${plural(game.streak, "dag", "dagar")} i rad`}> 🔥{game.streak}</span>
+              )}
+            </button>
+          ))}
 
-      <nav className="mb-5 flex gap-1" role="tablist" aria-label="Vyer">
-        {VIEWS.map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            id={`tab-${id}`}
-            aria-selected={view === id}
-            aria-controls={`panel-${id}`}
-            className="tab"
-            onClick={() => setView(id)}
-          >
-            {label}
-            {id === "statistik" && game.streak > 0 && (
-              <span aria-label={`${plural(game.streak, "dag", "dagar")} i rad`}> 🔥{game.streak}</span>
-            )}
-          </button>
-        ))}
-      </nav>
+          <HowToPlay />
+        </nav>
+      </header>
 
       {loadError && (
         <div className="card" role="alert">
@@ -170,9 +171,8 @@ export default function App() {
       {day && (
         <main className="flex flex-1 flex-col gap-5">
           <section
-            role="tabpanel"
             id="panel-spel"
-            aria-labelledby="tab-spel"
+            aria-label="Dagens kedja"
             hidden={view !== "spel"}
             className="flex flex-1 flex-col gap-5"
           >
@@ -229,9 +229,8 @@ export default function App() {
               <>
                 <ReportWord pair={game.lastMiss} day={day.date} />
 
-                {/* The rack and the buttons under it travel together and stay
-                    pinned to the foot of the screen, so the moves a player
-                    can make are always where they left them. */}
+                {/* The rack and what the board has to say about it travel
+                    together, pinned to the foot of the screen. */}
                 <div className="dock">
                   <Pool
                     parts={game.pool}
@@ -244,16 +243,7 @@ export default function App() {
                     handlers={handlers}
                   />
 
-                  <Controls
-                    day={day}
-                    status={game.status}
-                    announceKey={game.announceKey}
-                    placed={game.chain.length}
-                    hints={game.hints}
-                    parRevealed={game.parRevealed}
-                    onHint={game.hint}
-                    onReset={game.reset}
-                  />
+                  <Announcer status={game.status} announceKey={game.announceKey} />
                 </div>
               </>
             )}
@@ -302,9 +292,7 @@ export default function App() {
           </section>
 
           <section
-            role="tabpanel"
             id="panel-arkiv"
-            aria-labelledby="tab-arkiv"
             hidden={view !== "arkiv"}
             className="pb-10"
           >
@@ -318,9 +306,7 @@ export default function App() {
           </section>
 
           <section
-            role="tabpanel"
             id="panel-statistik"
-            aria-labelledby="tab-statistik"
             hidden={view !== "statistik"}
             className="pb-10"
           >

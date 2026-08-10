@@ -605,7 +605,8 @@ body {
     /* Outside the border, over the dock's own background — a caption on the
        box rather than a heading inside it. */
     margin-bottom: 0.45rem;
-    text-align: center;
+    padding-left: 0.35rem;
+    text-align: left;
     font-size: 1rem;
     font-weight: 800;
     letter-spacing: 0.12em;
@@ -674,6 +675,26 @@ body {
   }
   .btn--major:hover {
     background: color-mix(in srgb, var(--falu) 10%, transparent);
+  }
+
+  /* A side view, as a link in the header. Quiet until it is the view you
+     are in, when it takes the ink and the underline. */
+  .navlink {
+    padding: 0.2rem 0.1rem;
+    background: none;
+    border: 0;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .navlink[aria-pressed="true"] {
+    color: var(--falu-ink);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
   }
 
   .tab {

@@ -126,8 +126,7 @@ describe("the day board", () => {
     expect(screen.queryByRole("button", { name: /^hus$/i })).not.toBeInTheDocument();
     // One place to add a part, and no row of gaps announcing the answer's shape.
     expect(screen.getAllByRole("button", { name: /lägg en del efter/i })).toHaveLength(1);
-    expect(screen.getByText("1 länk")).toBeInTheDocument();
-    // Par is part of the puzzle until a hint is spent on it.
+    // Par is part of the puzzle, and nothing on the board gives it away.
     expect(screen.queryByLabelText("par 3")).not.toBeInTheDocument();
   });
 });
@@ -166,11 +165,9 @@ describe("building the chain", () => {
     render(<App />);
     await board();
     await u.click(chip("tak"));    // sten+tak ✓
-    expect(screen.getByText("2 länkar")).toBeInTheDocument();
-    await u.click(chip("glas"));   // tak+glas ✓
     expect(link(1, "tak")).toBeInTheDocument();
+    await u.click(chip("glas"));   // tak+glas ✓
     expect(link(2, "glas")).toBeInTheDocument();
-    expect(screen.getByText("3 länkar")).toBeInTheDocument();
   });
 
   it("never offers a forged link as a place to put a part", async () => {
@@ -805,7 +802,7 @@ describe("test mode", () => {
     await u.click(screen.getByRole("button", { name: "Spela om dagen" }));
     expect(screen.queryByText(/Under par — briljant!/)).not.toBeInTheDocument();
     expect(chip("bro")).toBeInTheDocument();
-    expect(screen.getByText("1 länk")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^länk 1,/i })).not.toBeInTheDocument();
   });
 
   it("does not count a replayed day twice", async () => {
@@ -845,7 +842,7 @@ describe("persistence", () => {
 
     render(<App />);
     await board();
-    expect(screen.getByText("2 länkar")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^länk 1, mur\./i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^mur\./i })).not.toBeInTheDocument();
     // The verdicts are transient state, but the chain they judge is not: a
     // reloaded chain comes back judged, with its checks and weld words.
@@ -875,7 +872,7 @@ describe("the archive", () => {
     mockCalendar([...CALENDAR, { ...testDay, date: "2026-08-07", no: 3, start: "fjäll" }]);
     render(<App />);
     await board();
-    await u.click(screen.getByRole("tab", { name: "Arkiv" }));
+    await u.click(screen.getByRole("button", { name: "Arkiv" }));
 
     const archive = screen.getByRole("region", { name: "Arkiv" });
     expect(within(archive).getAllByRole("button")).toHaveLength(2);
@@ -886,7 +883,7 @@ describe("the archive", () => {
     const u = user();
     render(<App />);
     await board();
-    await u.click(screen.getByRole("tab", { name: "Arkiv" }));
+    await u.click(screen.getByRole("button", { name: "Arkiv" }));
     await u.click(screen.getByRole("button", { name: /hav → vind/i }));
 
     expect(screen.getByText(/#1 · onsdag 5 augusti · arkiv/)).toBeInTheDocument();
@@ -894,7 +891,7 @@ describe("the archive", () => {
   });
 
   const openArchive = async (u: ReturnType<typeof user>) =>
-    u.click(screen.getByRole("tab", { name: "Arkiv" }));
+    u.click(screen.getByRole("button", { name: "Arkiv" }));
   const replayAll = () =>
     screen.queryByRole("button", { name: /spela om alla klarade dagar/i });
 
@@ -917,7 +914,7 @@ describe("the archive", () => {
     await u.click(replayAll()!);
     await u.click(screen.getByRole("button", { name: "Öppna igen" }));
 
-    await u.click(screen.getByRole("tab", { name: "Dagens" }));
+    await u.click(screen.getByRole("button", { name: "Arkiv" }));
     expect(screen.getByRole("button", { name: /^bro\./i })).toBeInTheDocument();
     expect(screen.queryByText(/Under par — briljant!/)).not.toBeInTheDocument();
 
@@ -939,7 +936,7 @@ describe("the archive", () => {
     await u.click(replayAll()!);
     await u.click(screen.getByRole("button", { name: "Avbryt" }));
 
-    await u.click(screen.getByRole("tab", { name: "Dagens" }));
+    await u.click(screen.getByRole("button", { name: "Arkiv" }));
     expect(screen.getByText(/Under par — briljant!/)).toBeInTheDocument();
   });
 });
@@ -955,7 +952,9 @@ describe("when the calendar cannot be fetched", () => {
   });
 });
 
-describe("the hint ladder", () => {
+// The ladder itself is untouched in useKedjan; what it has no buttons for,
+// for now, is being asked for. These come back with the row.
+describe.skip("the hint ladder", () => {
   const chip = (part: string) =>
     screen.getByRole("button", { name: new RegExp(`^${part}\\.`, "i") });
   const hintButton = () => screen.getByRole("button", { name: /^ledtråd/i });
