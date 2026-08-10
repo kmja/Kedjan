@@ -603,14 +603,15 @@ body {
     flex-direction: column;
     gap: 0.5rem;
     margin-top: auto;
-    padding-bottom: 0.35rem;
+    /* The page holds 1.25rem at the sides, so the dock holds 1.25rem under
+       the rack: the same air on all three edges it touches. */
+    padding-bottom: 1.25rem;
     background: var(--paper);
   }
   .pool-label {
     /* Outside the border, over the dock's own background — a caption on the
        box rather than a heading inside it. */
     margin-bottom: 0.45rem;
-    padding-left: 0.35rem;
     text-align: left;
     font-size: 1rem;
     font-weight: 800;
@@ -630,7 +631,7 @@ body {
     gap: 0.7rem;
     border: 2px dashed var(--edge);
     border-radius: 1rem;
-    padding: 1rem 0.9rem;
+    padding: 1rem;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
   /* The rack is where a chip is read and picked up, so it gets the room:
