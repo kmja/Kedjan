@@ -290,7 +290,9 @@ body {
     top: 50%;
     transform: translateY(-50%);
     display: flex;
-    align-items: center;
+    /* The tick and the word share a baseline — centring them by box put the
+       tick visibly adrift of the serif word beside it. */
+    align-items: baseline;
     gap: 0.3rem;
     /* Its own keyframes, not the shared pop: the mark is centred with a
        translate, and any animation of `transform` that forgets to carry it
@@ -299,16 +301,18 @@ body {
   }
   .weld-tick {
     color: var(--gran-ok);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 800;
     line-height: 1;
   }
   .weld-word {
-    /* Room to miss by a little: the text is small, thumbs are not. */
-    padding: 0.45rem 0.3rem;
+    /* No visible padding, but the tap target keeps its thumb-room: the
+       negative margin hands every pixel of padding straight back. */
+    padding: 0.4rem 0.3rem;
+    margin: -0.4rem -0.3rem;
     white-space: nowrap;
     font-family: var(--font-dictionary);
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 400;
     letter-spacing: 0.01em;
     color: var(--ink);
@@ -468,7 +472,7 @@ body {
     padding: 0.1rem 0.4rem;
     border-radius: 0.35rem;
     border: 1px solid currentColor;
-    font-size: 0.62rem;
+    font-size: 0.65rem;
     font-weight: 800;
     letter-spacing: 0.06em;
   }
@@ -500,7 +504,7 @@ body {
     border-radius: 0 999px 999px 0;
     background: var(--panel);
     color: var(--ink-soft);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: 0.04em;
     /* Tucked in until it is the one you are on, and then pulled out. */
@@ -525,7 +529,7 @@ body {
   .dag-note {
     margin-top: 0.4rem;
     text-align: center;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     color: var(--ink-soft);
   }
 
@@ -694,7 +698,7 @@ body {
     background: var(--panel);
     color: var(--ink);
     font-family: inherit;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 700;
     cursor: pointer;
   }
@@ -739,7 +743,7 @@ body {
   }
 
   .date-line {
-    font-size: 1.05rem;
+    font-size: 1rem;
   }
   /* Bare chevrons, but a full finger of hit area. */
   .date-step {
@@ -793,7 +797,7 @@ body {
     border: 1.5px solid var(--edge);
     background: var(--panel);
     color: var(--ink-soft);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.03em;
     white-space: nowrap;
