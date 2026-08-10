@@ -219,6 +219,35 @@ export function useKedjan(day: Day | null) {
   }, [key, day, applyVerdicts, clearVerdicts]);
 
   /**
+   * Sweep out every part left welded to neither of its neighbours.
+   *
+   * Placement demands that a chip stick to at least one side, but a removal
+   * can undo the side it was sticking by: take PAR out of kärlek-PAR-HÄST
+   * and HÄST — which was holding on through parhäst alone — is left floating
+   * in mid-air, attached to nothing. A part in that state was only ever in
+   * the chain by someone else's weld, so it goes home to the pool with the
+   * part that was holding it. Repeated until nothing floats, because the
+   * part swept out can itself have been holding the next one.
+   */
+  const sweepStranded = useCallback(
+    (parts: string[]): { kept: string[]; stranded: string[] } => {
+      if (!day) return { kept: parts, stranded: [] };
+      let kept = parts;
+      const stranded: string[] = [];
+      for (;;) {
+        const full = fullChain(day, kept);
+        const floater = kept.find(
+          (p, i) => !weld(day, full[i]!, p) && !weld(day, p, full[i + 2]!),
+        );
+        if (!floater) return { kept, stranded };
+        kept = kept.filter((x) => x !== floater);
+        stranded.push(floater);
+      }
+    },
+    [day],
+  );
+
+  /**
    * End the day if this chain holds — however it came to hold. A win by
    * *removing* a part is a legitimate win: taking a wrong link out of a
    * chain that was otherwise sound is exactly the kind of move the free
@@ -270,12 +299,14 @@ export function useKedjan(day: Day | null) {
         const left = MAX_LIVES - livesLost - 1;
         // If the chip came out of the chain for this move, it stays out —
         // rejected means back to the pool, wherever it was lifted from.
-        patch((p) => ({ ...p, chain: withoutPart, livesLost: (p.livesLost ?? 0) + 1 }));
+        // And lifting it out can have stranded whatever it was holding.
+        const { kept } = sweepStranded(withoutPart);
+        patch((p) => ({ ...p, chain: kept, livesLost: (p.livesLost ?? 0) + 1 }));
         setRejection((r) => ({ part, nonce: (r?.nonce ?? 0) + 1 }));
         setArmedJoint(null);
         setMarked(null);
         setDimmed(new Set());
-        applyVerdicts(withoutPart);
+        applyVerdicts(kept);
         say({
           kind: "no",
           msg:
@@ -286,7 +317,10 @@ export function useKedjan(day: Day | null) {
         return;
       }
 
-      patch((p) => ({ ...p, chain: next }));
+      // Moving a part from one place to another can strand the part it had
+      // been holding up at the old one.
+      const { kept } = sweepStranded(next);
+      patch((p) => ({ ...p, chain: kept }));
       setArmedJoint(null);
       setMarked(null);
       setDimmed(new Set());
@@ -294,27 +328,34 @@ export function useKedjan(day: Day | null) {
       // hung on a hook.
       setSettled((s) => ({ part, nonce: (s?.nonce ?? 0) + 1 }));
 
-      applyVerdicts(next);
+      applyVerdicts(kept);
 
-      if (finishIfSolved(next)) return;
+      if (finishIfSolved(kept)) return;
       say({ kind: "info", msg: `${upper(part)} lagd i kedjan.` });
     },
-    [day, solved, failed, chain, maxParts, armedJoint, livesLost, patch, say, applyVerdicts, finishIfSolved],
+    [day, solved, failed, chain, maxParts, armedJoint, livesLost, patch, say, applyVerdicts, finishIfSolved, sweepStranded],
   );
 
   /** Take a part back out. The chain closes up behind it. */
   const removeFrom = useCallback(
     (part: string) => {
       if (!day || solved || failed || !chain.includes(part)) return;
-      const next = chain.filter((p) => p !== part);
-      patch((p) => ({ ...p, chain: next }));
+      const { kept, stranded } = sweepStranded(chain.filter((p) => p !== part));
+      patch((p) => ({ ...p, chain: kept }));
       setMarked(null);
       setDimmed(new Set());
-      applyVerdicts(next);
-      if (finishIfSolved(next)) return;
-      say({ kind: "info", msg: `${upper(part)} tillbaka i poolen.` });
+      applyVerdicts(kept);
+      if (finishIfSolved(kept)) return;
+      say({
+        kind: "info",
+        msg: stranded.length
+          ? `${upper(part)} tillbaka i poolen — ${stranded
+              .map(upper)
+              .join(" och ")} satt bara fast i den och följde med.`
+          : `${upper(part)} tillbaka i poolen.`,
+      });
     },
-    [day, solved, failed, chain, patch, say, applyVerdicts, finishIfSolved],
+    [day, solved, failed, chain, patch, say, applyVerdicts, finishIfSolved, sweepStranded],
   );
 
   /** Arm a joint so the next chip lands there, or disarm it. */

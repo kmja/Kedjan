@@ -170,6 +170,21 @@ describe("building the chain", () => {
     expect(link(2, "glas")).toBeInTheDocument();
   });
 
+  it("sends home a part left hanging on nothing when its holder is removed", async () => {
+    const u = user();
+    render(<App />);
+    await board();
+    await u.click(chip("tak"));   // sten+tak holds
+    await u.click(chip("glas"));  // tak+glas holds — glas is held by tak alone
+    await u.click(link(1, "tak"));
+    // glas welds to neither sten nor hus: it cannot float in mid-air, so it
+    // follows tak back to the pool, and no life is charged for it.
+    expect(screen.queryByRole("button", { name: /^länk/i })).not.toBeInTheDocument();
+    expect(chip("glas")).toBeInTheDocument();
+    expect(chip("tak")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "3 liv kvar" })).toBeInTheDocument();
+  });
+
   it("never offers a forged link as a place to put a part", async () => {
     const u = user();
     render(<App />);
@@ -224,14 +239,22 @@ describe("building the chain", () => {
   });
 
   it("closes the chain up when a part is taken out", async () => {
+    // glas>mur keeps glas anchored through mur once tak leaves — without a
+    // hold on either neighbour the sweep would send it home instead.
+    mockCalendar([{
+      ...testDay, date: "2026-08-06", no: 2,
+      pairs: { ...testDay.pairs, "glas>mur": "glasmur" },
+    }]);
     const u = user();
     render(<App />);
     await board();
     await u.click(chip("tak"));
     await u.click(chip("glas"));
+    await u.click(chip("mur"));
     await u.click(link(1, "tak"));
-    // glas moves up rather than leaving a hole behind.
+    // glas and mur move up rather than leaving a hole behind.
     expect(link(1, "glas")).toBeInTheDocument();
+    expect(link(2, "mur")).toBeInTheDocument();
     expect(chip("tak")).toBeInTheDocument();
   });
 
@@ -1081,24 +1104,38 @@ describe("drag and drop", () => {
   // test context, which would arrive as the height function.
   beforeEach(() => placeZones());
 
-  // A chain with both its links open, so there are two joints to tell apart:
-  // build tak-glas, then take tak back out.
+  // A chain with two open joints to tell apart. A part can no longer float
+  // between two breaks — the sweep sends it home — so each segment anchors
+  // itself: mur holds on to sten, tak holds on through glas, and taking
+  // vägg out leaves breaks at mur>tak and at glas>hus.
+  const DRAG_DAY: Day = {
+    ...testDay,
+    pool: ["mur", "vägg", "tak", "glas", "bro"],
+    pairs: {
+      "sten>mur": "stenmur",
+      "mur>vägg": "murvägg",
+      "vägg>tak": "väggtak",
+      "tak>glas": "takglas",
+      "mur>bro": "murbro",
+      "glas>bro": "glasbro",
+    },
+  };
   const twoOpenJoints = async (u: ReturnType<typeof user>) => {
-    await u.click(chip("tak"));
-    await u.click(chip("glas"));
-    await u.click(screen.getByRole("button", { name: /^länk 1, tak\./i }));
+    for (const part of ["mur", "vägg", "tak", "glas"]) await u.click(chip(part));
+    await u.click(screen.getByRole("button", { name: /^länk 2, vägg\./i }));
   };
 
   it("drops a pool chip into the joint it was released over", async () => {
+    mockCalendar([{ ...DRAG_DAY, date: "2026-08-06", no: 2 }]);
     const u = user();
     render(<App />);
     await board();
     await twoOpenJoints(u);
     // Deliberately joint 1, not joint 0: an index-0 drop cannot tell a working
-    // parser from one that returns zero for everything. bro holds into hus.
+    // parser from one that returns zero for everything. bro holds onto mur.
     await dragTo(chip("bro"), 100, 120);
-    expect(link(1, "glas")).toBeInTheDocument();
     expect(link(2, "bro")).toBeInTheDocument();
+    expect(link(3, "tak")).toBeInTheDocument();
   });
 
   it("returns a chain part to the pool when dropped there", async () => {
@@ -1129,26 +1166,30 @@ describe("drag and drop", () => {
     // centre. Resolving by centre would send the chip backwards, up past a
     // part the player had already dropped it below.
     placeZones((i) => (i === 1 ? 80 : 40));
+    mockCalendar([{ ...DRAG_DAY, date: "2026-08-06", no: 2 }]);
     const u = user();
     render(<App />);
     await board();
     await twoOpenJoints(u);
-    await dragTo(chip("bro"), 100, 75);
-    expect(link(1, "glas")).toBeInTheDocument();
+    // Breaks at joints 1 and 3. This drop is nearest joint 1's *edge* but
+    // nearest joint 3's centre, because joint 1 is the tall one.
+    await dragTo(chip("bro"), 100, 235);
     expect(link(2, "bro")).toBeInTheDocument();
+    expect(link(3, "tak")).toBeInTheDocument();
   });
 
   it("takes drops from its own parts, moving one onto an open link", async () => {
+    mockCalendar([{ ...DRAG_DAY, date: "2026-08-06", no: 2 }]);
     const u = user();
     render(<App />);
     await board();
     await twoOpenJoints(u);
-    await dragTo(chip("bro"), 100, 120);   // glas, bro
+    await dragTo(chip("bro"), 100, 310);   // glas>bro holds: mur, tak, glas, bro
     // Moving a part already in the chain does not make it longer, so the
     // joints have to come back for it rather than demanding a removal first.
-    await dragTo(link(2, "bro"), 100, 20);
-    expect(link(1, "bro")).toBeInTheDocument();
-    expect(link(2, "glas")).toBeInTheDocument();
+    await dragTo(link(4, "bro"), 100, 110); // to the mur>tak break: mur>bro holds
+    expect(link(2, "bro")).toBeInTheDocument();
+    expect(link(4, "glas")).toBeInTheDocument();
   });
 
   it("does nothing when a pool chip is dropped back on the pool", async () => {
