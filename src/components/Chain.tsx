@@ -22,8 +22,14 @@ import { JOINT_ZONE } from "../game/useChipDrag";
  * swings a beat after its neighbour and less far, which is what makes the
  * chain read as one connected thing rather than a stack of chips.
  */
-/** How far a whole chain swings from upright, in degrees. */
-const SWAY_ANGLE = 2.2;
+/**
+ * How far a whole chain swings from upright at rest, in degrees. Kept well
+ * under half the placement pulse: the reaction to a new link only reads as
+ * a reaction if the idle underneath it is visibly calmer — at 2.2 the tips
+ * idled at over half the pulse's peak, and the chain never seemed to
+ * settle.
+ */
+const SWAY_ANGLE = 1.2;
 /**
  * How much more each link swings than the one it hangs from. Zero here is a
  * rigid rod: every piece shares one angle, travel grows linearly with
@@ -64,9 +70,13 @@ const PULSE_FLOOR = 0.06;
 const pulseAt = (distance: number) =>
   PULSE_DEGREES * Math.exp(-PULSE_FALLOFF * distance);
 
-/** The range of resting periods a chain can take, in seconds. */
-const SWAY_SLOWEST = 1.15;
-const SWAY_QUICKEST = 0.8;
+/**
+ * The range of resting periods a chain can take, in seconds. A touch slower
+ * than the placement swing, so calm also *moves* calmer — but not by much:
+ * a slow pendulum reads as a huge one.
+ */
+const SWAY_SLOWEST = 1.9;
+const SWAY_QUICKEST = 1.4;
 
 /** The fractional part, for wrapping a seed back into [0, 1). */
 const frac = (x: number) => x - Math.floor(x);
