@@ -24,3 +24,4 @@ generator/saldo_2.3.tgz
 # vendor. python -m kedjan.cli saolpull, or the saolpull workflow, recreates it.
 generator/saol-words.txt
 generator/karp-cache.json
+tsconfig.tsbuildinfo
