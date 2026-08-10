@@ -23,13 +23,13 @@ import { JOINT_ZONE } from "../game/useChipDrag";
  * chain read as one connected thing rather than a stack of chips.
  */
 /**
- * How far a whole chain swings from upright at rest, in degrees. Kept well
- * under half the placement pulse: the reaction to a new link only reads as
- * a reaction if the idle underneath it is visibly calmer — at 2.2 the tips
- * idled at over half the pulse's peak, and the chain never seemed to
- * settle.
+ * How far a whole chain swings from upright at rest, in degrees. This is
+ * the floor the placement swing decays down to, so it is what "settled"
+ * means — and a real chain settles to almost nothing. Kept just above
+ * zero so the board still breathes; the life of the chain lives in the
+ * reaction to a placement, not here.
  */
-const SWAY_ANGLE = 1.2;
+const SWAY_ANGLE = 0.45;
 /**
  * How much more each link swings than the one it hangs from. Zero here is a
  * rigid rod: every piece shares one angle, travel grows linearly with
@@ -39,6 +39,12 @@ const SWAY_ANGLE = 1.2;
  * out toward the tip.
  */
 const SWAY_BEND = 0.22;
+/**
+ * …but the compounding stops at double the base angle. Without a ceiling a
+ * long chain's tip multiplied its way to several degrees and the "rest"
+ * state of a six-part chain swung more than a short chain's reaction.
+ */
+const SWAY_BEND_CAP = 2;
 /**
  * …and runs a beat behind it, in seconds per link. The tip of a swung chain
  * arrives late; this is what makes the run read as links following each
@@ -530,7 +536,7 @@ export function Chain({
     // curves out toward the tip instead of hanging as a straight rod.
     const angle = hang.still.has(at)
       ? 0
-      : hang.angle * (1 + SWAY_BEND * Math.max(0, depth - 1));
+      : hang.angle * Math.min(SWAY_BEND_CAP, 1 + SWAY_BEND * Math.max(0, depth - 1));
     const travel = hang.reach.get(at)! * Math.tan((angle * Math.PI) / 180);
 
     // A piece swings from the end that holds it, and the sign follows: a

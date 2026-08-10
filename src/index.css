@@ -167,13 +167,13 @@ body {
     animation:
       chain-idle var(--period, 2.6s) ease-in-out var(--phase, 0s) infinite
         alternate,
-      chain-pulse-a 2s ease-in-out var(--pulse-delay, 0ms) both;
+      chain-pulse-a 5.5s ease-in-out var(--pulse-delay, 0ms) both;
   }
   .chain-piece--pulse-b {
     animation:
       chain-idle var(--period, 2.6s) ease-in-out var(--phase, 0s) infinite
         alternate,
-      chain-pulse-b 2s ease-in-out var(--pulse-delay, 0ms) both;
+      chain-pulse-b 5.5s ease-in-out var(--pulse-delay, 0ms) both;
   }
 
   /* A joint is the run of chain between two parts. It takes a part when the
@@ -891,29 +891,34 @@ body {
   }
 }
 
-/* A damped oscillation: each swing a little more than half the one before,
-   dying away over two seconds. The first beat is the impact; the rest is the
-   chain shedding it. */
+/* A damped oscillation, the way a hanging chain actually sheds energy: each
+   swing about six tenths of the one before, every beat smaller than the
+   last, over five and a half seconds — long enough to watch it calm, and
+   ending at the near-stillness the idle sway keeps underneath. */
 @keyframes chain-pulse-a {
   0% { transform: rotate(0deg); }
-  10% { transform: rotate(var(--pulse, 0deg)); }
-  26% { transform: rotate(calc(var(--pulse, 0deg) * -0.58)); }
-  42% { transform: rotate(calc(var(--pulse, 0deg) * 0.34)); }
-  58% { transform: rotate(calc(var(--pulse, 0deg) * -0.2)); }
-  72% { transform: rotate(calc(var(--pulse, 0deg) * 0.11)); }
-  84% { transform: rotate(calc(var(--pulse, 0deg) * -0.06)); }
-  93% { transform: rotate(calc(var(--pulse, 0deg) * 0.03)); }
+  7% { transform: rotate(var(--pulse, 0deg)); }
+  20% { transform: rotate(calc(var(--pulse, 0deg) * -0.62)); }
+  33% { transform: rotate(calc(var(--pulse, 0deg) * 0.38)); }
+  45% { transform: rotate(calc(var(--pulse, 0deg) * -0.24)); }
+  57% { transform: rotate(calc(var(--pulse, 0deg) * 0.15)); }
+  68% { transform: rotate(calc(var(--pulse, 0deg) * -0.09)); }
+  78% { transform: rotate(calc(var(--pulse, 0deg) * 0.055)); }
+  87% { transform: rotate(calc(var(--pulse, 0deg) * -0.03)); }
+  94% { transform: rotate(calc(var(--pulse, 0deg) * 0.015)); }
   100% { transform: rotate(0deg); }
 }
 @keyframes chain-pulse-b {
   0% { transform: rotate(0deg); }
-  10% { transform: rotate(var(--pulse, 0deg)); }
-  26% { transform: rotate(calc(var(--pulse, 0deg) * -0.58)); }
-  42% { transform: rotate(calc(var(--pulse, 0deg) * 0.34)); }
-  58% { transform: rotate(calc(var(--pulse, 0deg) * -0.2)); }
-  72% { transform: rotate(calc(var(--pulse, 0deg) * 0.11)); }
-  84% { transform: rotate(calc(var(--pulse, 0deg) * -0.06)); }
-  93% { transform: rotate(calc(var(--pulse, 0deg) * 0.03)); }
+  7% { transform: rotate(var(--pulse, 0deg)); }
+  20% { transform: rotate(calc(var(--pulse, 0deg) * -0.62)); }
+  33% { transform: rotate(calc(var(--pulse, 0deg) * 0.38)); }
+  45% { transform: rotate(calc(var(--pulse, 0deg) * -0.24)); }
+  57% { transform: rotate(calc(var(--pulse, 0deg) * 0.15)); }
+  68% { transform: rotate(calc(var(--pulse, 0deg) * -0.09)); }
+  78% { transform: rotate(calc(var(--pulse, 0deg) * 0.055)); }
+  87% { transform: rotate(calc(var(--pulse, 0deg) * -0.03)); }
+  94% { transform: rotate(calc(var(--pulse, 0deg) * 0.015)); }
   100% { transform: rotate(0deg); }
 }
 
