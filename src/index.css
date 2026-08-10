@@ -159,19 +159,21 @@ body {
     animation: chain-idle var(--period, 2.6s) ease-in-out var(--phase, 0s)
       infinite alternate;
   }
+  /* The reaction to a new link rides on top of the idle sway — it animates
+     `transform` where the idle owns `translate` and `rotate` — so when the
+     last damped swing dies out, what is left underneath is the chain already
+     swaying gently, and the handover needs no seam. */
   .chain-piece--pulse-a {
     animation:
       chain-idle var(--period, 2.6s) ease-in-out var(--phase, 0s) infinite
         alternate,
-      chain-pulse-a 0.95s cubic-bezier(0.36, 0.07, 0.3, 1)
-        var(--pulse-delay, 0ms) both;
+      chain-pulse-a 2s ease-in-out var(--pulse-delay, 0ms) both;
   }
   .chain-piece--pulse-b {
     animation:
       chain-idle var(--period, 2.6s) ease-in-out var(--phase, 0s) infinite
         alternate,
-      chain-pulse-b 0.95s cubic-bezier(0.36, 0.07, 0.3, 1)
-        var(--pulse-delay, 0ms) both;
+      chain-pulse-b 2s ease-in-out var(--pulse-delay, 0ms) both;
   }
 
   /* A joint is the run of chain between two parts. It takes a part when the
@@ -718,6 +720,39 @@ body {
     color: var(--on-falu);
   }
 
+  .date-line {
+    font-size: 1.05rem;
+  }
+  /* Bare chevrons, but a full finger of hit area. */
+  .date-step {
+    padding: 0.1rem 0.75rem;
+    background: none;
+    border: 0;
+    color: var(--ink-soft);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .date-step:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+
+  .report-btn {
+    background: none;
+    border: 0;
+    padding: 0.3rem 0.5rem;
+    color: var(--ink-soft);
+    font-size: inherit;
+    font-family: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .report-btn:disabled {
+    text-decoration: none;
+    cursor: default;
+  }
+
   .card {
     border-radius: 0.9rem;
     border: 1px solid var(--edge);
@@ -834,20 +869,29 @@ body {
   }
 }
 
+/* A damped oscillation: each swing a little more than half the one before,
+   dying away over two seconds. The first beat is the impact; the rest is the
+   chain shedding it. */
 @keyframes chain-pulse-a {
   0% { transform: rotate(0deg); }
-  18% { transform: rotate(var(--pulse, 0deg)); }
-  40% { transform: rotate(calc(var(--pulse, 0deg) * -0.62)); }
-  62% { transform: rotate(calc(var(--pulse, 0deg) * 0.34)); }
-  82% { transform: rotate(calc(var(--pulse, 0deg) * -0.14)); }
+  10% { transform: rotate(var(--pulse, 0deg)); }
+  26% { transform: rotate(calc(var(--pulse, 0deg) * -0.58)); }
+  42% { transform: rotate(calc(var(--pulse, 0deg) * 0.34)); }
+  58% { transform: rotate(calc(var(--pulse, 0deg) * -0.2)); }
+  72% { transform: rotate(calc(var(--pulse, 0deg) * 0.11)); }
+  84% { transform: rotate(calc(var(--pulse, 0deg) * -0.06)); }
+  93% { transform: rotate(calc(var(--pulse, 0deg) * 0.03)); }
   100% { transform: rotate(0deg); }
 }
 @keyframes chain-pulse-b {
   0% { transform: rotate(0deg); }
-  18% { transform: rotate(var(--pulse, 0deg)); }
-  40% { transform: rotate(calc(var(--pulse, 0deg) * -0.62)); }
-  62% { transform: rotate(calc(var(--pulse, 0deg) * 0.34)); }
-  82% { transform: rotate(calc(var(--pulse, 0deg) * -0.14)); }
+  10% { transform: rotate(var(--pulse, 0deg)); }
+  26% { transform: rotate(calc(var(--pulse, 0deg) * -0.58)); }
+  42% { transform: rotate(calc(var(--pulse, 0deg) * 0.34)); }
+  58% { transform: rotate(calc(var(--pulse, 0deg) * -0.2)); }
+  72% { transform: rotate(calc(var(--pulse, 0deg) * 0.11)); }
+  84% { transform: rotate(calc(var(--pulse, 0deg) * -0.06)); }
+  93% { transform: rotate(calc(var(--pulse, 0deg) * 0.03)); }
   100% { transform: rotate(0deg); }
 }
 

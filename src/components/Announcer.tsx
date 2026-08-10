@@ -29,7 +29,14 @@ export function Announcer({ status, announceKey }: Props) {
       aria-atomic="true"
     >
       {status && (
-        <span key={announceKey} style={{ color: statusColor(status.kind) }}>
+        <span
+          key={announceKey}
+          // A placement is visible as motion — the chip travels — so eyes
+          // need no caption for it. A screen reader still gets every word:
+          // for its users the announcement IS the move.
+          className={status.kind === "info" ? "sr-only" : undefined}
+          style={{ color: statusColor(status.kind) }}
+        >
           <span aria-hidden="true">{statusMark(status.kind)} </span>
           {status.msg}
         </span>

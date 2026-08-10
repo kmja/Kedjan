@@ -62,6 +62,18 @@ export default function App() {
     );
   }, [calendar, released, pickedDate, today, tier]);
 
+  // The released dates of the tier on the board, oldest first — the track
+  // the date chevrons step along.
+  const tierDates = useMemo(
+    () =>
+      released
+        .filter((d) => tierOf(d) === tier)
+        .map((d) => d.date)
+        .sort(),
+    [released, tier],
+  );
+  const dayAt = day ? tierDates.indexOf(day.date) : -1;
+
   const game = useKedjan(day);
   // A chip that is clicked rather than dragged still has to be seen to
   // travel: this animates every one that has moved since the last render.
@@ -164,10 +176,33 @@ export default function App() {
             hidden={view !== "spel"}
             className="flex flex-1 flex-col gap-5"
           >
-            <p className="text-center text-xs font-semibold" style={{ color: "var(--ink-soft)" }}>
-              #{day.no} · {formatSwedishDate(day.date)}
-              {day.date !== today && " · arkiv"}
-            </p>
+            {/* The date is also the way to the days around it: the archive
+                list is still there for jumping far, the chevrons are for
+                stepping. Stepping stays in the tier you are on. */}
+            <div className="flex items-center justify-center gap-1">
+              <button
+                type="button"
+                className="date-step"
+                disabled={dayAt <= 0}
+                onClick={() => setPickedDate(tierDates[dayAt - 1]!)}
+                aria-label="Föregående dag"
+              >
+                ‹
+              </button>
+              <p className="date-line text-center font-bold" style={{ color: "var(--ink-soft)" }}>
+                #{day.no} · {formatSwedishDate(day.date)}
+                {day.date !== today && " · arkiv"}
+              </p>
+              <button
+                type="button"
+                className="date-step"
+                disabled={dayAt < 0 || dayAt >= tierDates.length - 1}
+                onClick={() => setPickedDate(tierDates[dayAt + 1]!)}
+                aria-label="Nästa dag"
+              >
+                ›
+              </button>
+            </div>
 
             {/* Every date carries two chains. The toggle never resets the
                 other chain — each keeps its own saved progress. It lives on

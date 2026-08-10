@@ -24,6 +24,21 @@ import { JOINT_ZONE } from "../game/useChipDrag";
  */
 /** How far a whole chain swings from upright, in degrees. */
 const SWAY_ANGLE = 2.2;
+/**
+ * How much more each link swings than the one it hangs from. Zero here is a
+ * rigid rod: every piece shares one angle, travel grows linearly with
+ * distance, and the chain hangs as a straight line however long it gets —
+ * which is exactly what a five-part chain looked like. A chain is not a
+ * rod; each link bends a little further than its parent, so the run curves
+ * out toward the tip.
+ */
+const SWAY_BEND = 0.22;
+/**
+ * …and runs a beat behind it, in seconds per link. The tip of a swung chain
+ * arrives late; this is what makes the run read as links following each
+ * other rather than a picture of links tilting together.
+ */
+const SWAY_LAG = 0.05;
 
 /**
  * What each kind of piece contributes to a chain's length, in pixels at the
@@ -38,9 +53,9 @@ const HEIGHT_OF: Record<"part" | "link" | "loose-below" | "loose-above", number>
   "loose-above": 25,
 };
 /** How far the piece at the epicentre of a placement swings, in degrees. */
-const PULSE_DEGREES = 3.2;
+const PULSE_DEGREES = 5.5;
 /** Each piece further from the epicentre swings e^-k as far. */
-const PULSE_FALLOFF = 0.45;
+const PULSE_FALLOFF = 0.3;
 /** …and a beat later, so the pulse travels rather than flashing. */
 const PULSE_STEP_MS = 55;
 /** Below this the swing is not worth an animation. */
@@ -424,6 +439,7 @@ export function Chain({
       heldBelow: boolean;
       order: number[];
       reach: Map<number, number>;
+      depth: Map<number, number>;
       still: Set<number>;
     }
   >();
@@ -442,9 +458,11 @@ export function Chain({
     // part itself is the thing the chain hangs from: it does not move, and
     // the first piece under it hangs from an edge that stays put.
     const reach = new Map<number, number>();
+    const depth = new Map<number, number>();
     const still = new Set<number>();
     let far = 0;
     (heldBelow ? [...order].reverse() : order).forEach((at, i) => {
+      depth.set(at, i);
       if (i === 0 && (fromTop || fromBottom)) {
         reach.set(at, 0);
         still.add(at);
@@ -487,6 +505,7 @@ export function Chain({
       heldBelow,
       order,
       reach,
+      depth,
       still,
     });
   }
@@ -496,7 +515,12 @@ export function Chain({
   const piece = (at: number) => {
     const mine = seq[at]!;
     const hang = anchored.get(mine.chainNo)!;
-    const angle = hang.still.has(at) ? 0 : hang.angle;
+    const depth = hang.depth.get(at) ?? 0;
+    // Each link swings a little further than its parent, so the chain
+    // curves out toward the tip instead of hanging as a straight rod.
+    const angle = hang.still.has(at)
+      ? 0
+      : hang.angle * (1 + SWAY_BEND * Math.max(0, depth - 1));
     const travel = hang.reach.get(at)! * Math.tan((angle * Math.PI) / 180);
 
     // A piece swings from the end that holds it, and the sign follows: a
@@ -512,7 +536,10 @@ export function Chain({
       "--tilt": `${(heldBelow ? -angle : angle).toFixed(2)}deg`,
       "--pivot": heldBelow ? "100%" : "0%",
       "--period": `${hang.period.toFixed(2)}s`,
-      "--phase": `${hang.phase.toFixed(2)}s`,
+      // The tip runs late: each link starts its cycle a beat after the one
+      // it hangs from, which is the difference between links following each
+      // other and a picture of links tilting in step.
+      "--phase": `${(hang.phase + depth * SWAY_LAG).toFixed(2)}s`,
       // A chain held from below bends the other way, for the same reason.
       "--lean": heldBelow ? "-1" : "1",
     } as Record<string, string>;
