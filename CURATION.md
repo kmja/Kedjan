@@ -253,6 +253,29 @@ now scores it (`attested`). The calendar takes the well-attested candidates
 for its near dates and the rest for its tail; the tail is the part the next
 sweep replaces first.
 
+## A pool is ways in and ways to be wrong, nothing else
+
+The worry was that pools carried *pure decoys*: chips a player can never
+legally reach, whose welds all point the wrong way — into the top of the
+start, out of the bottom of the target, or at other equally unreachable
+chips. Inert filler like that is an elimination the puzzle never meant to
+sell, because a systematic player spots it without playing a move.
+
+Measured, the calendar has none: every one of the 105 days' pool chips is
+either on a winning route (about 8.2 a day) or on a reachable doomed limb
+(about 1.8 a day). That is no accident of virtue — `build_day` only ever
+recruits candidates that weld to the core, and a pool-internal weld is
+usable in both directions since a chain builds upward as well as down, so
+recruitment makes chips reachable for free. `pool_roles` now measures the
+three classes, and the lint blocks a pure decoy outright, which costs
+nothing today and keeps the accident a rule.
+
+The distinction that *does* bite is depth, not reachability: a false-path
+chip like budstrid is reachable, welds handsomely, and is dead one move
+later. Difficulty lives in how far a wrong line lets you walk, which is
+what MIN_TRAP_DEPTH measures — over the whole board today, per false
+opening perhaps tomorrow.
+
 ## The calendar is history in one direction only
 
 Dates up to and including today keep whatever they already carry — a chain a

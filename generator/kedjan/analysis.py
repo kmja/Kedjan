@@ -187,6 +187,62 @@ def report(day: DayLike, saldo: Saldo | None = None) -> DayReport:
     )
 
 
+def _solutions_any_length(day: DayLike) -> list[list[str]]:
+    """Every winning chain of any length: the game accepts the long way."""
+    start, target = str(day["start"]), str(day["target"])
+    pairs = day.get("pairs", {})
+    pool = _pool(day)
+    found: list[list[str]] = []
+
+    def walk(part: str, chain: list[str]) -> None:
+        if f"{part}>{target}" in pairs and chain:
+            found.append(list(chain))
+        for nxt in pool:
+            if nxt not in chain and f"{part}>{nxt}" in pairs:
+                walk(nxt, [*chain, nxt])
+
+    walk(start, [])
+    return found
+
+
+def pool_roles(day: DayLike) -> dict[str, list[str]]:
+    """Every pool chip sorted into route, false path, or pure decoy.
+
+    A route chip lies on some winning way through. A false-path chip does
+    not, but a player can still legally reach it: it welds — in either
+    direction, since the chain builds up as well as down — to something that
+    is itself reachable from an anchor. A pure decoy is neither: it welds
+    only in ways no legal chain can ever use, wrong-side-of-anchor welds and
+    welds among the equally unreachable. It is inert filler, and a player
+    who notices earns an elimination the puzzle never intended to sell.
+
+    Measured when this was written, the calendar had none — the pool fill
+    only ever recruits chips that weld to the core, which makes them
+    reachable for free. This keeps that accident a rule.
+    """
+    start, target = str(day["start"]), str(day["target"])
+    pool = _pool(day)
+    pairs = day.get("pairs", {})
+    weld = lambda a, b: f"{a}>{b}" in pairs  # noqa: E731
+
+    on_route = {p for r in _solutions_any_length(day) for p in r}
+    engaged: set[str] = set()
+    frontier = [p for p in pool if weld(start, p) or weld(p, target)]
+    while frontier:
+        p = frontier.pop()
+        if p in engaged:
+            continue
+        engaged.add(p)
+        frontier += [
+            q for q in pool if q not in engaged and (weld(p, q) or weld(q, p))
+        ]
+    return {
+        "route": [p for p in pool if p in on_route],
+        "false_path": [p for p in pool if p in engaged and p not in on_route],
+        "decoy": [p for p in pool if p not in engaged],
+    }
+
+
 def false_paths(day: DayLike) -> tuple[list[str], int]:
     """The traps: welds that look like a way in and are not.
 

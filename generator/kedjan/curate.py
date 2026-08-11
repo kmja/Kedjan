@@ -250,6 +250,17 @@ def check_day(
             "springs at once costs a player little"
         )
 
+    # A pool of exactly two kinds of chip: ways in, and ways to be wrong.
+    # An unreachable chip is neither — inert filler a systematic player
+    # eliminates for free — and the fill has never actually produced one, so
+    # the rule costs nothing to enforce.
+    inert = analysis.pool_roles(day)["decoy"]
+    if inert:
+        err(
+            f"{', '.join(inert)} can never be reached from either end — "
+            "pure decoys, welded only to the unreachable"
+        )
+
     joins, forced_run = analysis.route_shape(day, r.solutions)
     if forced_run > MAX_FORCED_RUN:
         err(

@@ -191,3 +191,36 @@ def test_ancestors_stop_at_the_requested_depth_and_never_loop():
     saldo = _saldo_with({"a": "b", "b": "c", "c": "a"})
     assert saldo.ancestors("a", depth=2) == ["b", "c"]
     assert saldo.ancestors("a", depth=9) == ["b", "c"]   # the cycle terminates
+
+
+def test_pool_roles_sorts_route_from_false_path_from_decoy():
+    """mur wins, tak dangles off the start, glas dangles off tak — and lus
+    welds only to another unreachable chip, which no legal chain can use."""
+    day = {
+        "start": "sten", "target": "hus", "budget": 4,
+        "pool": ["mur", "tak", "glas", "lus", "orm"],
+        "pairs": {
+            "sten>mur": "stenmur", "mur>hus": "murhus",
+            "sten>tak": "stentak", "tak>glas": "takglas",
+            "lus>orm": "lusorm",
+        },
+    }
+    from kedjan import analysis
+    roles = analysis.pool_roles(day)
+    assert roles["route"] == ["mur"]
+    assert roles["false_path"] == ["tak", "glas"]
+    assert roles["decoy"] == ["lus", "orm"]
+
+
+def test_a_backward_weld_is_still_a_way_in():
+    """glas welds *into* tak (glas>tak), so a player can hang it above tak —
+    reachable, not a decoy, even though nothing welds onward out of it."""
+    day = {
+        "start": "sten", "target": "hus", "budget": 4,
+        "pool": ["tak", "glas"],
+        "pairs": {"sten>tak": "stentak", "glas>tak": "glastak", "tak>hus": "takhus"},
+    }
+    from kedjan import analysis
+    roles = analysis.pool_roles(day)
+    assert roles["false_path"] == ["glas"]
+    assert roles["decoy"] == []
