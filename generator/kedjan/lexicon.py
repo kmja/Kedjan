@@ -111,7 +111,11 @@ UNUSABLE_FLAGS = frozenset("%¤Z!")
 #:              betoning — and absent from all of SAOL/SO/SAOB (checked
 #:              2026-08-09 in play). Two corpora vouch; the authority the
 #:              player is shown does not, so it goes.
-GHOST_WORDS = frozenset({"tomslag", "tryckord"})
+#:   rocksjäl   SFOL-only (rock+själ/ADG), no SALDO entry, not on svenska.se
+#:              (checked 2026-08-23 in play) — the same single-witness
+#:              failure as tomslag, just with a more plausible-looking
+#:              compound.
+GHOST_WORDS = frozenset({"tomslag", "tryckord", "rocksjäl"})
 
 #: The mirror of GHOST_WORDS, for the lexicalized mode: compounds a player
 #: attested against SAOL that SALDO has simply never recorded. SALDO is a
